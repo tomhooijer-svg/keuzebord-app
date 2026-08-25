@@ -1,0 +1,3 @@
+# Deze app bevat leerlinggegevens en hoort niet in een zoekmachine.
+User-agent: *
+Disallow: /

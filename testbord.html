@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Keuzebord — testbord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- optical sizing laat Inter zich aanpassen aan de tekstgrootte: grote koppen
+     krijgen strakkere letters. display=optional voorkomt dat de bladzijde
+     verspringt als het lettertype later binnenkomt. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=optional">
+<link rel="stylesheet" href="src/kb-stijl.css">
+<style>
+/* het testbord gebruikt exact dezelfde stijl als het echte bord */
+</style>
+<style>
+/* ── het bord ─────────────────────────────────────────── */
+/* Een zachte, warme ondergrond met een vleugje kleur in de hoeken —
+   vrolijk zonder dat het onrustig wordt achter de picto's. */
+body.bord{
+  background:
+    radial-gradient(1100px 620px at 8% -12%,  #ffeede 0%, transparent 62%),
+    radial-gradient(1000px 560px at 96% 4%,   #e2f0fb 0%, transparent 58%),
+    radial-gradient(900px 640px at 42% 110%,  #eaf6ec 0%, transparent 60%),
+    #fbf8f4;
+  background-attachment: fixed;
+}
+.scherm{ display: none; height: 100vh; flex-direction: column; }
+.scherm.aan{ display: flex; }
+
+.balk{
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 40px 14px; flex: none;
+}
+.balk-links{ display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.groepnaam{ font-size: 1.42rem; font-weight: 650; letter-spacing: -.02em; }
+.datum{ font-size: 1.05rem; color: var(--inkt-3); }
+.balk-rechts{ display: flex; align-items: center; gap: 20px; }
+.klok{ font-size: 1.15rem; color: var(--inkt-2); font-variant-numeric: tabular-nums; }
+.rondje{
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(20,28,44,.05); display: flex; align-items: center; justify-content: center;
+  transition: background .18s ease;
+}
+.rondje:hover{ background: rgba(20,28,44,.1); }
+
+.rooster{
+  flex-grow: 1; display: grid; gap: 22px; padding: 0 40px; min-height: 0;
+  grid-template-columns: repeat(var(--kolommen, 3), minmax(0, 1fr));
+  align-content: stretch;
+}
+
+.hoek{
+  display: flex; flex-direction: column; min-height: 0; cursor: pointer;
+  position: relative; background: var(--hoekzacht, #fff);
+  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 10px 26px var(--hoekschaduw, rgba(20,28,44,.06));
+  transition: transform .2s var(--veer), box-shadow .2s ease;
+}
+.hoek:active{ transform: scale(.985); }
+.hoek.doelwit{
+  box-shadow: 0 0 0 4px var(--hoekkleur), 0 16px 34px var(--hoekschaduw);
+  transform: translateY(-4px) scale(1.012);
+}
+.hoek.vol.doelwit{ box-shadow: 0 0 0 4px var(--let-op), 0 16px 34px rgba(200,130,10,.3); }
+
+.hoek-beeld{
+  height: 52%; min-height: 92px; background: var(--hoektint, #f2f4f7);
+  display: flex; align-items: center; justify-content: center; flex: none;
+  background-size: cover; background-position: center;
+}
+.hoek-onder{ padding: 13px 20px 16px; display: flex; flex-direction: column; gap: 10px;
+             flex-grow: 1; min-height: 0; }
+.hoek-kop{ display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hoek-naam{ font-size: 1.28rem; font-weight: 650; letter-spacing: -.015em;
+            color: var(--hoekkleur); filter: brightness(.82);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plekjes{ display: flex; gap: 5px; flex: none; }
+.plek{ width: 10px; height: 10px; border-radius: 50%; background: rgba(20,28,44,.13); }
+.plek.bezet{ background: var(--hoekkleur, var(--accent)); }
+.hoek-kinderen{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+                margin-top: auto; }
+.leeg-plekje{ width: 46px; height: 46px; border-radius: 50%;
+              border: 2px dashed rgba(20,28,44,.16); flex: none; }
+.vol-label{
+  margin-left: auto; font-size: .82rem; font-weight: 600; color: var(--inkt-2);
+  background: rgba(20,28,44,.06); padding: 5px 13px; border-radius: var(--rond-vol);
+}
+.wacht-label{ background: var(--let-op-zacht); color: var(--let-op); }
+
+/* De strook met kinderen die nog moeten kiezen krijgt een eigen vlak,
+   zodat het bord onderaan niet uitloopt in de achtergrond. */
+.strook{
+  flex: none; margin: 18px 40px 22px; padding: 16px 24px;
+  display: flex; align-items: center; gap: 26px; min-height: 0;
+  background: rgba(255,255,255,.72); border-radius: var(--rond-l);
+  box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 20px rgba(20,28,44,.05);
+}
+.strook-kop{ font-size: 1rem; font-weight: 600; color: var(--inkt-3); white-space: nowrap; flex: none; }
+.strook-kinderen{ display: flex; gap: 20px; overflow-x: auto; padding: 4px 2px; }
+.strook .picto-rond{ width: 62px; height: 62px; font-size: 1.4rem; }
+.hoek-kinderen .picto-rond{ width: 46px; height: 46px; font-size: 1.05rem; }
+.hoek-kinderen .picto-naam{ display: none; }
+
+/* ── klas kiezen ──────────────────────────────────────── */
+#scherm-klassen{ align-items: center; justify-content: center; padding: 30px; }
+.klas-titel{ font-size: 2.6rem; font-weight: 650; letter-spacing: -.03em; margin: 0 0 8px;
+              background: linear-gradient(96deg, #3b6ff0, #17a9bd 42%, #37ab74 72%, #e79a1f);
+              -webkit-background-clip: text; background-clip: text; color: transparent; }
+.klas-sub{ font-size: 1.05rem; color: var(--inkt-3); margin: 0 0 36px; }
+.klas-rooster{ display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 220px)); gap: 18px; justify-content: center; }
+.klas-kaart{ padding: 22px; text-align: left; transition: transform .2s var(--veer); }
+.klas-kaart:hover{ transform: translateY(-3px); }
+.klas-kaart .n{ font-size: 1.2rem; font-weight: 600; margin-bottom: 3px; }
+.klas-kaart .s{ font-size: .9rem; color: var(--inkt-3); }
+
+/* ── hoekdetail ───────────────────────────────────────── */
+.detail-kop{ display: flex; align-items: center; gap: 18px; margin-bottom: 26px; }
+.detail-icoon{ width: 62px; height: 62px; border-radius: 20px; background: var(--vlak-2);
+               display: flex; align-items: center; justify-content: center; flex: none;
+               background-size: cover; background-position: center; }
+.detail-plekken{ display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 18px; }
+.detail-plek{ display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.detail-plek .picto-rond{ width: 84px; height: 84px; font-size: 2rem; }
+.detail-plek .ring{ top: -10px; right: -10px; bottom: -10px; left: -10px; }
+.detail-plek .ring circle{ stroke-width: 5; }
+.detail-stand{ font-size: .85rem; color: var(--inkt-3); text-align: center; }
+.detail-stand.vrij{ color: var(--goed); font-weight: 600; }
+.detail-leeg{ width: 104px; height: 104px; border-radius: 50%;
+              border: 3px dashed rgba(20,28,44,.15); display: flex;
+              align-items: center; justify-content: center; }
+
+.rij-wacht{ display: flex; align-items: flex-end; justify-content: center; gap: 24px; margin: 26px 0; }
+.rij-plek{ display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rij-nummer{ font-size: .9rem; font-weight: 600; color: var(--inkt-3); }
+.rij-plek.ikzelf .rij-nummer{ color: var(--accent); font-weight: 700; }
+.rij-plek .picto-rond{ width: 62px; height: 62px; font-size: 1.4rem; }
+.rij-plek.ikzelf .picto-rond{ width: 84px; height: 84px; font-size: 2rem; }
+.rij-ring{ padding: 5px; border-radius: 50%; background: rgba(59,111,240,.14); }
+
+/* Het picto dat je optilt: alleen de bol, iets groter, met een schaduw
+   die meegroeit. Dat leest als oppakken in plaats van als slepen. */
+.sleep-geest{
+  position: fixed; z-index: 500; pointer-events: none;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  filter: drop-shadow(0 2px 6px rgba(20,28,44,.18));
+  transition: transform .18s var(--veer), filter .18s ease, left .16s ease-out, top .16s ease-out;
+}
+.sleep-geest.opgetild{
+  transform: translate(-50%, -50%) scale(1.22) rotate(-4deg);
+  filter: drop-shadow(0 16px 26px rgba(20,28,44,.3));
+  transition: transform .18s var(--veer), filter .18s ease;
+}
+.sleep-geest.landt{
+  transform: translate(-50%, -50%) scale(.9) rotate(0deg);
+  filter: drop-shadow(0 3px 8px rgba(20,28,44,.16));
+  opacity: .7;
+}
+.sleep-geest.valt-terug{
+  transform: translate(-50%, -50%) scale(.8);
+  opacity: 0;
+}
+.picto.sleept .picto-rond{ transition: transform .2s var(--veer); transform: scale(.9); }
+
+/* wie vandaag aan de beurt is in de werkplaats staat er alvast, wachtend */
+.gereserveerd{
+  position: relative; flex: none;
+  padding: 3px; border-radius: 50%;
+  border: 2px dashed rgba(59,111,240,.45);
+}
+.gereserveerd .picto-rond{ opacity: .45; box-shadow: none; }
+.beurt-label{ background: rgba(59,111,240,.12); color: var(--accent); }
+
+@media (max-width: 760px){
+  .balk{ padding: 16px 20px 10px; }
+  .rooster{ padding: 0 20px; gap: 14px; }
+  .strook{ padding: 14px 20px 20px; gap: 14px; }
+  .groepnaam{ font-size: 1.1rem; } .datum{ display: none; }
+}
+</style>
+<style>
+#meter{
+  position: fixed; top: 12px; right: 12px; z-index: 700; width: 232px;
+  background: rgba(20,28,44,.9); color: #e7eaf2; border-radius: 16px;
+  padding: 14px 16px; font: 500 12px/1.5 var(--letter);
+  box-shadow: 0 10px 30px rgba(20,28,44,.3); backdrop-filter: blur(8px);
+}
+#meter h2{ font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+           color: #8a94a6; margin: 0 0 10px; font-weight: 600; }
+#meter .m{ display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+#meter .m b{ font-variant-numeric: tabular-nums; font-weight: 600; }
+#meter .goed{ color: #6ddba0; }
+#meter .balkje{ height: 5px; border-radius: 99px; background: rgba(255,255,255,.12); margin: 8px 0 4px; overflow: hidden; }
+#meter .balkje span{ display: block; height: 100%; background: #6ddba0; border-radius: 99px; }
+#meter .log{ margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.12);
+             max-height: 120px; overflow-y: auto; font-size: 11px; color: #a8b0c4; }
+#meter .log div{ padding: 1px 0; }
+#meter button{ width: 100%; margin-top: 10px; background: rgba(255,255,255,.12); color: #e7eaf2;
+               border-radius: 999px; padding: 7px; font: 600 11px var(--letter); }
+#meter.klein{ width: auto; padding: 8px 12px; }
+#meter.klein .verberg{ display: none; }
+#check-blad h2{ font-size: 1.35rem; font-weight: 600; letter-spacing: -.025em; margin: 0 0 6px; }
+#check-blad .kop-sub{ font-size: .92rem; color: var(--inkt-3); margin-bottom: 20px; }
+#check-blad .oordeel{ padding: 16px 18px; border-radius: 14px; margin-bottom: 20px; }
+#check-blad .oordeel.goed{ background: var(--goed-zacht); }
+#check-blad .oordeel.let-op{ background: var(--let-op-zacht); }
+#check-blad .oordeel.stop{ background: var(--stop-zacht); }
+#check-blad .oordeel b{ display: block; font-size: 1.02rem; margin-bottom: 4px; }
+#check-blad .oordeel span{ font-size: .9rem; color: var(--inkt-2); line-height: 1.5; }
+#check-blad .groep{ font-size: .72rem; font-weight: 600; letter-spacing: .06em;
+                    text-transform: uppercase; color: var(--inkt-3); margin: 18px 0 8px; }
+#check-blad .cr{ display: flex; align-items: flex-start; gap: 11px; padding: 8px 0;
+                 border-bottom: 1px solid var(--vlak-2); font-size: .9rem; }
+#check-blad .cr:last-child{ border-bottom: none; }
+#check-blad .cv{ width: 19px; height: 19px; border-radius: 50%; flex: none; margin-top: 1px;
+                 display: flex; align-items: center; justify-content: center;
+                 font-size: 12px; font-weight: 700; color: #fff; }
+#check-blad .cv.ja{ background: var(--goed); }
+#check-blad .cv.nee{ background: var(--stop); }
+#check-blad .cv.mss{ background: var(--let-op); }
+#check-blad .cn{ flex-grow: 1; }
+#check-blad .cu{ font-size: .82rem; color: var(--inkt-3); margin-top: 1px; }
+#check-blad .cw{ font-variant-numeric: tabular-nums; color: var(--inkt-2); font-weight: 600;
+                 white-space: nowrap; }
+#check-blad pre{ background: var(--vlak-2); border-radius: 10px; padding: 12px 14px;
+                 font-size: .74rem; line-height: 1.55; overflow-x: auto; white-space: pre-wrap;
+                 margin: 16px 0 0; color: var(--inkt-2); }
+</style>
+</head>
+<body class="bord">
+
+<div id="scherm-bord" class="scherm aan">
+  <div class="balk">
+    <div class="balk-links">
+      <div class="groepnaam" id="bord-groep"></div>
+      <div class="datum" id="bord-datum"></div>
+    </div>
+    <div class="balk-rechts">
+      <div class="klok" id="bord-klok"></div>
+      <button class="rondje" id="knop-menu" aria-label="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="5" cy="12" r="1.5" fill="#6b7a94"></circle>
+          <circle cx="12" cy="12" r="1.5" fill="#6b7a94"></circle>
+          <circle cx="19" cy="12" r="1.5" fill="#6b7a94"></circle>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="rooster" id="rooster"></div>
+  <div class="strook">
+    <div class="strook-kop" id="strook-kop"></div>
+    <div class="strook-kinderen" id="strook"></div>
+  </div>
+</div>
+<div id="scherm-klassen" class="scherm"><div class="klas-rooster" id="klas-rooster"></div><div id="klas-datum"></div></div>
+
+<div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
+<div class="overlay" id="check-overlay"><div class="blad" id="check-blad"></div></div>
+<div class="melding" id="melding"></div>
+
+<aside id="meter">
+  <h2>Testbord</h2>
+  <div class="m"><span>Vingers nu</span><b id="m-nu">0</b></div>
+  <div class="m"><span>Meeste tegelijk</span><b id="m-max">0</b></div>
+  <div class="m"><span>Slepen bezig</span><b id="m-sleep">0</b></div>
+  <div class="m"><span>Beeldjes/sec</span><b id="m-fps">–</b></div>
+  <div class="balkje"><span id="m-fpsbalk" style="width:100%"></span></div>
+  <div class="m verberg"><span>Keuzes gemaakt</span><b id="m-keuzes">0</b></div>
+  <div class="m verberg"><span>Gewisseld</span><b id="m-wissel">0</b></div>
+  <div class="log verberg" id="m-log"></div>
+  <button class="verberg" id="m-check">Wat kan dit bord?</button>
+  <button class="verberg" id="m-reset">Bord leegmaken</button>
+  <button id="m-klein">Kleiner</button>
+</aside>
+
+<script src="src/kb-data.js"></script>
+<script>
+/* Het testbord draait op eigen gegevens, los van je echte groepen. */
+(function () {
+  var TEST_SLEUTEL = 'kb_testbord';
+  var echteSleutel = 'kb_v5';
+  var bewaard = null;
+  try { bewaard = localStorage.getItem(echteSleutel); } catch (e) {}
+
+  var NAMEN = ['Bram','Isa','Kees','Yara','Otis','Loua','Sam','Fenne','Joep','Nora',
+               'Timo','Wies','Levi','Roos','Cas','Maud','Bas','Lotte','Sef','Fien',
+               'Mees','Sanne','Aiden','Vera'];
+  var HOEKEN = [['Bouwhoek',4],['Huishoek',3],['Zandtafel',4],['Knutselhoek',4],
+                ['Leeshoek',3],['Werktafel',5]];
+
+  var eigen = null;
+  try { eigen = localStorage.getItem(TEST_SLEUTEL); } catch (e) {}
+  if (!eigen) {
+    var k = { id:'testklas', naam:'Testgroep', borden:[{ id:'testbord', naam:'Testbord',
+              hoekLibIds:[], plaatsingen:{}, dagOpen:true, dagGesloten:false }],
+              activeBordId:'testbord', hoekLib:[], fotoLib:[], leerlingen:[], wachtrij:[],
+              doelActief:{}, settings:{ timerAan:false, timerMinuten:20, wachtrijAan:false,
+                                        tellingAan:false, werkplaatsAan:false, pinAan:false } };
+    HOEKEN.forEach(function (h, i) {
+      var id = 'th' + i;
+      k.hoekLib.push({ id:id, naam:h[0], maxKinderen:h[1], timerMinuten:0, fotoId:null });
+      k.borden[0].hoekLibIds.push(id);
+      k.borden[0].plaatsingen[id] = [];
+    });
+    var kleuren = ['#3b6ff0','#d94f4f','#2e9e6b','#c8820a','#7c5cbf','#b8436d','#c06428','#1a9aad'];
+    NAMEN.forEach(function (n, i) {
+      k.leerlingen.push({ id:'tl' + i, naam:n, kleur:kleuren[i % kleuren.length], image:null, lid:true });
+    });
+    eigen = JSON.stringify({ klassen:[k], activeKlasId:'testklas' });
+  }
+  // Het bord leest kb_v5; we lenen die sleutel zolang deze pagina open staat
+  // en zetten je echte gegevens terug zodra je weggaat.
+  try {
+    localStorage.setItem(echteSleutel, eigen);
+    localStorage.setItem('kb_beheer_klas', 'testklas');
+  } catch (e) {}
+  window.addEventListener('pagehide', function () {
+    try {
+      localStorage.setItem(TEST_SLEUTEL, localStorage.getItem(echteSleutel) || '');
+      if (bewaard) localStorage.setItem(echteSleutel, bewaard);
+      else localStorage.removeItem(echteSleutel);
+      localStorage.removeItem('kb_beheer_klas');
+    } catch (e) {}
+  });
+})();
+</script>
+<script src="src/kb-bord.js"></script>
+<script>
+/* ── het meetpaneel ──────────────────────────────────────── */
+(function () {
+  var vingers = {}, maxTegelijk = 0, keuzes = 0, wissels = 0;
+  var waar = {};   // leerlingId -> hoekId, om wisselen te herkennen
+
+  function $(id){ return document.getElementById(id); }
+  function log(tekst){
+    var d = document.createElement('div');
+    var nu = new Date();
+    d.textContent = String(nu.getHours()).padStart(2,'0') + ':' +
+                    String(nu.getMinutes()).padStart(2,'0') + ':' +
+                    String(nu.getSeconds()).padStart(2,'0') + '  ' + tekst;
+    var l = $('m-log');
+    l.insertBefore(d, l.firstChild);
+    while (l.children.length > 40) l.removeChild(l.lastChild);
+  }
+
+  ['pointerdown','pointerup','pointercancel'].forEach(function (soort) {
+    document.addEventListener(soort, function (e) {
+      if (soort === 'pointerdown') vingers[e.pointerId] = true;
+      else delete vingers[e.pointerId];
+      var n = Object.keys(vingers).length;
+      if (n > maxTegelijk) { maxTegelijk = n; $('m-max').textContent = n; }
+      $('m-nu').textContent = n;
+    }, true);
+  });
+
+  // beeldsnelheid: zakt die weg tijdens het slepen, dan loopt het bord vast
+  var vorige = performance.now(), tellerFrames = 0, laagste = 60;
+  function meet(nu){
+    tellerFrames++;
+    if (nu - vorige >= 500) {
+      var fps = Math.round(tellerFrames * 1000 / (nu - vorige));
+      tellerFrames = 0; vorige = nu;
+      if (fps < laagste) laagste = fps;
+      $('m-fps').textContent = fps + ' (laagst ' + laagste + ')';
+      var balk = $('m-fpsbalk');
+      balk.style.width = Math.min(100, fps / 60 * 100) + '%';
+      balk.style.background = fps >= 45 ? '#6ddba0' : fps >= 25 ? '#e8b04b' : '#f08080';
+    }
+    var s = window.KB_SLEEP_STATUS ? window.KB_SLEEP_STATUS() : { lopend: 0 };
+    $('m-sleep').textContent = s.lopend;
+    requestAnimationFrame(meet);
+  }
+  requestAnimationFrame(meet);
+
+  // keuzes en wissels tellen door naar de gegevens te kijken
+  setInterval(function () {
+    if (!window.KB || !KB.G) return;
+    var b = KB.bord();
+    Object.keys(b.plaatsingen || {}).forEach(function (hoekId) {
+      (b.plaatsingen[hoekId] || []).forEach(function (p) {
+        var vorigeHoek = waar[p.leerlingId];
+        if (vorigeHoek === hoekId) return;
+        var l = KB.leerling(p.leerlingId);
+        var h = KB.hoekVan(hoekId);
+        if (!l || !h) return;
+        if (vorigeHoek === undefined) { keuzes++; log(l.naam + ' koos ' + h.naam); }
+        else { wissels++; log(l.naam + ' wisselde naar ' + h.naam); }
+        waar[p.leerlingId] = hoekId;
+      });
+    });
+    Object.keys(waar).forEach(function (lid) {
+      var nog = Object.keys(b.plaatsingen || {}).some(function (hoekId) {
+        return (b.plaatsingen[hoekId] || []).some(function (p) { return p.leerlingId === lid; });
+      });
+      if (!nog) delete waar[lid];
+    });
+    $('m-keuzes').textContent = keuzes;
+    $('m-wissel').textContent = wissels;
+  }, 300);
+
+  /* ── wat kan dit bord? ──────────────────────────────────────
+     Oudere digiborden draaien soms een browser van jaren terug. In
+     plaats van te gokken laten we het bord zelf vertellen wat het kan. */
+  function kanCss(eigenschap, waarde){
+    try { return window.CSS && CSS.supports && CSS.supports(eigenschap, waarde); }
+    catch (e) { return false; }
+  }
+  function chromeVersie(){
+    var m = navigator.userAgent.match(/Chrom(?:e|ium)\/(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  function verzamel(){
+    var v = chromeVersie();
+    return {
+      bord: [
+        ['Aanraakpunten tegelijk', navigator.maxTouchPoints || 0,
+         (navigator.maxTouchPoints || 0) >= 2 ? 'ja' : 'nee',
+         (navigator.maxTouchPoints || 0) >= 6 ? 'Ruim genoeg voor een groepje aan het bord.'
+           : (navigator.maxTouchPoints || 0) >= 2 ? 'Twee kinderen tegelijk lukt; meer niet.'
+           : 'Het bord meldt geen aanraking — werkt dit met een muis?'],
+        ['Schermbreedte', window.screen.width + ' × ' + window.screen.height, 'ja', ''],
+        ['Pixelverhouding', (window.devicePixelRatio || 1).toFixed(2), 'ja', '']
+      ],
+      basis: [
+        ['Aanraakgebeurtenissen', !!window.PointerEvent, 'Zonder dit werkt het slepen niet.'],
+        ['Opslag in de browser', (function(){ try { localStorage.setItem('_t','1');
+           localStorage.removeItem('_t'); return true; } catch(e){ return false; } })(),
+         'Hier staan de groepen en de planning in.'],
+        ['Fotokluis', !!window.indexedDB, 'Hier staan de picto\'s van de kinderen.'],
+        ['Vlakken met tussenruimte', kanCss('gap', '10px') && kanCss('display', 'grid'),
+         'Zonder dit staat de indeling van het bord door elkaar.'],
+        ['Kleurvariabelen', kanCss('color', 'var(--x)'), 'Zonder dit klopt geen enkele kleur.']
+      ],
+      extra: [
+        ['Foto\'s verkleinen', !!window.createImageBitmap,
+         'Anders duurt het inladen van foto\'s langer, maar het werkt wel.'],
+        ['WebP opslaan', (function(){ try { var c = document.createElement('canvas');
+           c.width = c.height = 1; return c.toDataURL('image/webp').indexOf('image/webp') > 0; }
+           catch(e){ return false; } })(), 'Anders worden foto\'s als JPEG bewaard, iets groter.'],
+        ['Word-bestanden lezen', !!window.DecompressionStream,
+         'Alleen nodig in het beheer, niet op het bord zelf.'],
+        ['Versleutelde back-up', !!(window.crypto && crypto.subtle && window.isSecureContext),
+         'Vraagt een https-adres. Zonder dit kan een back-up wel, maar niet met wachtwoord.'],
+        ['Wazige achtergrond', kanCss('backdrop-filter', 'blur(4px)'),
+         'Puur mooi. Zonder dit zijn de schermpjes gewoon effen.']
+      ],
+      versie: v
+    };
+  }
+
+  function toonCheck(){
+    var g = verzamel();
+    var blad = $('check-blad');
+    blad.innerHTML = '';
+
+    var basisNee = g.basis.filter(function (r) { return !r[1]; });
+    var extraNee = g.extra.filter(function (r) { return !r[1]; });
+    var vingers = navigator.maxTouchPoints || 0;
+
+    var titel = document.createElement('h2');
+    titel.textContent = 'Wat kan dit bord?';
+    blad.appendChild(titel);
+    var sub = document.createElement('div');
+    sub.className = 'kop-sub';
+    sub.textContent = 'Zo kunnen we zien of dit digibord de app aankan, zonder te gokken.';
+    blad.appendChild(sub);
+
+    var oordeel = document.createElement('div');
+    var kop = document.createElement('b'), tekst = document.createElement('span');
+    if (basisNee.length) {
+      oordeel.className = 'oordeel stop';
+      kop.textContent = 'Dit bord mist iets belangrijks';
+      tekst.textContent = 'Deze browser kan ' + basisNee.map(function (r) {
+        return r[0].toLowerCase(); }).join(' en ') + ' niet. Waarschijnlijk is hij te oud. ' +
+        'Kijk of er een nieuwere Chrome op kan, of sluit een laptop aan op het bord.';
+    } else if (vingers < 2) {
+      oordeel.className = 'oordeel let-op';
+      kop.textContent = 'Alles werkt, maar het bord meldt geen aanraking';
+      tekst.textContent = 'De app draait prima met een muis. Raak het scherm eens aan en kijk of ' +
+        'de teller "Vingers nu" omhoog gaat.';
+    } else if (extraNee.length) {
+      oordeel.className = 'oordeel goed';
+      kop.textContent = 'Dit bord kan de app aan';
+      tekst.textContent = 'Alles wat het bord nodig heeft werkt, met ' + vingers +
+        ' vingers tegelijk. Een paar extraatjes ontbreken; die staan hieronder en zijn niet erg.';
+    } else {
+      oordeel.className = 'oordeel goed';
+      kop.textContent = 'Dit bord kan alles';
+      tekst.textContent = 'Alles werkt, met ' + vingers + ' vingers tegelijk.';
+    }
+    oordeel.appendChild(kop); oordeel.appendChild(tekst);
+    blad.appendChild(oordeel);
+
+    function groep(naam, regels, metWaarde){
+      var k = document.createElement('div');
+      k.className = 'groep'; k.textContent = naam;
+      blad.appendChild(k);
+      regels.forEach(function (r) {
+        var rij = document.createElement('div');
+        rij.className = 'cr';
+        var vink = document.createElement('div');
+        var goed = metWaarde ? r[2] === 'ja' : !!r[1];
+        vink.className = 'cv ' + (goed ? 'ja' : 'nee');
+        vink.textContent = goed ? '✓' : '✕';
+        rij.appendChild(vink);
+        var naamvak = document.createElement('div');
+        naamvak.className = 'cn';
+        naamvak.textContent = r[0];
+        var uitleg = metWaarde ? r[3] : r[2];
+        if (uitleg && (!goed || metWaarde)) {
+          var u = document.createElement('div');
+          u.className = 'cu'; u.textContent = uitleg;
+          naamvak.appendChild(u);
+        }
+        rij.appendChild(naamvak);
+        if (metWaarde) {
+          var w = document.createElement('div');
+          w.className = 'cw'; w.textContent = r[1];
+          rij.appendChild(w);
+        }
+        blad.appendChild(rij);
+      });
+    }
+    groep('Het scherm', g.bord, true);
+    groep('Moet werken', g.basis, false);
+    groep('Fijn om te hebben', g.extra, false);
+
+    var samen = document.createElement('pre');
+    samen.textContent =
+      'Browser: ' + navigator.userAgent + '\n' +
+      'Chrome-versie: ' + (g.versie || 'onbekend') + '\n' +
+      'Aanraakpunten: ' + (navigator.maxTouchPoints || 0) + '\n' +
+      'Scherm: ' + window.screen.width + '×' + window.screen.height +
+      ' (venster ' + window.innerWidth + '×' + window.innerHeight + ')\n' +
+      'Mist: ' + (basisNee.concat(extraNee).map(function (r) { return r[0]; }).join(', ') || 'niets');
+    blad.appendChild(samen);
+
+    var uitleg2 = document.createElement('div');
+    uitleg2.className = 'kop-sub';
+    uitleg2.style.marginTop = '14px';
+    uitleg2.textContent = 'Maak hier een foto van en stuur hem door, dan weet ik precies waar ik ' +
+      'rekening mee moet houden.';
+    blad.appendChild(uitleg2);
+
+    var sluit = document.createElement('button');
+    sluit.className = 'knop knop-primair';
+    sluit.style.marginTop = '16px';
+    sluit.textContent = 'Sluiten';
+    sluit.addEventListener('click', function () {
+      document.getElementById('check-overlay').classList.remove('open');
+    });
+    blad.appendChild(sluit);
+
+    document.getElementById('check-overlay').classList.add('open');
+  }
+
+  $('m-check').addEventListener('click', toonCheck);
+  document.getElementById('check-overlay').addEventListener('click', function (e) {
+    if (e.target.id === 'check-overlay') e.currentTarget.classList.remove('open');
+  });
+
+  $('m-reset').addEventListener('click', function () {
+    var b = KB.bord();
+    Object.keys(b.plaatsingen).forEach(function (h) { b.plaatsingen[h] = []; });
+    KB.klas().wachtrij = [];
+    waar = {}; KB.bewaar();
+    location.reload();
+  });
+  $('m-klein').addEventListener('click', function () {
+    var m = $('meter');
+    m.classList.toggle('klein');
+    $('m-klein').textContent = m.classList.contains('klein') ? 'Meer' : 'Kleiner';
+  });
+})();
+</script>
+</body>
+</html>

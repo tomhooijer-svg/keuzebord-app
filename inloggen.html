@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Inloggen — Keuzebord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=optional">
+<link rel="stylesheet" href="src/kb-stijl.css">
+<style>
+body.inlog{
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 30px 20px;
+  background:
+    radial-gradient(1100px 620px at 8% -12%,  #ffeede 0%, transparent 62%),
+    radial-gradient(1000px 560px at 96% 4%,   #e2f0fb 0%, transparent 58%),
+    radial-gradient(900px 640px at 42% 110%,  #eaf6ec 0%, transparent 60%),
+    #fbf8f4;
+}
+.kaart{
+  width: 100%; max-width: 420px;
+  background: rgba(255,255,255,.86); border-radius: 22px; padding: 34px 32px 28px;
+  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 14px 40px rgba(20,28,44,.09);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+.merk{
+  font-size: 1.9rem; font-weight: 650; letter-spacing: -.032em; margin: 0 0 4px;
+  background: linear-gradient(96deg, #3b6ff0, #17a9bd 42%, #37ab74 72%, #e79a1f);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.onder{ font-size: .95rem; color: var(--inkt-3); margin: 0 0 26px; }
+.veld{ margin-bottom: 14px; }
+.veld label{ display: block; font-size: .83rem; font-weight: 550; color: var(--inkt-2);
+             margin-bottom: 6px; letter-spacing: -.008em; }
+.veld input{
+  width: 100%; font: inherit; font-size: 1rem; color: var(--inkt);
+  padding: 12px 14px; border-radius: 12px;
+  border: 1.5px solid var(--lijn); background: #fff;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.veld input:focus{
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3.5px var(--accent-zacht);
+}
+.groot{ width: 100%; display: flex; justify-content: center; padding: 14px 18px;
+        font-size: 1.02rem; font-weight: 600; margin-top: 8px; }
+.wissel{ margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--vlak-2);
+         font-size: .89rem; color: var(--inkt-3); text-align: center; }
+.wissel button{ color: var(--accent); font-weight: 600; font-size: inherit; }
+.melder{
+  margin: 0 0 16px; padding: 11px 14px; border-radius: 11px; font-size: .89rem;
+  line-height: 1.5; display: none;
+}
+.melder.aan{ display: block; }
+.melder.mis{ background: var(--stop-zacht); color: var(--stop); }
+.melder.goed{ background: var(--goed-zacht); color: var(--goed); }
+.bezig{ opacity: .55; pointer-events: none; }
+.voet{ margin-top: 22px; text-align: center; font-size: .8rem; color: var(--inkt-4); line-height: 1.6; }
+</style>
+</head>
+<body class="inlog">
+
+<div class="kaart">
+  <h1 class="merk">Keuzebord</h1>
+  <p class="onder" id="onder">Log in om verder te gaan.</p>
+
+  <div class="melder" id="melder"></div>
+
+  <form id="formulier" novalidate>
+    <div class="veld" id="veld-naam" style="display:none">
+      <label for="naam">Je naam</label>
+      <input id="naam" type="text" autocomplete="name" placeholder="Juf Marieke">
+    </div>
+    <div class="veld">
+      <label for="email">E-mailadres</label>
+      <input id="email" type="email" autocomplete="username" required
+             autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="veld">
+      <label for="ww">Wachtwoord</label>
+      <input id="ww" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="knop knop-primair groot" id="verstuur" type="submit">Inloggen</button>
+  </form>
+
+  <div class="wissel" id="wissel"></div>
+  <p class="voet">Werkt het even niet? Het bord blijft ook zonder verbinding gewoon
+     werken; wat je doet gaat later vanzelf mee.</p>
+</div>
+
+<script src="src/kb-supabase.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var stand = 'aanmelden';          // of 'registreren'
+  var bezig = false;
+
+  function meld(tekst, soort){
+    var m = $('melder');
+    m.textContent = tekst || '';
+    m.className = 'melder' + (tekst ? ' aan ' + (soort || 'mis') : '');
+  }
+
+  function teken(){
+    var registreren = stand === 'registreren';
+    $('onder').textContent = registreren
+      ? 'Maak een account. Ben je uitgenodigd, gebruik dan datzelfde e-mailadres.'
+      : 'Log in om verder te gaan.';
+    $('veld-naam').style.display = registreren ? '' : 'none';
+    $('verstuur').textContent = registreren ? 'Account maken' : 'Inloggen';
+    $('ww').autocomplete = registreren ? 'new-password' : 'current-password';
+    $('wissel').innerHTML = registreren
+      ? 'Heb je al een account? <button type="button" data-naar="aanmelden">Inloggen</button>'
+      : 'Nog geen account? <button type="button" data-naar="registreren">Er een maken</button>' +
+        '<br><button type="button" data-naar="vergeten" style="margin-top:8px;font-weight:500;color:var(--inkt-3)">Wachtwoord vergeten</button>';
+    meld('');
+  }
+
+  $('wissel').addEventListener('click', function (e) {
+    var knop = e.target.closest('button[data-naar]');
+    if (!knop) return;
+    if (knop.dataset.naar === 'vergeten') return vergeten();
+    stand = knop.dataset.naar; teken();
+  });
+
+  function vergeten(){
+    var email = $('email').value.trim();
+    if (!email) { meld('Vul eerst je e-mailadres in, dan sturen we je een link.'); $('email').focus(); return; }
+    SB.wachtwoordVergeten(email).then(function () {
+      meld('We hebben een link gestuurd naar ' + email + '.', 'goed');
+    }).catch(toonFout);
+  }
+
+  function toonFout(e){
+    if (e && e.offline) {
+      meld('Geen verbinding met de server. Controleer het internet en probeer het opnieuw.');
+    } else if (e && /invalid login|klopt niet|credentials/i.test(e.message || '')) {
+      meld('Dit e-mailadres of wachtwoord klopt niet.');
+    } else if (e && /already registered|al een account/i.test(e.message || '')) {
+      meld('Er bestaat al een account met dit e-mailadres. Log in of vraag een nieuw wachtwoord aan.');
+    } else {
+      meld((e && e.message) || 'Er ging iets mis. Probeer het nog eens.');
+    }
+  }
+
+  function verder(){
+    // Waar hoort deze persoon heen? Wie nog geen school heeft moet er
+    // eerst een beginnen; een schoolbeheerder gaat naar het schoolbeheer,
+    // een leerkracht naar haar eigen groep.
+    return SB.wieBenIk().then(function (ik) {
+      if (!ik.profiel || !ik.profiel.school_id) { location.href = 'school.html?nieuw=1'; return; }
+      if (ik.profiel.rol === 'schoolbeheerder') { location.href = 'school.html'; return; }
+      location.href = 'beheer.html';
+    }).catch(function (e) {
+      // Inloggen lukte, maar de rest niet. Dan maar naar het bord: dat
+      // werkt ook zonder verbinding.
+      if (e && e.offline) { location.href = 'bord.html'; return; }
+      throw e;
+    });
+  }
+
+  $('formulier').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (bezig) return;
+    var email = $('email').value.trim();
+    var ww    = $('ww').value;
+    if (!email) { meld('Vul je e-mailadres in.'); $('email').focus(); return; }
+    if (!ww)    { meld('Vul je wachtwoord in.');  $('ww').focus();    return; }
+    if (stand === 'registreren' && ww.length < 8) {
+      meld('Kies een wachtwoord van minstens acht tekens.'); $('ww').focus(); return;
+    }
+
+    bezig = true;
+    document.querySelector('.kaart').classList.add('bezig');
+    meld('');
+
+    var werk = stand === 'registreren'
+      ? SB.registreren(email, ww, $('naam').value.trim())
+      : SB.aanmelden(email, ww);
+
+    werk.then(function (uit) {
+      if (uit && uit.bevestigen) {
+        meld('Bijna klaar. We hebben een link gestuurd naar ' + email +
+             '. Klik daarop om je account te bevestigen.', 'goed');
+        return;
+      }
+      return verder();
+    }).catch(toonFout).then(function () {
+      bezig = false;
+      document.querySelector('.kaart').classList.remove('bezig');
+    });
+  });
+
+  // Al ingelogd? Dan meteen door.
+  if (SB.ingelogd()) {
+    document.querySelector('.kaart').classList.add('bezig');
+    verder().catch(function () {
+      document.querySelector('.kaart').classList.remove('bezig');
+    });
+  }
+  teken();
+  $('email').focus();
+})();
+</script>
+</body>
+</html>

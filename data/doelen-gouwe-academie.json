@@ -1,0 +1,4348 @@
+{
+ "formaat": "keuzebord-doelen",
+ "versie": 1,
+ "bron": "Doelenlijst leer- en ontwikkelingslijnen jonge kind (Gouwe Academie), gesorteerd per beheersingsniveau",
+ "opmerking": "Doelen met ster:true stonden in het bronbestand met een * ervoor. Het bronbestand bevat geen legenda; de betekenis is nog niet vastgesteld.",
+ "niveaus": [
+  "0",
+  "1a",
+  "1b",
+  "1",
+  "2a",
+  "2b",
+  "2",
+  "3a",
+  "3b",
+  "3"
+ ],
+ "domeinen": [
+  "Spel",
+  "Taal",
+  "Rekenen",
+  "Motoriek",
+  "Sociaal-emotioneel"
+ ],
+ "aantal": 480,
+ "doelen": [
+  {
+   "id": "ga-001",
+   "niveau": "0",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "HANDELEN",
+   "doel": "exploreert en doet ervaringen op met materiaal",
+   "ster": false
+  },
+  {
+   "id": "ga-002",
+   "niveau": "0",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "ROLGEBRUIK",
+   "doel": "speelt naast een ander kind hetzelfde spel",
+   "ster": false
+  },
+  {
+   "id": "ga-003",
+   "niveau": "0",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELDUUR",
+   "doel": "verkent korte tijd verschillende materialen",
+   "ster": false
+  },
+  {
+   "id": "ga-004",
+   "niveau": "0",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELTAAL",
+   "doel": "gebruiken van speelgeluiden, eenvoudige taal",
+   "ster": true
+  },
+  {
+   "id": "ga-005",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP VERHAAL EN TEKST",
+   "doel": "weet dat de boekomslag iets vertelt over het verhaal",
+   "ster": false
+  },
+  {
+   "id": "ga-006",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "onthoudt een rijmpje/versje en zegt het op",
+   "ster": false
+  },
+  {
+   "id": "ga-007",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP GESCHREVEN TAAL",
+   "doel": "toont interesse in boeken en verhalen",
+   "ster": false
+  },
+  {
+   "id": "ga-008",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "ervaringen opdoen met rijmen",
+   "ster": true
+  },
+  {
+   "id": "ga-009",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP GESCHREVEN TAAL",
+   "doel": "spelen met lettermateriaal (bijv. stempels, magneetletters)",
+   "ster": true
+  },
+  {
+   "id": "ga-010",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "VISUELE WAARNEMING",
+   "doel": "verschillen zien tussen concrete voorwerpen op een afbeelding",
+   "ster": true
+  },
+  {
+   "id": "ga-011",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "LEESPLEZIER",
+   "doel": "genieten van voorgelezen versjes en verhaaltjes",
+   "ster": true
+  },
+  {
+   "id": "ga-012",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "luistert naar en begrijpt een enkelvoudige instructie",
+   "ster": false
+  },
+  {
+   "id": "ga-013",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "SPREKEN",
+   "doel": "spreekt in zinnen van vier woorden",
+   "ster": false
+  },
+  {
+   "id": "ga-014",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "GESPREKKEN",
+   "doel": "voert een gesprekje met de leerkracht en/of een ander kind",
+   "ster": false
+  },
+  {
+   "id": "ga-015",
+   "niveau": "0",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "WOORDENSCHAT",
+   "doel": "uitbreiden van passieve en actieve woordenschat",
+   "ster": true
+  },
+  {
+   "id": "ga-016",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "zegt de telrij tot 5 op",
+   "ster": false
+  },
+  {
+   "id": "ga-017",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "vergelijkt hoeveelheden op veel en weinig",
+   "ster": false
+  },
+  {
+   "id": "ga-018",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "eerlijk verdelen van voorwerpen over verschillende bakjes",
+   "ster": true
+  },
+  {
+   "id": "ga-019",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "kan de begrippen kort/lang en laag/hoog aanwijzen",
+   "ster": false
+  },
+  {
+   "id": "ga-020",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "begrijpt woorden als snel, nu, vroeg en laat",
+   "ster": false
+  },
+  {
+   "id": "ga-021",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "oefenen met de begrippen dik en dun",
+   "ster": true
+  },
+  {
+   "id": "ga-022",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "weet waar iets zich bevindt ten opzichte van het eigen lichaam (bijv. voor, achter, naast, in, op, onder)",
+   "ster": false
+  },
+  {
+   "id": "ga-023",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "kan blokken stapelen en ruimtelijk bouwen",
+   "ster": false
+  },
+  {
+   "id": "ga-024",
+   "niveau": "0",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "kan de kleuren rood, blauw, groen en geel aanwijzen",
+   "ster": false
+  },
+  {
+   "id": "ga-025",
+   "niveau": "0",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "KLIMMEN",
+   "doel": "klimt in een klimtoestel omhoog en omlaag",
+   "ster": false
+  },
+  {
+   "id": "ga-026",
+   "niveau": "0",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "BALANCEREN",
+   "doel": "loopt over een recht en breed balanceervlak (bank) met hulp",
+   "ster": false
+  },
+  {
+   "id": "ga-027",
+   "niveau": "0",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "HINKELEN",
+   "doel": "staat kort op één been",
+   "ster": false
+  },
+  {
+   "id": "ga-028",
+   "niveau": "0",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "VRIJ SPRINGEN",
+   "doel": "springt van een kleine hoogte af, met beide voeten tegelijk",
+   "ster": false
+  },
+  {
+   "id": "ga-029",
+   "niveau": "0",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "gooit een bal zonder zijn evenwicht te verliezen",
+   "ster": false
+  },
+  {
+   "id": "ga-030",
+   "niveau": "0",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Maakt grove bewegingen vanuit schouder (bijv. verven of tekenen op groot papier)",
+   "ster": false
+  },
+  {
+   "id": "ga-031",
+   "niveau": "0",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Kan bewegingen maken met handen en vingers (bijv. grote kralen rijgen)",
+   "ster": false
+  },
+  {
+   "id": "ga-032",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Welbevinden B Komt ontspannen over",
+   "ster": false
+  },
+  {
+   "id": "ga-033",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Heeft plezier in wat het doet",
+   "ster": false
+  },
+  {
+   "id": "ga-034",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat zelfvertrouwen zien",
+   "ster": false
+  },
+  {
+   "id": "ga-035",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Durft zichzelf te zijn in de groep",
+   "ster": false
+  },
+  {
+   "id": "ga-036",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Betrokkenheid / taakgerichtheid B Toont belangstelling voor activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-037",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat concentratie zien bij activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-038",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Kan opgaan in activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-039",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Zet door bij activiteiten, ook als het tegenzit",
+   "ster": false
+  },
+  {
+   "id": "ga-040",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van zichzelf",
+   "aspect": "GEVOELENS",
+   "doel": "uit emotie in situaties",
+   "ster": false
+  },
+  {
+   "id": "ga-041",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van zichzelf",
+   "aspect": "PERSOONSKENMERKEN",
+   "doel": "benoemt (lichaams)kenmerken van zichzelf",
+   "ster": false
+  },
+  {
+   "id": "ga-042",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met zichzelf",
+   "aspect": "GEVOELENS HANTEREN",
+   "doel": "reageert (non-)verbaal op verschillende situaties",
+   "ster": false
+  },
+  {
+   "id": "ga-043",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met zichzelf",
+   "aspect": "IMPULSCONTROLE",
+   "doel": "kan behoeftes tijdelijk uitstellen",
+   "ster": false
+  },
+  {
+   "id": "ga-044",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van de ander",
+   "aspect": "GEVOELENS",
+   "doel": "ziet emoties van een ander",
+   "ster": false
+  },
+  {
+   "id": "ga-045",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van de ander",
+   "aspect": "PERSOONSKENMERKEN",
+   "doel": "herkent verschillen tussen zichzelf en de ander",
+   "ster": false
+  },
+  {
+   "id": "ga-046",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "AANSLUITEN",
+   "doel": "toont interesse in de ander",
+   "ster": false
+  },
+  {
+   "id": "ga-047",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "CONFLICTEN",
+   "doel": "verkent wat eigen grenzen zijn",
+   "ster": false
+  },
+  {
+   "id": "ga-048",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "SAMENWERKEN",
+   "doel": "beseft dat anderen naast hem/haar spelen",
+   "ster": false
+  },
+  {
+   "id": "ga-049",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Keuzes maken",
+   "aspect": "WELOVERWOGEN KIEZEN",
+   "doel": "kiest tussen twee mogelijkheden",
+   "ster": false
+  },
+  {
+   "id": "ga-050",
+   "niveau": "0",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Keuzes maken",
+   "aspect": "ZELFSTANDIGHEID",
+   "doel": "voert een eenvoudige taak zelf uit",
+   "ster": false
+  },
+  {
+   "id": "ga-051",
+   "niveau": "1a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "HANDELEN",
+   "doel": "laat symbolisch spel zien (materiaal wordt anders gebruikt)",
+   "ster": false
+  },
+  {
+   "id": "ga-052",
+   "niveau": "1a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "ROLGEBRUIK",
+   "doel": "handelt eerst en koppelt daarna een rol aan het spel",
+   "ster": false
+  },
+  {
+   "id": "ga-053",
+   "niveau": "1a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "ROLGEBRUIK",
+   "doel": "laat aanzet tot samenspelen zien",
+   "ster": false
+  },
+  {
+   "id": "ga-054",
+   "niveau": "1a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPELVERHAAL",
+   "doel": "speelt een aantal beperkte handelingen in het rollenspel",
+   "ster": false
+  },
+  {
+   "id": "ga-055",
+   "niveau": "1a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELDUUR",
+   "doel": "speelt een spelscenario van ± 5-10 minuten (in een rol)",
+   "ster": false
+  },
+  {
+   "id": "ga-056",
+   "niveau": "1a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELTAAL",
+   "doel": "verwoorden van de handelingen",
+   "ster": true
+  },
+  {
+   "id": "ga-057",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP VERHAAL EN TEKST",
+   "doel": "kan iets navertellen aan de hand van een plaat uit een boek",
+   "ster": false
+  },
+  {
+   "id": "ga-058",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "herkent het woordbeeld van zijn naam",
+   "ster": false
+  },
+  {
+   "id": "ga-059",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP GESCHREVEN TAAL",
+   "doel": "doet alsof het leest",
+   "ster": false
+  },
+  {
+   "id": "ga-060",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "VISUELE WAARNEMING",
+   "doel": "kan het verschil zien tussen concrete voorwerpen op een afbeelding",
+   "ster": false
+  },
+  {
+   "id": "ga-061",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "spelen met woorden en letters, zoals woordspelletjes, rijmen",
+   "ster": true
+  },
+  {
+   "id": "ga-062",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP GESCHREVEN TAAL",
+   "doel": "spelend woorden maken met lettermateriaal",
+   "ster": true
+  },
+  {
+   "id": "ga-063",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "VISUELE WAARNEMING",
+   "doel": "meerdere details aanwijzen op een illustratie n.a.v. vragen *LEESPLEZIER: meeleven met personages in het voorgelezen verhaal",
+   "ster": true
+  },
+  {
+   "id": "ga-064",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "luistert naar en begrijpt een meervoudige instructie",
+   "ster": false
+  },
+  {
+   "id": "ga-065",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "SPREKEN",
+   "doel": "spreekt in langere zinnen van ongeveer zes tot acht woorden",
+   "ster": false
+  },
+  {
+   "id": "ga-066",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "GESPREKKEN",
+   "doel": "geeft antwoord op een vraag van de leerkracht of een ander kind",
+   "ster": false
+  },
+  {
+   "id": "ga-067",
+   "niveau": "1a",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "WOORDENSCHAT",
+   "doel": "leren en gebruiken van (nieuwe) woorden naar aanleiding van verhalen en/of een thema; woorden liggen dicht bij het kind",
+   "ster": true
+  },
+  {
+   "id": "ga-068",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "zegt de telrij tot 10 op",
+   "ster": false
+  },
+  {
+   "id": "ga-069",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "telt voorwerpen tot en met 5; synchroon",
+   "ster": false
+  },
+  {
+   "id": "ga-070",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "vergelijkt hoeveelheden op meer en minder",
+   "ster": false
+  },
+  {
+   "id": "ga-071",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "voorwerp erbij of eraf doen en beseffen dat het er één meer of minder wordt",
+   "ster": true
+  },
+  {
+   "id": "ga-072",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "schatten van hoeveelheden tot 6",
+   "ster": true
+  },
+  {
+   "id": "ga-073",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "ontdekken dat hoeveelheden verschoven of bedekt kunnen worden zonder dat het aantal verandert",
+   "ster": true
+  },
+  {
+   "id": "ga-074",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "kan de begrippen kort/lang en laag/hoog benoemen",
+   "ster": false
+  },
+  {
+   "id": "ga-075",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "kent de begrippen ochtend, middag, avond en nacht",
+   "ster": false
+  },
+  {
+   "id": "ga-076",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "OPPERVLAKTE",
+   "doel": "aanwijzen van de grootste en de kleinste",
+   "ster": true
+  },
+  {
+   "id": "ga-077",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "oefenen met de begrippen gisteren, morgen en overmorgen",
+   "ster": true
+  },
+  {
+   "id": "ga-078",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GEWICHT",
+   "doel": "oefenen met de begrippen zwaar en licht",
+   "ster": true
+  },
+  {
+   "id": "ga-079",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "INHOUD",
+   "doel": "oefenen met de begrippen vol en leeg",
+   "ster": true
+  },
+  {
+   "id": "ga-080",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "hanteert meetkundige begrippen als voor, achter, op, in en naast, in relatie tot eigen lichaam",
+   "ster": false
+  },
+  {
+   "id": "ga-081",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "kan een patroon van twee voorwerpen voortzetten (bijv. ketting, mozaïek, vormen)",
+   "ster": false
+  },
+  {
+   "id": "ga-082",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "benoemt de primaire kleuren",
+   "ster": false
+  },
+  {
+   "id": "ga-083",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "benoemt de vormen cirkel, driehoek en vierkant",
+   "ster": false
+  },
+  {
+   "id": "ga-084",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "knutselen met papier",
+   "ster": true
+  },
+  {
+   "id": "ga-085",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "vouwen van een schuine vouw",
+   "ster": true
+  },
+  {
+   "id": "ga-086",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "betekenis geven aan gemaakte bouwwerken (bijv. huis of boot)",
+   "ster": true
+  },
+  {
+   "id": "ga-087",
+   "niveau": "1a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "sorteren op 1 kenmerk (bijv. cirkels en vierkanten)",
+   "ster": true
+  },
+  {
+   "id": "ga-088",
+   "niveau": "1a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Welbevinden B Komt ontspannen over",
+   "ster": false
+  },
+  {
+   "id": "ga-089",
+   "niveau": "1a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Heeft plezier in wat het doet",
+   "ster": false
+  },
+  {
+   "id": "ga-090",
+   "niveau": "1a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat zelfvertrouwen zien",
+   "ster": false
+  },
+  {
+   "id": "ga-091",
+   "niveau": "1a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Durft zichzelf te zijn in de groep",
+   "ster": false
+  },
+  {
+   "id": "ga-092",
+   "niveau": "1a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Betrokkenheid / taakgerichtheid B Toont belangstelling voor activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-093",
+   "niveau": "1a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat concentratie zien bij activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-094",
+   "niveau": "1a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Kan opgaan in activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-095",
+   "niveau": "1a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Zet door bij activiteiten, ook als het tegenzit",
+   "ster": false
+  },
+  {
+   "id": "ga-096",
+   "niveau": "1b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "HANDELEN",
+   "doel": "plant rollen en handelingen vooraf en tijdens het spel",
+   "ster": false
+  },
+  {
+   "id": "ga-097",
+   "niveau": "1b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "ROLGEBRUIK",
+   "doel": "speelt rollen samen met een ander kind binnen de regels",
+   "ster": false
+  },
+  {
+   "id": "ga-098",
+   "niveau": "1b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPELVERHAAL",
+   "doel": "speelt eenvoudige spelscenario's die passen bij een rol",
+   "ster": false
+  },
+  {
+   "id": "ga-099",
+   "niveau": "1b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELDUUR",
+   "doel": "speelt een spelscenario van ± 10 minuten (in een rol)",
+   "ster": false
+  },
+  {
+   "id": "ga-100",
+   "niveau": "1b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELTAAL",
+   "doel": "beschrijven van rolgebonden handelingen tijdens/na het spel",
+   "ster": true
+  },
+  {
+   "id": "ga-101",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP VERHAAL EN TEKST",
+   "doel": "vertelt een verhaal na met behulp van platen",
+   "ster": false
+  },
+  {
+   "id": "ga-102",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "onderscheidt een woord in een reeks van woorden",
+   "ster": false
+  },
+  {
+   "id": "ga-103",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP GESCHREVEN TAAL",
+   "doel": "geeft zijn eigen naam of woorden weer door te schrijven (tekenen)",
+   "ster": false
+  },
+  {
+   "id": "ga-104",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "VISUELE WAARNEMING",
+   "doel": "kan meerdere details op een plaat aanwijzen n.a.v. vragen",
+   "ster": false
+  },
+  {
+   "id": "ga-105",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP VERHAAL EN TEKST",
+   "doel": "kennismaken met wat de hoofdcomponenten zijn in het verhaal (n.a.v. 'wie-' en 'wat-' vragen, evt. m.b.v. picto's)",
+   "ster": true
+  },
+  {
+   "id": "ga-106",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "spelenderwijs bezig zijn met klanken, zoals rijmwoorden",
+   "ster": true
+  },
+  {
+   "id": "ga-107",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "spelenderwijs fonemen en klankeenheden (bijv. beginklank) van themawoorden of namen herkennen",
+   "ster": true
+  },
+  {
+   "id": "ga-108",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "LEESPLEZIER",
+   "doel": "beleven van verschillende emoties of gevoelens van personages in het voorgelezen verhaal",
+   "ster": true
+  },
+  {
+   "id": "ga-109",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "interpreteert wat er wordt verteld (vanuit eigen kennis en ervaring)",
+   "ster": false
+  },
+  {
+   "id": "ga-110",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "SPREKEN",
+   "doel": "vertelt in enkele eenvoudig samengestelde zinnen een verhaal of gebeurtenis",
+   "ster": false
+  },
+  {
+   "id": "ga-111",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "GESPREKKEN",
+   "doel": "houdt zich aan gespreksregels, zoals de ander aankijken en stil zijn",
+   "ster": false
+  },
+  {
+   "id": "ga-112",
+   "niveau": "1b",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "WOORDENSCHAT",
+   "doel": "leren en gebruiken van (nieuwe) woorden passend in een netwerk van woorden",
+   "ster": true
+  },
+  {
+   "id": "ga-113",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "zegt de telrij tot 20 op",
+   "ster": false
+  },
+  {
+   "id": "ga-114",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "telt voorwerpen tot en met 10; synchroon en resultatief",
+   "ster": false
+  },
+  {
+   "id": "ga-115",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "kan de getalsymbolen 0 t/m 5 lezen",
+   "ster": false
+  },
+  {
+   "id": "ga-116",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "terugtellen vanaf 10",
+   "ster": true
+  },
+  {
+   "id": "ga-117",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "vergelijken van hoeveelheden tot tenminste 5 (bijv. door het leggen van 1-1 relatie) op meeste, minste (meer, minder) en evenveel",
+   "ster": true
+  },
+  {
+   "id": "ga-118",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "schatten van hoeveelheden tot 10",
+   "ster": true
+  },
+  {
+   "id": "ga-119",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "handig organiseren van het tellen van hoeveelheden door te structureren: op een rijtje leggen, groeperen",
+   "ster": true
+  },
+  {
+   "id": "ga-120",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "rekenproblemen begrijpen vanuit een context (bijv. prentenboek)",
+   "ster": true
+  },
+  {
+   "id": "ga-121",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "oefenen met de vaste volgorde van getallen in de getallenrij tot 10",
+   "ster": true
+  },
+  {
+   "id": "ga-122",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "kan tegenstellingen benoemen: kortste/langste, laagste/hoogste",
+   "ster": false
+  },
+  {
+   "id": "ga-123",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "OPPERVLAKTE",
+   "doel": "kan tegenstellingen benoemen: grootste/kleinste",
+   "ster": false
+  },
+  {
+   "id": "ga-124",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "benoemt de namen van de dagen van de week in de goede volgorde",
+   "ster": false
+  },
+  {
+   "id": "ga-125",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "ervaren dat de tijd verstrijkt (bijv. zandloper, klok, time timer, kookwekker, kalender)",
+   "ster": true
+  },
+  {
+   "id": "ga-126",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GELD",
+   "doel": "oefenen met tegenstellingen: duurste/goedkoopste",
+   "ster": true
+  },
+  {
+   "id": "ga-127",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GEWICHT",
+   "doel": "oefenen met tegenstellingen: lichtste/zwaarste",
+   "ster": true
+  },
+  {
+   "id": "ga-128",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "INHOUD",
+   "doel": "ordenen van inhoud en begrippen benoemen: van leeg naar vol, minder- meer-evenveel",
+   "ster": true
+  },
+  {
+   "id": "ga-129",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "hanteert meetkundige begrippen als voor, achter, naast, in, op, boven en onder",
+   "ster": false
+  },
+  {
+   "id": "ga-130",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "bouwt een eenvoudige foto of voorbeeld na in de ruimte",
+   "ster": false
+  },
+  {
+   "id": "ga-131",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "sorteert voorwerpen op minimaal twee kenmerken (bijv. rode rondjes, groene vierkanten)",
+   "ster": false
+  },
+  {
+   "id": "ga-132",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "lopen van een eenvoudige route",
+   "ster": true
+  },
+  {
+   "id": "ga-133",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "vouwen van een recht kruis",
+   "ster": true
+  },
+  {
+   "id": "ga-134",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "maken van mozaïek en kettingpatronen",
+   "ster": true
+  },
+  {
+   "id": "ga-135",
+   "niveau": "1b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "spelen met licht en schaduw van zon of zaklamp",
+   "ster": true
+  },
+  {
+   "id": "ga-136",
+   "niveau": "1b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Welbevinden B Komt ontspannen over",
+   "ster": false
+  },
+  {
+   "id": "ga-137",
+   "niveau": "1b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Heeft plezier in wat het doet",
+   "ster": false
+  },
+  {
+   "id": "ga-138",
+   "niveau": "1b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat zelfvertrouwen zien",
+   "ster": false
+  },
+  {
+   "id": "ga-139",
+   "niveau": "1b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Durft zichzelf te zijn in de groep",
+   "ster": false
+  },
+  {
+   "id": "ga-140",
+   "niveau": "1b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Betrokkenheid / taakgerichtheid B Toont belangstelling voor activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-141",
+   "niveau": "1b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat concentratie zien bij activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-142",
+   "niveau": "1b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Kan opgaan in activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-143",
+   "niveau": "1b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Zet door bij activiteiten, ook als het tegenzit",
+   "ster": false
+  },
+  {
+   "id": "ga-144",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "KLIMMEN",
+   "doel": "klimt in een klauterrek op verschillende hoogte heen en weer",
+   "ster": false
+  },
+  {
+   "id": "ga-145",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "HUPPELEN",
+   "doel": "galoppeert",
+   "ster": false
+  },
+  {
+   "id": "ga-146",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "BALANCEREN",
+   "doel": "balanceert over een recht en breed balanceervlak (bank) zonder hulp",
+   "ster": false
+  },
+  {
+   "id": "ga-147",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "BALANCEREN",
+   "doel": "balanceert met hindernissen over een recht en breed balanceervlak (bank) zonder hulp",
+   "ster": false
+  },
+  {
+   "id": "ga-148",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "HINKELEN",
+   "doel": "hinkelt 5 keer op voorkeursbeen",
+   "ster": false
+  },
+  {
+   "id": "ga-149",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "VRIJ SPRINGEN",
+   "doel": "springt vanuit stilstand met 2 benen tegelijk vanaf een hoogte en komt met 2 benen tegelijk op de grond",
+   "ster": false
+  },
+  {
+   "id": "ga-150",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "LOOPSPRINGEN",
+   "doel": "springt vanuit stilstand van mat naar mat",
+   "ster": false
+  },
+  {
+   "id": "ga-151",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "TOUWTJE SPRINGEN",
+   "doel": "springt over een schommelend touw",
+   "ster": false
+  },
+  {
+   "id": "ga-152",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "gooit met een pittenzak tegen een grote, boven hoofdhoogte (2 meter) hangende krant",
+   "ster": false
+  },
+  {
+   "id": "ga-153",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "gooit met een bal pilonnen omver",
+   "ster": false
+  },
+  {
+   "id": "ga-154",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "mikt een bal of pittenzak in een open kast (max. 1,5 meter)",
+   "ster": false
+  },
+  {
+   "id": "ga-155",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "RIJDEN",
+   "doel": "fietsen op een driewieler",
+   "ster": true
+  },
+  {
+   "id": "ga-156",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "GLIJDEN",
+   "doel": "glijden van een brede glijbaan zittend en via de rug",
+   "ster": true
+  },
+  {
+   "id": "ga-157",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "werpen met een bal op een laken met gat erin (hoogte max. 1 meter)",
+   "ster": true
+  },
+  {
+   "id": "ga-158",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "rollen met een bal tegen blokjes (max. 1,5 meter)",
+   "ster": true
+  },
+  {
+   "id": "ga-159",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "VANGEN",
+   "doel": "vangen van een grote (zachte) bal",
+   "ster": true
+  },
+  {
+   "id": "ga-160",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "BELANGRIJKE BEWEGINGEN",
+   "doel": "kruipen, liggen op de buik met het hoofd omhoog",
+   "ster": true
+  },
+  {
+   "id": "ga-161",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "ROLLEN",
+   "doel": "rollen (minimaal eenmaal) om de lengteas",
+   "ster": true
+  },
+  {
+   "id": "ga-162",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Maakt grove bewegingen vanuit de elleboog",
+   "ster": false
+  },
+  {
+   "id": "ga-163",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Tikt met duim (zonder een rondje te maken) o.a. tegen wijsvinger",
+   "ster": false
+  },
+  {
+   "id": "ga-164",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Maakt gebruik van twee handen tijdens spelen en werken (doorgeven van de éne hand naar de andere hand of beide handen actief)",
+   "ster": false
+  },
+  {
+   "id": "ga-165",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "De bewegingen van beide lichaamshelften zijn elkaars spiegelbeeld (bijv. éne hand vuist, de andere hand maakt ook deze beweging)",
+   "ster": false
+  },
+  {
+   "id": "ga-166",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Experimenteren met knippen",
+   "ster": true
+  },
+  {
+   "id": "ga-167",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Bouwen met kleine blokjes",
+   "ster": true
+  },
+  {
+   "id": "ga-168",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Scheuren van (grote, grove) stukken papier",
+   "ster": true
+  },
+  {
+   "id": "ga-169",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Experimenteren met vouwen",
+   "ster": true
+  },
+  {
+   "id": "ga-170",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Werken met beide handen in zand, met blokjes, scheerschuim, mais e.d.",
+   "ster": true
+  },
+  {
+   "id": "ga-171",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Zelfstandig dichtmaken van een rits",
+   "ster": true
+  },
+  {
+   "id": "ga-172",
+   "niveau": "1",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Experimenteren met klei",
+   "ster": true
+  },
+  {
+   "id": "ga-173",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van zichzelf",
+   "aspect": "GEVOELENS",
+   "doel": "gebruikt eenvoudige emotiewoorden",
+   "ster": false
+  },
+  {
+   "id": "ga-174",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van zichzelf",
+   "aspect": "PERSOONSKENMERKEN",
+   "doel": "benoemt wat het (niet) goed kan",
+   "ster": false
+  },
+  {
+   "id": "ga-175",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met zichzelf",
+   "aspect": "GEVOELENS HANTEREN",
+   "doel": "kan met hulp van een volwassene emoties reguleren",
+   "ster": false
+  },
+  {
+   "id": "ga-176",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met zichzelf",
+   "aspect": "IMPULSCONTROLE",
+   "doel": "kan met hulp van een volwassene impulsen beheersen",
+   "ster": false
+  },
+  {
+   "id": "ga-177",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van de ander",
+   "aspect": "GEVOELENS",
+   "doel": "herkent gevoelens van een ander",
+   "ster": false
+  },
+  {
+   "id": "ga-178",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van de ander",
+   "aspect": "PERSOONSKENMERKEN",
+   "doel": "benoemt verschillen tussen zichzelf en de ander",
+   "ster": false
+  },
+  {
+   "id": "ga-179",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "AANSLUITEN",
+   "doel": "gaat interactie aan met een ander",
+   "ster": false
+  },
+  {
+   "id": "ga-180",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "CONFLICTEN",
+   "doel": "herkent de eigen grens als een ander daar overheen gaat",
+   "ster": false
+  },
+  {
+   "id": "ga-181",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "SAMENWERKEN",
+   "doel": "heeft een eigen inbreng tijdens gezamenlijke activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-182",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Keuzes maken",
+   "aspect": "WELOVERWOGEN KIEZEN",
+   "doel": "kiest op basis van eigen voorkeuren",
+   "ster": false
+  },
+  {
+   "id": "ga-183",
+   "niveau": "1",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Keuzes maken",
+   "aspect": "ZELFSTANDIGHEID",
+   "doel": "pakt zelf materialen voor een taak en ruimt deze op",
+   "ster": false
+  },
+  {
+   "id": "ga-184",
+   "niveau": "2a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "HANDELEN",
+   "doel": "maakt samen plannen voor spelscenario’s",
+   "ster": false
+  },
+  {
+   "id": "ga-185",
+   "niveau": "2a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "ROLGEBRUIK",
+   "doel": "speelt interactief rollenspel binnen de afspraken",
+   "ster": false
+  },
+  {
+   "id": "ga-186",
+   "niveau": "2a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPELVERHAAL",
+   "doel": "kan meerdere rollen aannemen binnen thematisch rollenspel",
+   "ster": false
+  },
+  {
+   "id": "ga-187",
+   "niveau": "2a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELDUUR",
+   "doel": "speelt een spelscenario van ± 15 minuten (in een rol)",
+   "ster": false
+  },
+  {
+   "id": "ga-188",
+   "niveau": "2a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELTAAL",
+   "doel": "beschrijven van rollen, rollentaal en handelingen",
+   "ster": true
+  },
+  {
+   "id": "ga-189",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP VERHAAL EN TEKST",
+   "doel": "legt platen uit een verhaal in de goede volgorde neer en vertelt het verhaal na",
+   "ster": false
+  },
+  {
+   "id": "ga-190",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP VERHAAL EN TEKST",
+   "doel": "weet wat de hoofdcomponenten zijn in het verhaal (wie, wat en waar)",
+   "ster": false
+  },
+  {
+   "id": "ga-191",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "kan fonemen (bijv. beginklank) als klankeenheden in woorden herkennen",
+   "ster": false
+  },
+  {
+   "id": "ga-192",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP GESCHREVEN TAAL",
+   "doel": "herkent de letters van eigen naam en enkele van de themawoorden",
+   "ster": false
+  },
+  {
+   "id": "ga-193",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "VISUELE WAARNEMING",
+   "doel": "kan 5 à 6 getoonde voorwerpen onthouden",
+   "ster": false
+  },
+  {
+   "id": "ga-194",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "fonemen als klankeenheden samenvoegen tot een woord",
+   "ster": true
+  },
+  {
+   "id": "ga-195",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "rijmen met (onzin)woorden",
+   "ster": true
+  },
+  {
+   "id": "ga-196",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "woorden in klankgroepen klappen",
+   "ster": true
+  },
+  {
+   "id": "ga-197",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP GESCHREVEN TAAL",
+   "doel": "naschrijven of naleggen van themawoorden met lettermateriaal",
+   "ster": true
+  },
+  {
+   "id": "ga-198",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "LEESPLEZIER",
+   "doel": "mening geven over een voorgelezen verhaal",
+   "ster": true
+  },
+  {
+   "id": "ga-199",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "vat samen in één zin wat het gehoord heeft",
+   "ster": false
+  },
+  {
+   "id": "ga-200",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "SPREKEN",
+   "doel": "maakt eenvoudige zinnen, met gebruik van voegwoorden (omdat, en)",
+   "ster": false
+  },
+  {
+   "id": "ga-201",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "GESPREKKEN",
+   "doel": "blijft bij het gespreksonderwerp",
+   "ster": false
+  },
+  {
+   "id": "ga-202",
+   "niveau": "2a",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "WOORDENSCHAT",
+   "doel": "leren en gebruiken van (nieuwe) woorden naar aanleiding van verhalen en/of een thema. De woorden liggen in de wereld om het kind en verder buiten het kind",
+   "ster": true
+  },
+  {
+   "id": "ga-203",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "telt door vanaf verschillende getallen in de telrij tot en met 12",
+   "ster": false
+  },
+  {
+   "id": "ga-204",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "lost eenvoudige splitsproblemen (handelend) op tot tenminste 5",
+   "ster": false
+  },
+  {
+   "id": "ga-205",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "kan de getalsymbolen 0 t/m 12 lezen",
+   "ster": false
+  },
+  {
+   "id": "ga-206",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "terugtellen vanaf verschillende getallen in de telrij tot en met 12",
+   "ster": true
+  },
+  {
+   "id": "ga-207",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "omgaan met begrippen zoals: verder, naast, door, terug en tussenin",
+   "ster": true
+  },
+  {
+   "id": "ga-208",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "oefenen met rangtelwoorden als eerste, tweede, vierde en verkennen wanneer je die gebruikt",
+   "ster": true
+  },
+  {
+   "id": "ga-209",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "tellen van voorwerpen tot en met 15; synchroon en resultatief",
+   "ster": true
+  },
+  {
+   "id": "ga-210",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "representeren van hoeveelheden tot tenminste 5 (bijv. vingers, streepjes, stippen)",
+   "ster": true
+  },
+  {
+   "id": "ga-211",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "schatten van hoeveelheden tot 15",
+   "ster": true
+  },
+  {
+   "id": "ga-212",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "onderzoeken van getalrelaties: buurgetallen",
+   "ster": true
+  },
+  {
+   "id": "ga-213",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "ordent van kort naar lang en van laag naar hoog",
+   "ster": false
+  },
+  {
+   "id": "ga-214",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "kent de begrippen gisteren, vandaag, morgen en nu",
+   "ster": false
+  },
+  {
+   "id": "ga-215",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GELD",
+   "doel": "betaalt gepast tot minimaal 12 euro, met munten van 1 euro",
+   "ster": false
+  },
+  {
+   "id": "ga-216",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "OPPERVLAKTE",
+   "doel": "ordenen van groot naar klein",
+   "ster": true
+  },
+  {
+   "id": "ga-217",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "oefenen met de seizoenen van het jaar",
+   "ster": true
+  },
+  {
+   "id": "ga-218",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GEWICHT",
+   "doel": "ordenen van licht naar zwaar",
+   "ster": true
+  },
+  {
+   "id": "ga-219",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "INHOUD",
+   "doel": "ordenen van leeg naar vol",
+   "ster": true
+  },
+  {
+   "id": "ga-220",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "kent de begrippen dichtbij, veraf, tegenover en tussen",
+   "ster": false
+  },
+  {
+   "id": "ga-221",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "herkent de vormen driehoek, vierkant, cirkel en rechthoek in voorwerpen of figuren",
+   "ster": false
+  },
+  {
+   "id": "ga-222",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "beschrijven van routes",
+   "ster": true
+  },
+  {
+   "id": "ga-223",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "puzzels maken van 20 stukjes",
+   "ster": true
+  },
+  {
+   "id": "ga-224",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "vouwen van 16 vierkantjes",
+   "ster": true
+  },
+  {
+   "id": "ga-225",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "maken van creatieve bouwwerken",
+   "ster": true
+  },
+  {
+   "id": "ga-226",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "experimenteren met vormen en figuren in spiegels en spiegeleffecten",
+   "ster": true
+  },
+  {
+   "id": "ga-227",
+   "niveau": "2a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "VERBANDEN",
+   "doel": "gebruiken van staafdiagrammen",
+   "ster": true
+  },
+  {
+   "id": "ga-228",
+   "niveau": "2a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Welbevinden B Komt ontspannen over",
+   "ster": false
+  },
+  {
+   "id": "ga-229",
+   "niveau": "2a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Heeft plezier in wat het doet",
+   "ster": false
+  },
+  {
+   "id": "ga-230",
+   "niveau": "2a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat zelfvertrouwen zien",
+   "ster": false
+  },
+  {
+   "id": "ga-231",
+   "niveau": "2a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Durft zichzelf te zijn in de groep",
+   "ster": false
+  },
+  {
+   "id": "ga-232",
+   "niveau": "2a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Betrokkenheid / taakgerichtheid B Toont belangstelling voor activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-233",
+   "niveau": "2a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat concentratie zien bij activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-234",
+   "niveau": "2a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Kan opgaan in activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-235",
+   "niveau": "2a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Zet door bij activiteiten, ook als het tegenzit",
+   "ster": false
+  },
+  {
+   "id": "ga-236",
+   "niveau": "2b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "HANDELEN",
+   "doel": "maakt samen plannen voor complexe spelscenario's",
+   "ster": false
+  },
+  {
+   "id": "ga-237",
+   "niveau": "2b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "ROLGEBRUIK",
+   "doel": "laat interactief thematisch rollenspel zien volgens voorbedacht plan",
+   "ster": false
+  },
+  {
+   "id": "ga-238",
+   "niveau": "2b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPELVERHAAL",
+   "doel": "maakt vooraf plannen met anderen voor spelscenario's",
+   "ster": false
+  },
+  {
+   "id": "ga-239",
+   "niveau": "2b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELDUUR",
+   "doel": "speelt een spelscenario van ± 20 minuten (in een rol)",
+   "ster": false
+  },
+  {
+   "id": "ga-240",
+   "niveau": "2b",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELTAAL",
+   "doel": "gebruiken van rolgebonden, academische taal in dialoog",
+   "ster": true
+  },
+  {
+   "id": "ga-241",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP VERHAAL EN TEKST",
+   "doel": "weet de leesrichting van teksten (van links naar rechts en van boven naar beneden)",
+   "ster": false
+  },
+  {
+   "id": "ga-242",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "kan fonemen als klankeenheden samenvoegen tot een woord (v-i-s = vis)",
+   "ster": false
+  },
+  {
+   "id": "ga-243",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "herkent begin- en eindklank van een woord",
+   "ster": false
+  },
+  {
+   "id": "ga-244",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "kan rijmen met bestaande woorden",
+   "ster": false
+  },
+  {
+   "id": "ga-245",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP GESCHREVEN TAAL",
+   "doel": "herkent/schrijft 8-12 letters van eigen naam of themawoorden",
+   "ster": false
+  },
+  {
+   "id": "ga-246",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "VISUELE WAARNEMING",
+   "doel": "ziet kleine verschillen tussen figuren (bijv. tussen letters/cijfers/afbeeldingen/voorwerpen)",
+   "ster": false
+  },
+  {
+   "id": "ga-247",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "onderscheiden van een letter, een woord en een zin",
+   "ster": true
+  },
+  {
+   "id": "ga-248",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "een reeks van vier woorden (themawoorden) nazeggen",
+   "ster": true
+  },
+  {
+   "id": "ga-249",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "TAALBEWUSTZIJN",
+   "doel": "een woord verdelen in klankeenheden (vis = v-i-s)",
+   "ster": true
+  },
+  {
+   "id": "ga-250",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "LEESPLEZIER",
+   "doel": "voorkeur hebben voor bepaalde voorgelezen verhalen en boeken",
+   "ster": true
+  },
+  {
+   "id": "ga-251",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "luistert naar en reageert op een ander",
+   "ster": false
+  },
+  {
+   "id": "ga-252",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "SPREKEN",
+   "doel": "gebruikt complexere samengestelde zinnen met voegwoorden (omdat, of, maar)",
+   "ster": false
+  },
+  {
+   "id": "ga-253",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "GESPREKKEN",
+   "doel": "geeft zijn mening over het gesprek en beargumenteert dit",
+   "ster": false
+  },
+  {
+   "id": "ga-254",
+   "niveau": "2b",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "WOORDENSCHAT",
+   "doel": "uitbreiden woordenschat n.a.v. thema en academische taal (praten over complexe onderwerpen)",
+   "ster": true
+  },
+  {
+   "id": "ga-255",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "telt door vanaf verschillende getallen in de telrij tot en met 20",
+   "ster": false
+  },
+  {
+   "id": "ga-256",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "kan verkort tellen van hoeveelheden tot tenminste 12 door gebruik te maken van structuren (bijv. dobbelstenen)",
+   "ster": false
+  },
+  {
+   "id": "ga-257",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "kan getalsymbolen, telwoorden en hoeveelheden tot tenminste 12 koppelen aan elkaar",
+   "ster": false
+  },
+  {
+   "id": "ga-258",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "verkort tellen met sprongen van twee (1,3,5; 2,4,6)",
+   "ster": true
+  },
+  {
+   "id": "ga-259",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "hanteren van rangtelwoorden als eerste, tweede, derde t/m tiende",
+   "ster": true
+  },
+  {
+   "id": "ga-260",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "representeren van hoeveelheden tot tenminste 10 (bijv. vingers, streepjes, stippen)",
+   "ster": true
+  },
+  {
+   "id": "ga-261",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "herkennen van groepjes tot 6, zonder te tellen, door gebruik te maken van structuren (bijv. dobbelstenen)",
+   "ster": true
+  },
+  {
+   "id": "ga-262",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "vergelijken van hoeveelheden tot tenminste 12 door het leggen van 1-1 relaties en ordenen (meer, minder, evenveel, meeste, minste, veel, samen (bijv. staafdiagram))",
+   "ster": true
+  },
+  {
+   "id": "ga-263",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "oplossen van eenvoudige splitsproblemen (handelend) tot ten minste 8",
+   "ster": true
+  },
+  {
+   "id": "ga-264",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "schatten van hoeveelheden tot 20",
+   "ster": true
+  },
+  {
+   "id": "ga-265",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "nadenken over \"nul\" als getal",
+   "ster": true
+  },
+  {
+   "id": "ga-266",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "oefenen met de volgorde van de getallen in de getallenrij",
+   "ster": true
+  },
+  {
+   "id": "ga-267",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "meet met een natuurlijke maat (bijv. hand of voet) en met informele instrumenten (bijv. touwtje of stroken)",
+   "ster": false
+  },
+  {
+   "id": "ga-268",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "vertelt met tijdsbegrippen zoals eerder, vroeger, later (bijv. bij weergave van een verhaal)",
+   "ster": false
+  },
+  {
+   "id": "ga-269",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GELD",
+   "doel": "betaalt gepast met munten van 1 en 2 euro",
+   "ster": false
+  },
+  {
+   "id": "ga-270",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "redeneren over lengte en omtrek in betekenisvolle situaties",
+   "ster": true
+  },
+  {
+   "id": "ga-271",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "OPPERVLAKTE",
+   "doel": "vergelijken en ordenen van groot naar klein",
+   "ster": true
+  },
+  {
+   "id": "ga-272",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "OPPERVLAKTE",
+   "doel": "redeneren over oppervlakte in betekenisvolle situaties",
+   "ster": true
+  },
+  {
+   "id": "ga-273",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "aflezen van hele uren op een klok",
+   "ster": true
+  },
+  {
+   "id": "ga-274",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "oefenen met enkele maanden van het jaar",
+   "ster": true
+  },
+  {
+   "id": "ga-275",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GEWICHT",
+   "doel": "ordenen van licht naar zwaar en redeneren over het waarom",
+   "ster": true
+  },
+  {
+   "id": "ga-276",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "INHOUD",
+   "doel": "halfvol inschenken van een beker",
+   "ster": true
+  },
+  {
+   "id": "ga-277",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TEMPERATUUR",
+   "doel": "redeneren over de begrippen warm en koud",
+   "ster": true
+  },
+  {
+   "id": "ga-278",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "VERHOUDINGEN",
+   "doel": "verhoudingsgewijs ordenen (bijv. als je groter wordt moeten je kleren ook groter zijn)",
+   "ster": true
+  },
+  {
+   "id": "ga-279",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "kan eenvoudige plattegronden aflezen en uitleggen",
+   "ster": false
+  },
+  {
+   "id": "ga-280",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "kan met constructiemateriaal een voorbeeld namaken",
+   "ster": false
+  },
+  {
+   "id": "ga-281",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "sorteert voorwerpen op minimaal drie kenmerken (bijv. rood, dun vierkant)",
+   "ster": false
+  },
+  {
+   "id": "ga-282",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "vertellen wat wel of niet zichtbaar is vanaf een bepaald standpunt",
+   "ster": true
+  },
+  {
+   "id": "ga-283",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "redeneren over eenvoudige meetkundige problemen",
+   "ster": true
+  },
+  {
+   "id": "ga-284",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "redeneren over vormen en figuren in passende probleemsituaties",
+   "ster": true
+  },
+  {
+   "id": "ga-285",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "VERHOUDINGEN",
+   "doel": "verkennen van getalsmatige verhoudingen (bijv. 1 stoel heeft 4 poten, 2 stoelen hebben 8 poten)",
+   "ster": true
+  },
+  {
+   "id": "ga-286",
+   "niveau": "2b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "VERBANDEN",
+   "doel": "aflezen van informatie uit een grafische voorstelling (bijv. met beelddiagram, staafdiagram)",
+   "ster": true
+  },
+  {
+   "id": "ga-287",
+   "niveau": "2b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Welbevinden B Komt ontspannen over",
+   "ster": false
+  },
+  {
+   "id": "ga-288",
+   "niveau": "2b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Heeft plezier in wat het doet",
+   "ster": false
+  },
+  {
+   "id": "ga-289",
+   "niveau": "2b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat zelfvertrouwen zien",
+   "ster": false
+  },
+  {
+   "id": "ga-290",
+   "niveau": "2b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Durft zichzelf te zijn in de groep",
+   "ster": false
+  },
+  {
+   "id": "ga-291",
+   "niveau": "2b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Betrokkenheid / taakgerichtheid B Toont belangstelling voor activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-292",
+   "niveau": "2b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat concentratie zien bij activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-293",
+   "niveau": "2b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Kan opgaan in activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-294",
+   "niveau": "2b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Zet door bij activiteiten, ook als het tegenzit",
+   "ster": false
+  },
+  {
+   "id": "ga-295",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "KLIMMEN",
+   "doel": "klimt binnen een klautercircuit op verschillende hoogtes",
+   "ster": false
+  },
+  {
+   "id": "ga-296",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "HUPPELEN",
+   "doel": "huppelt",
+   "ster": false
+  },
+  {
+   "id": "ga-297",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "BALANCEREN",
+   "doel": "loopt over een schuin smal balanceervlak (evenwichtsbalk) zonder evenwichtsverstoring",
+   "ster": false
+  },
+  {
+   "id": "ga-298",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "BALANCEREN",
+   "doel": "balanceert over een wip zonder evenwichtsverstoring",
+   "ster": false
+  },
+  {
+   "id": "ga-299",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "HINKELEN",
+   "doel": "hinkelt 10 keer op voorkeursbeen",
+   "ster": false
+  },
+  {
+   "id": "ga-300",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "VRIJ SPRINGEN",
+   "doel": "loopt via een bank omhoog en springt in een doorgaande beweging en komt met 2 benen tegelijk op de grond",
+   "ster": false
+  },
+  {
+   "id": "ga-301",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "STEUNSPRINGEN",
+   "doel": "voert de hazensprong op de bank uit",
+   "ster": false
+  },
+  {
+   "id": "ga-302",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "STEUNSPRINGEN",
+   "doel": "voert de wendsprong op de bank uit",
+   "ster": false
+  },
+  {
+   "id": "ga-303",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "LOOPSPRINGEN",
+   "doel": "springt vanuit een doorgaande beweging over lage hindernissen in een parcours",
+   "ster": false
+  },
+  {
+   "id": "ga-304",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "TOUWTJE SPRINGEN",
+   "doel": "springt in een touw gedraaid door de leerkracht",
+   "ster": false
+  },
+  {
+   "id": "ga-305",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "gooit van een grotere afstand (2 – 2,5 meter) een pittenzak/bal tegen een hoog hangende en kleinere krant",
+   "ster": false
+  },
+  {
+   "id": "ga-306",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "gooit van een grotere afstand (2 – 2,5 meter) met een bal pilonnen omver",
+   "ster": false
+  },
+  {
+   "id": "ga-307",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "mikt een bal of pittenzak vanaf een grotere afstand in een kast",
+   "ster": false
+  },
+  {
+   "id": "ga-308",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "RIJDEN",
+   "doel": "fietsen op tweewieler",
+   "ster": true
+  },
+  {
+   "id": "ga-309",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "RIJDEN",
+   "doel": "steppen",
+   "ster": true
+  },
+  {
+   "id": "ga-310",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "GLIJDEN",
+   "doel": "glijden van een smalle en steile glijbaan op buik, rug en hurkend (met mat)",
+   "ster": true
+  },
+  {
+   "id": "ga-311",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "werpen vanaf een grotere afstand van een bal op een laken/mat met gat erin of rondje erop",
+   "ster": true
+  },
+  {
+   "id": "ga-312",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "MIKKEN",
+   "doel": "rollen vanaf een grotere afstand van een bal tegen blokjes",
+   "ster": true
+  },
+  {
+   "id": "ga-313",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "VANGEN",
+   "doel": "vangen van een kleine bal",
+   "ster": true
+  },
+  {
+   "id": "ga-314",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "BALVAARDIGHEID",
+   "doel": "stuiteren met een bal",
+   "ster": true
+  },
+  {
+   "id": "ga-315",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Grove motoriek",
+   "aspect": "ROLLEN",
+   "doel": "rollen (minimaal tweemaal) om de lengteas",
+   "ster": true
+  },
+  {
+   "id": "ga-316",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Maakt fijne bewegingen vanuit pols",
+   "ster": false
+  },
+  {
+   "id": "ga-317",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Opponeert met de duim flexibel tegen vingers (maakt een rondje met duim en andere vingers)",
+   "ster": false
+  },
+  {
+   "id": "ga-318",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Maakt onafhankelijke bewegingen met de hand (bijv. éne hand op de knie slaan, andere hand op de schouder)",
+   "ster": false
+  },
+  {
+   "id": "ga-319",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Laat duidelijk een voorkeurshand zien",
+   "ster": false
+  },
+  {
+   "id": "ga-320",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Maakt bewegingen die over de middenlijn gaan rond 6/6,5 jaar (bijv. sla met je linkerhand op je rechterknie e.d.)",
+   "ster": false
+  },
+  {
+   "id": "ga-321",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Knippen langs een gebogen lijn",
+   "ster": true
+  },
+  {
+   "id": "ga-322",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Knopen open-/dichtmaken",
+   "ster": true
+  },
+  {
+   "id": "ga-323",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Kleuren binnen de lijntjes",
+   "ster": true
+  },
+  {
+   "id": "ga-324",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Werken met knijpers en pincetten",
+   "ster": true
+  },
+  {
+   "id": "ga-325",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Rijgen van kleine kralen aan een koord",
+   "ster": true
+  },
+  {
+   "id": "ga-326",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Scheuren van papier in reepjes/stukjes",
+   "ster": true
+  },
+  {
+   "id": "ga-327",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Scherp en nauwkeurig vouwen",
+   "ster": true
+  },
+  {
+   "id": "ga-328",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Maken van schrijfpatronen in een rechte lijn op A3 formaat papier",
+   "ster": true
+  },
+  {
+   "id": "ga-329",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Veters vastmaken",
+   "ster": true
+  },
+  {
+   "id": "ga-330",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Hebben van een goede pengreep (rond 6 jaar)",
+   "ster": true
+  },
+  {
+   "id": "ga-331",
+   "niveau": "2",
+   "domein": "Motoriek",
+   "leerlijn": "Fijne motoriek",
+   "aspect": null,
+   "doel": "Verfijnd werken met klei",
+   "ster": true
+  },
+  {
+   "id": "ga-332",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van zichzelf",
+   "aspect": "GEVOELENS",
+   "doel": "benoemt in een situatie gevoelens van zichzelf",
+   "ster": false
+  },
+  {
+   "id": "ga-333",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van zichzelf",
+   "aspect": "PERSOONSKENMERKEN",
+   "doel": "benoemt vaardigheden en kwaliteiten van zichzelf",
+   "ster": false
+  },
+  {
+   "id": "ga-334",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met zichzelf",
+   "aspect": "GEVOELENS HANTEREN",
+   "doel": "kan in terugkerende situaties zelf zijn emoties reguleren",
+   "ster": false
+  },
+  {
+   "id": "ga-335",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met zichzelf",
+   "aspect": "IMPULSCONTROLE",
+   "doel": "kan een impulsieve reactie in een lastige situatie uitstellen",
+   "ster": false
+  },
+  {
+   "id": "ga-336",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van de ander",
+   "aspect": "GEVOELENS",
+   "doel": "benoemt gevoelens van een ander",
+   "ster": false
+  },
+  {
+   "id": "ga-337",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van de ander",
+   "aspect": "PERSOONSKENMERKEN",
+   "doel": "herkent vaardigheden en kwaliteiten bij de ander",
+   "ster": false
+  },
+  {
+   "id": "ga-338",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "AANSLUITEN",
+   "doel": "heeft voorkeur voor een aantal klasgenoten",
+   "ster": false
+  },
+  {
+   "id": "ga-339",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "CONFLICTEN",
+   "doel": "benoemt eigen grenzen in een situatie",
+   "ster": false
+  },
+  {
+   "id": "ga-340",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "SAMENWERKEN",
+   "doel": "bedenkt regels en afspraken bij gezamenlijke activiteiten en houdt zich hieraan",
+   "ster": false
+  },
+  {
+   "id": "ga-341",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Keuzes maken",
+   "aspect": "WELOVERWOGEN KIEZEN",
+   "doel": "kiest en blijft bij de eigen keuze",
+   "ster": false
+  },
+  {
+   "id": "ga-342",
+   "niveau": "2",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Keuzes maken",
+   "aspect": "ZELFSTANDIGHEID",
+   "doel": "voert meerdere taken achter elkaar uit",
+   "ster": false
+  },
+  {
+   "id": "ga-343",
+   "niveau": "3a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPELVERHAAL",
+   "doel": "samen opbouwen van een spelscript en bedenken van spelregels",
+   "ster": true
+  },
+  {
+   "id": "ga-344",
+   "niveau": "3a",
+   "domein": "Spel",
+   "leerlijn": "Spel",
+   "aspect": "SPEELDUUR",
+   "doel": "onderbroken spel weer oppakken",
+   "ster": true
+  },
+  {
+   "id": "ga-345",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest 20 letters die aangeboden zijn (eerder observeren; rond de",
+   "ster": false
+  },
+  {
+   "id": "ga-346",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "herfstsignalering) Herkent en leest vlot alle letters die aangeboden zijn (december-januari)",
+   "ster": false
+  },
+  {
+   "id": "ga-347",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest de klankzuivere woorden (globaal-woorden) die aangeboden zijn",
+   "ster": false
+  },
+  {
+   "id": "ga-348",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "binnen het thema (mkm-woorden) Herkent en leest vlot mkmm- en mmkm- woorden",
+   "ster": false
+  },
+  {
+   "id": "ga-349",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest vlot twee medeklinkers vooraan/achteraan mmkmm",
+   "ster": false
+  },
+  {
+   "id": "ga-350",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest de woorden met de lange klanken aa, ee, oo en uu",
+   "ster": false
+  },
+  {
+   "id": "ga-351",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest de woorden met de tweetekenklanken oe, eu, au, ie, ij en ei",
+   "ster": false
+  },
+  {
+   "id": "ga-352",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest direct de lidwoorden de, het en een",
+   "ster": false
+  },
+  {
+   "id": "ga-353",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Leest zinnen van ongeveer zes woorden, zonder hoofdletters",
+   "ster": false
+  },
+  {
+   "id": "ga-354",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": "ORIËNTATIE OP VERHAAL EN TEKST",
+   "doel": "geven van een mondelinge samenvatting van een",
+   "ster": true
+  },
+  {
+   "id": "ga-355",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "gelezen verhaal *ORIËNTATIE OP VERHAAL EN TEKST: weten waar het antwoord gevonden kan worden",
+   "ster": false
+  },
+  {
+   "id": "ga-356",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "op vragen gerelateerd aan het thema *ORIËNTATIE OP GESCHREVEN TAAL: zelf teksten schrijven over het thema n.a.v. boeken",
+   "ster": false
+  },
+  {
+   "id": "ga-357",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "en teksten *ORIËNTATIE OP GESCHREVEN TAAL: maken van eigen prentenboek passend bij het",
+   "ster": false
+  },
+  {
+   "id": "ga-358",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "thema *ORIËNTATIE OP GESCHREVEN TAAL: zelfstandig lezen van prentenboeken, eigen en",
+   "ster": false
+  },
+  {
+   "id": "ga-359",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "andermans teksten *LEESPLEZIER: zelf boeken-verhalen kiezen om 'zelf' in te lezen",
+   "ster": false
+  },
+  {
+   "id": "ga-360",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft woorden na van het thema",
+   "ster": false
+  },
+  {
+   "id": "ga-361",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft 20 letters die aangeboden zijn rondom het thema (rond herfstsignalering",
+   "ster": false
+  },
+  {
+   "id": "ga-362",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "observeren) Schrijft woorden bij werkjes die aangeboden zijn bij het thema",
+   "ster": false
+  },
+  {
+   "id": "ga-363",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft woorden correct die klankzuiver zijn aangeboden",
+   "ster": false
+  },
+  {
+   "id": "ga-364",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft woorden met dubbele klinkers, zoals aa, oe, ei, au, ou",
+   "ster": false
+  },
+  {
+   "id": "ga-365",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft woorden met lidwoorden",
+   "ster": false
+  },
+  {
+   "id": "ga-366",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft mkm-woorden",
+   "ster": false
+  },
+  {
+   "id": "ga-367",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Herkent een spellingsfout in een woord",
+   "ster": false
+  },
+  {
+   "id": "ga-368",
+   "niveau": "3a",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijven van eenvoudige functionele teksten, zoals boodschappenlijstjes enz.",
+   "ster": true
+  },
+  {
+   "id": "ga-369",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "telt verkort met sprongen van twee tot 20",
+   "ster": false
+  },
+  {
+   "id": "ga-370",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "telt verkort met sprongen van vijf tot 20",
+   "ster": false
+  },
+  {
+   "id": "ga-371",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "kan de telrij tot 50 opzeggen",
+   "ster": false
+  },
+  {
+   "id": "ga-372",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "kan groepjes maken van 5 en 10",
+   "ster": false
+  },
+  {
+   "id": "ga-373",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "kent de splitsingen tot en met 6 uit het hoofd",
+   "ster": false
+  },
+  {
+   "id": "ga-374",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "kan de getallen 1 t/m 10 schrijven",
+   "ster": false
+  },
+  {
+   "id": "ga-375",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "benoemt buurgetallen tot tenminste 20",
+   "ster": false
+  },
+  {
+   "id": "ga-376",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "kan de getallen plaatsen op de getallenlijn t/m 20",
+   "ster": false
+  },
+  {
+   "id": "ga-377",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "optellen en aftrekken: kan eenvoudige optel- en aftrekproblemen in een context met hoeveelheden t/m tenminste 12 (handelend) oplossen",
+   "ster": false
+  },
+  {
+   "id": "ga-378",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "delen: kan eenvoudige verdelingen maken in een context met hoeveelheden tot tenminste 12",
+   "ster": false
+  },
+  {
+   "id": "ga-379",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "getalbeelden op rekenrek zetten in één greep",
+   "ster": true
+  },
+  {
+   "id": "ga-380",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "HOEVEELHEDEN",
+   "doel": "splitsingen tot en met 10",
+   "ster": true
+  },
+  {
+   "id": "ga-381",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "tekening/verhaal maken bij de som en een som bij de tekening of verhaal",
+   "ster": true
+  },
+  {
+   "id": "ga-382",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "gebruiken van rekentaal zoals +/-/=",
+   "ster": true
+  },
+  {
+   "id": "ga-383",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "meet lengte met een liniaal",
+   "ster": false
+  },
+  {
+   "id": "ga-384",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "leest hele uren af van analoge en digitale klok",
+   "ster": false
+  },
+  {
+   "id": "ga-385",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GELD",
+   "doel": "betaalt gepast met 1 en 2 euro munten en met biljetten van 5",
+   "ster": false
+  },
+  {
+   "id": "ga-386",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GEWICHT",
+   "doel": "weegt met een balansweegschaal en vergelijkt resultaten met elkaar",
+   "ster": false
+  },
+  {
+   "id": "ga-387",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "ervaren dat afspreken van een vaste maat voorwaarde is voor het eerlijk meten, vergelijken en ordenen",
+   "ster": true
+  },
+  {
+   "id": "ga-388",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "OPPERVLAKTE",
+   "doel": "ontwerpen van figuren met eenzelfde oppervlakte m.b.v. vierkanten en ruiten",
+   "ster": true
+  },
+  {
+   "id": "ga-389",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "uren van een analoge klok verbinden aan momenten van de dag (bijv. een uur later, uur eerder)",
+   "ster": true
+  },
+  {
+   "id": "ga-390",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "aflezen van hele en halve uren op analoge en digitale klok",
+   "ster": true
+  },
+  {
+   "id": "ga-391",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "INHOUD",
+   "doel": "gelijk verdelen van hoeveelheden",
+   "ster": true
+  },
+  {
+   "id": "ga-392",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TEMPERATUUR",
+   "doel": "gebruiken van een thermometer (binnen of buiten)",
+   "ster": true
+  },
+  {
+   "id": "ga-393",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "kan een route volgen aan de hand van een plattegrond",
+   "ster": false
+  },
+  {
+   "id": "ga-394",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "kan het aantal blokjes van een bouwwerk bepalen, ook die je niet kan zien",
+   "ster": false
+  },
+  {
+   "id": "ga-395",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "VERBANDEN",
+   "doel": "kan informatie aflezen uit een grafische voorstelling (bijv. beeld- en staafdiagram)",
+   "ster": false
+  },
+  {
+   "id": "ga-396",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "uitleggen hoe een voorwerp eruit ziet vanaf een ander standpunt",
+   "ster": true
+  },
+  {
+   "id": "ga-397",
+   "niveau": "3a",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "blokkenbouwwerk nabouwen van een tekening en een tekening maken van een blokkenbouwwerk",
+   "ster": true
+  },
+  {
+   "id": "ga-398",
+   "niveau": "3a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Welbevinden B Komt ontspannen over",
+   "ster": false
+  },
+  {
+   "id": "ga-399",
+   "niveau": "3a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Heeft plezier in wat het doet",
+   "ster": false
+  },
+  {
+   "id": "ga-400",
+   "niveau": "3a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat zelfvertrouwen zien",
+   "ster": false
+  },
+  {
+   "id": "ga-401",
+   "niveau": "3a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Durft zichzelf te zijn in de groep",
+   "ster": false
+  },
+  {
+   "id": "ga-402",
+   "niveau": "3a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Betrokkenheid / taakgerichtheid B Toont belangstelling voor activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-403",
+   "niveau": "3a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat concentratie zien bij activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-404",
+   "niveau": "3a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Kan opgaan in activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-405",
+   "niveau": "3a",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Zet door bij activiteiten, ook als het tegenzit",
+   "ster": false
+  },
+  {
+   "id": "ga-406",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest vlot twee en drie medeklinkers vooraan/achteraan mmmkm-en",
+   "ster": false
+  },
+  {
+   "id": "ga-407",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "mkmmm-woorden Herkent en leest vlot samengestelde woorden of tweelettergrepige woorden",
+   "ster": false
+  },
+  {
+   "id": "ga-408",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest alle klankgroep-woorden (lange en korte klank, medeklinker en",
+   "ster": false
+  },
+  {
+   "id": "ga-409",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "tweetekenklank) Herkent en leest woorden met medeklinkercluster, zoals eur, eer, oor",
+   "ster": false
+  },
+  {
+   "id": "ga-410",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest verkleinwoorden -je, -tje en -ptje",
+   "ster": false
+  },
+  {
+   "id": "ga-411",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest de woorden met c als s en woorden met ch als g",
+   "ster": false
+  },
+  {
+   "id": "ga-412",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest woorden die beginnen met sch- en schr-",
+   "ster": false
+  },
+  {
+   "id": "ga-413",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest vlot een eenlettergrepig woord dat eindigt op dt, ng of nk",
+   "ster": false
+  },
+  {
+   "id": "ga-414",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest woorden met aai, ooi en oei",
+   "ster": false
+  },
+  {
+   "id": "ga-415",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Herkent en leest woorden met -uw, -eeuw, - ieuw",
+   "ster": false
+  },
+  {
+   "id": "ga-416",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Geletterdheid",
+   "aspect": null,
+   "doel": "Leest zinnen van ongeveer 8 tot 10 woorden, met hoofdletters",
+   "ster": false
+  },
+  {
+   "id": "ga-417",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft alle letters die aangeboden zijn rondom het thema",
+   "ster": false
+  },
+  {
+   "id": "ga-418",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft zinnen met woorden van het thema",
+   "ster": false
+  },
+  {
+   "id": "ga-419",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft mkmm- en mmkm-woorden",
+   "ster": false
+  },
+  {
+   "id": "ga-420",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijft woorden met twee medeklinkers vooraan/achteraan mmkmm",
+   "ster": false
+  },
+  {
+   "id": "ga-421",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Herkent een spellingsfout in een zelf geschreven zin",
+   "ster": false
+  },
+  {
+   "id": "ga-422",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Afschrijven van een voorgestructureerde tekst (bijv. een verhaaltje afschrijven)",
+   "ster": true
+  },
+  {
+   "id": "ga-423",
+   "niveau": "3b",
+   "domein": "Taal",
+   "leerlijn": "Spelling/schrijven",
+   "aspect": null,
+   "doel": "Schrijven van een eenvoudige tekst naar aanleiding van een plaat over het thema",
+   "ster": true
+  },
+  {
+   "id": "ga-424",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "kan de telrij tot 100 opzeggen",
+   "ster": false
+  },
+  {
+   "id": "ga-425",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "kan vanuit elk getal verder en terug tellen tot 50",
+   "ster": false
+  },
+  {
+   "id": "ga-426",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "kan de getallen op de getallenlijn zetten in tientallen van 10 tot 100",
+   "ster": false
+  },
+  {
+   "id": "ga-427",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "kan de getallen 0 tot 100 lezen en uitspreken",
+   "ster": false
+  },
+  {
+   "id": "ga-428",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "GETALLEN",
+   "doel": "kan de getallen 11 t/m 20 schrijven",
+   "ster": false
+  },
+  {
+   "id": "ga-429",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "kent de optellingen, aftrekkingen en splitsingen t/m 10 uit het hoofd",
+   "ster": false
+  },
+  {
+   "id": "ga-430",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "kan een som uit een verhaal halen en een verhaal uit een som",
+   "ster": false
+  },
+  {
+   "id": "ga-431",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "kan optellen en aftrekken t/m 20 met behulp van strategieën (bijv. dubbelen, verwisselen, of aanvullen tot 10)",
+   "ster": false
+  },
+  {
+   "id": "ga-432",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "VERMENIGVULDIGEN",
+   "doel": "kan hoeveelheden verdubbelen en tellen met groepjes",
+   "ster": false
+  },
+  {
+   "id": "ga-433",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "DELEN",
+   "doel": "kan hoeveelheden halveren en splitsen in groepjes",
+   "ster": false
+  },
+  {
+   "id": "ga-434",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "verder tellen vanuit elk getal tot 100",
+   "ster": true
+  },
+  {
+   "id": "ga-435",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "TELRIJ",
+   "doel": "oefenen met getallen die dichtbij of verder uit elkaar liggen in de getallenrij tot tenminste 20 (bijv. ‘Welk getal ligt dichterbij 10: 13 of 5?')",
+   "ster": true
+  },
+  {
+   "id": "ga-436",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "oefenen met de relatie tussen optellen, aftrekken, splitsen en toepassen (bijv. 2 + 5 = 7, 7 - 5 = 2, 7 = 5 + 2)",
+   "ster": true
+  },
+  {
+   "id": "ga-437",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "uit het hoofd automatiseren van de optellingen, aftrekkingen en splitsingen t/m 20",
+   "ster": true
+  },
+  {
+   "id": "ga-438",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Tellen en getalbegrip",
+   "aspect": "BEWERKINGEN",
+   "doel": "kritisch denken en redeneren over het rekenen tot ten minste 20 in betekenisvolle probleemsituaties",
+   "ster": true
+  },
+  {
+   "id": "ga-439",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "LENGTE EN OMTREK",
+   "doel": "kan meten met een meetlint van een meter",
+   "ster": false
+  },
+  {
+   "id": "ga-440",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "OPPERVLAKTE",
+   "doel": "kan oppervlaktes meten met een natuurlijke maat (bijv. met hokjes en tegels, afpassen met blaadjes)",
+   "ster": false
+  },
+  {
+   "id": "ga-441",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "kan halve uren aflezen op een analoge en digitale klok",
+   "ster": false
+  },
+  {
+   "id": "ga-442",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "TIJD",
+   "doel": "weet wat een kalender is en hoe je die kan lezen",
+   "ster": false
+  },
+  {
+   "id": "ga-443",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GELD",
+   "doel": "kan gepast betalen met 1 en 2 euro munten en biljetten van 5 en 10 tot een bedrag van 20 euro",
+   "ster": false
+  },
+  {
+   "id": "ga-444",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "OPPERVLAKTE",
+   "doel": "redeneren over oppervlakte (bijv. ‘Dit tafelblad is langer dan dat tafelblad, maar ook smaller. Op beide tafelbladen passen evenveel A4-tjes’)",
+   "ster": true
+  },
+  {
+   "id": "ga-445",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GEWICHT",
+   "doel": "experimenteren met het feit dat gewicht niet één op één samenvalt met omvang: zwaarder betekent niet altijd groter",
+   "ster": true
+  },
+  {
+   "id": "ga-446",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "GEWICHT",
+   "doel": "oefenen met kilo's",
+   "ster": true
+  },
+  {
+   "id": "ga-447",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meten",
+   "aspect": "INHOUD",
+   "doel": "oefenen met liters",
+   "ster": true
+  },
+  {
+   "id": "ga-448",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "kent de ruimtelijke begrippen links en rechts",
+   "ster": false
+  },
+  {
+   "id": "ga-449",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "CONSTRUEREN",
+   "doel": "vouwwerk navouwen van een voorbeeld met een vouwreeks van enkele stappen",
+   "ster": false
+  },
+  {
+   "id": "ga-450",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "OPEREREN MET VORMEN EN FIGUREN",
+   "doel": "kan bij afbeeldingen van eenvoudige ruimtelijke figuren de bijpassende uitslagen zoeken",
+   "ster": false
+  },
+  {
+   "id": "ga-451",
+   "niveau": "3b",
+   "domein": "Rekenen",
+   "leerlijn": "Meetkunde",
+   "aspect": "ORIËNTEREN IN DE RUIMTE",
+   "doel": "maken van bouwplaten",
+   "ster": true
+  },
+  {
+   "id": "ga-452",
+   "niveau": "3b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Welbevinden B Komt ontspannen over",
+   "ster": false
+  },
+  {
+   "id": "ga-453",
+   "niveau": "3b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Heeft plezier in wat het doet",
+   "ster": false
+  },
+  {
+   "id": "ga-454",
+   "niveau": "3b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat zelfvertrouwen zien",
+   "ster": false
+  },
+  {
+   "id": "ga-455",
+   "niveau": "3b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Durft zichzelf te zijn in de groep",
+   "ster": false
+  },
+  {
+   "id": "ga-456",
+   "niveau": "3b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Betrokkenheid / taakgerichtheid B Toont belangstelling voor activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-457",
+   "niveau": "3b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Laat concentratie zien bij activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-458",
+   "niveau": "3b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Kan opgaan in activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-459",
+   "niveau": "3b",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Welbevinden",
+   "aspect": null,
+   "doel": "Zet door bij activiteiten, ook als het tegenzit",
+   "ster": false
+  },
+  {
+   "id": "ga-460",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "bespreken van een verhaallijn met wie, wat en waar-vragen",
+   "ster": true
+  },
+  {
+   "id": "ga-461",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "herkennen en gebruiken van een nieuw woord in een andere context",
+   "ster": true
+  },
+  {
+   "id": "ga-462",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "enigszins de inhoud van het verhaal voorspellen",
+   "ster": true
+  },
+  {
+   "id": "ga-463",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "LUISTEREN",
+   "doel": "vertellen over de opbouw in een verhaal en de situatie waarin het verhaal",
+   "ster": true
+  },
+  {
+   "id": "ga-464",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": null,
+   "doel": "zich afspeelt *SPREKEN: vertellen van een persoonlijk verhaal",
+   "ster": false
+  },
+  {
+   "id": "ga-465",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "SPREKEN",
+   "doel": "vertellen en presenteren voor de groep",
+   "ster": true
+  },
+  {
+   "id": "ga-466",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "SPREKEN",
+   "doel": "variatie in woordgebruik, woordvorming en zinsvorming",
+   "ster": true
+  },
+  {
+   "id": "ga-467",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "GESPREKKEN",
+   "doel": "in kleine en grote groepen actief deelnemen aan gesprekken, door te",
+   "ster": true
+  },
+  {
+   "id": "ga-468",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": null,
+   "doel": "spreken en te luisteren *GESPREKKEN: reflecteren op het verloop van het gesprek, de spreker en de boodschap",
+   "ster": false
+  },
+  {
+   "id": "ga-469",
+   "niveau": "3",
+   "domein": "Taal",
+   "leerlijn": "Mondelinge taal",
+   "aspect": "GESPREKKEN",
+   "doel": "vertellen of het wel of niet eens is met een mening",
+   "ster": true
+  },
+  {
+   "id": "ga-470",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van zichzelf",
+   "aspect": "GEVOELENS",
+   "doel": "beschrijft welke gevoelens een situatie bij zichzelf kan oproepen",
+   "ster": false
+  },
+  {
+   "id": "ga-471",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van zichzelf",
+   "aspect": "PERSOONSKENMERKEN",
+   "doel": "zet vaardigheden en kwaliteiten van zichzelf in",
+   "ster": false
+  },
+  {
+   "id": "ga-472",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met zichzelf",
+   "aspect": "GEVOELENS HANTEREN",
+   "doel": "kan achteraf vertellen waarom bepaald gedrag vertoond is",
+   "ster": false
+  },
+  {
+   "id": "ga-473",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met zichzelf",
+   "aspect": "IMPULSCONTROLE",
+   "doel": "kan eigen gedrag sturen in een lastige situatie",
+   "ster": false
+  },
+  {
+   "id": "ga-474",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van de ander",
+   "aspect": "GEVOELENS",
+   "doel": "beschrijft welke gevoelens een situatie bij een ander kan oproepen",
+   "ster": false
+  },
+  {
+   "id": "ga-475",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Besef van de ander",
+   "aspect": "PERSOONSKENMERKEN",
+   "doel": "benoemt kwaliteiten van de ander",
+   "ster": false
+  },
+  {
+   "id": "ga-476",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "AANSLUITEN",
+   "doel": "kan omgaan met klasgenoten die niet hun voorkeur hebben",
+   "ster": false
+  },
+  {
+   "id": "ga-477",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "CONFLICTEN",
+   "doel": "bedenkt tijdens het conflict oplossingen",
+   "ster": false
+  },
+  {
+   "id": "ga-478",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Omgaan met de ander",
+   "aspect": "SAMENWERKEN",
+   "doel": "kan hulp vragen en bieden tijdens gezamenlijke activiteiten",
+   "ster": false
+  },
+  {
+   "id": "ga-479",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Keuzes maken",
+   "aspect": "WELOVERWOGEN KIEZEN",
+   "doel": "legt uit welke gevolgen een keuze heeft",
+   "ster": false
+  },
+  {
+   "id": "ga-480",
+   "niveau": "3",
+   "domein": "Sociaal-emotioneel",
+   "leerlijn": "Keuzes maken",
+   "aspect": "ZELFSTANDIGHEID",
+   "doel": "maakt complexere taken af",
+   "ster": false
+  }
+ ]
+}

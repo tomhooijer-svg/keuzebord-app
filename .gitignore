@@ -1,0 +1,18 @@
+# Foto's van kinderen horen niet in deze repository.
+# Ze leven in de fotokluis op het apparaat zelf (IndexedDB) en gaan van
+# apparaat naar apparaat via een los kluisbestand dat je zelf bewaart —
+# bij voorkeur met een wachtwoord versleuteld via Beheer → Foto's.
+*fotokluis*.json
+*.fotos.json
+assets/fotos/
+
+# Back-ups met leerling-, doel- of observatiegegevens
+back-up*.json
+backup*.json
+*.observaties.csv
+
+# Samengevoegd ontwerpcanvas (2,3 MB build-uitvoer, opnieuw te maken uit design/*.dc.html)
+design/keuzebord-v2-ontwerp.html
+
+# Alleen voor het testen; de app zelf heeft geen pakketten nodig.
+node_modules/

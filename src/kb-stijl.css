@@ -1,0 +1,155 @@
+/* ══════════════════════════════════════════════════════════════
+   KEUZEBORD — GEDEELDE VORMTAAL
+   Systeemletters, zachte hoeken, diepte via schaduw in plaats van
+   randen, en kleur alleen waar die iets betekent.
+   Het bord staat op een warme ondergrond, het beheer op een koele:
+   zo zie je meteen in welke van de twee je zit.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Op een Apple-apparaat pakt hij het systeemlettertype (SF Pro) — dat is
+   precies de vibe die we willen. Elders halen we Inter op, dat er sterk op
+   lijkt. Valt het internet weg, dan zakt hij terug op Segoe UI of wat er
+   staat, en blijft alles leesbaar. */
+:root{
+  --letter: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+            "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui,
+            "Helvetica Neue", Arial, sans-serif;
+
+  --inkt:      #1a2233;
+  --inkt-2:    #4a5568;
+  --inkt-3:    #8a94a6;
+  --inkt-4:    #b0b8c6;
+
+  --vlak:      #ffffff;
+  --vlak-2:    #f2f4f7;
+  --lijn:      #e6e9ef;
+
+  --accent:      #3b6ff0;
+  --accent-zacht:#eaf0fe;
+  --goed:        #2e9e6b;
+  --goed-zacht:  #e9f6f0;
+  --let-op:      #c8820a;
+  --let-op-zacht:#fbf0e6;
+  --stop:        #d94f4f;
+  --stop-zacht:  #fdeeee;
+
+  --rond-s: 10px;
+  --rond-m: 16px;
+  --rond-l: 26px;
+  --rond-vol: 999px;
+
+  --schaduw-1: 0 1px 2px rgba(20,28,44,.05), 0 4px 16px rgba(20,28,44,.05);
+  --schaduw-2: 0 1px 2px rgba(20,28,44,.05), 0 8px 24px rgba(20,28,44,.06);
+  --schaduw-3: 0 1px 2px rgba(20,28,44,.05), 0 14px 38px rgba(20,28,44,.09);
+
+  --veer: cubic-bezier(.22,1,.36,1);
+}
+
+*{ box-sizing: border-box; }
+html, body{ height: 100%; }
+body{
+  margin: 0;
+  font-family: var(--letter);
+  font-feature-settings: 'cv11', 'ss01';   /* rechte a en g, zoals SF Pro */
+  font-optical-sizing: auto;
+  color: var(--inkt);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  letter-spacing: -.006em;
+}
+
+/* Koppen zetten we iets strakker en zwaarder — dat is wat een interface
+   van Apple zo rustig doet ogen: weinig maten, duidelijk verschil. */
+h1, h2, h3, .titel, .groepnaam, .klas-titel, .hoek-naam{
+  letter-spacing: -.021em;
+  text-wrap: balance;
+}
+
+/* Cijfers die per seconde veranderen mogen de bladzijde niet duwen. */
+.klok, .hoek-telling, .cijfer .n, .weekdag-telling{
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+}
+body.beheer{ background: var(--vlak-2); }
+
+button{ font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+input, select, textarea{ font: inherit; color: inherit; }
+:focus-visible{ outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ── knoppen ───────────────────────────────────────────── */
+.knop{
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-weight: 600; border-radius: var(--rond-vol);
+  padding: 11px 22px; font-size: .95rem;
+  transition: transform .18s var(--veer), background .18s ease, opacity .18s ease;
+}
+.knop:active{ transform: scale(.96); }
+.knop-primair{ background: var(--accent); color: #fff; }
+.knop-stil   { background: rgba(20,28,44,.06); color: var(--inkt-2); }
+.knop-gevaar { background: var(--stop-zacht); color: var(--stop); }
+.knop-groot  { padding: 15px 30px; font-size: 1.1rem; }
+.knop-klein  { padding: 8px 15px; font-size: .84rem; }
+
+/* ── kinderpicto ───────────────────────────────────────── */
+.picto{
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+}
+.picto-rond{
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 600; letter-spacing: -.01em;
+  background-size: cover; background-position: center;
+  box-shadow: 0 1px 3px rgba(20,28,44,.18);
+  position: relative; flex: none;
+}
+.picto-naam{ font-size: .82rem; color: var(--inkt-2); max-width: 78px;
+             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+.picto.sleept{ opacity: .35; }
+.picto.op-slot .picto-rond{ box-shadow: 0 1px 3px rgba(20,28,44,.18); }
+
+/* de ring die vol loopt tot een kind mag wisselen */
+.ring{ position: absolute; top: -6px; right: -6px; bottom: -6px; left: -6px;
+       pointer-events: none; }
+.ring svg{ width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle{ fill: none; stroke-width: 4; stroke-linecap: round; }
+.ring .baan{ stroke: rgba(20,28,44,.10); }
+.ring .voortgang{ stroke: var(--accent); transition: stroke-dasharray .9s linear, stroke .4s ease; }
+.picto.vrij .ring .voortgang{ stroke: var(--goed); }
+
+/* ── kaart ─────────────────────────────────────────────── */
+.kaart{
+  background: var(--vlak); border-radius: var(--rond-l);
+  box-shadow: var(--schaduw-2); overflow: hidden;
+}
+
+/* ── overlay ───────────────────────────────────────────── */
+.overlay{
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 400;
+  background: rgba(20,28,44,.34); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  opacity: 0; pointer-events: none; transition: opacity .22s ease;
+}
+.overlay.open{ opacity: 1; pointer-events: auto; }
+.blad{
+  background: var(--vlak); border-radius: 30px; box-shadow: var(--schaduw-3);
+  max-width: 560px; width: 100%; max-height: 88vh; overflow-y: auto;
+  padding: 34px; transform: scale(.94) translateY(12px);
+  transition: transform .26s var(--veer);
+}
+.overlay.open .blad{ transform: none; }
+
+/* ── melding ───────────────────────────────────────────── */
+.melding{
+  position: fixed; left: 50%; bottom: 30px; transform: translate(-50%, 20px);
+  background: rgba(20,28,44,.94); color: #fff; padding: 13px 24px;
+  border-radius: var(--rond-vol); font-size: .95rem; font-weight: 500;
+  box-shadow: var(--schaduw-3); z-index: 600;
+  opacity: 0; pointer-events: none; transition: opacity .22s ease, transform .26s var(--veer);
+}
+.melding.zichtbaar{ opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

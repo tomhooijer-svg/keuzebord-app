@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keuzebord — schoolbeheer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- optical sizing laat Inter zich aanpassen aan de tekstgrootte: grote koppen
+     krijgen strakkere letters. display=optional voorkomt dat de bladzijde
+     verspringt als het lettertype later binnenkomt. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=optional">
+<link rel="stylesheet" href="src/kb-stijl.css">
+<style>
+body.school{ background:#eef0f4; }
+.wrap{ max-width:1080px; margin:0 auto; padding:34px 24px 70px; }
+.top{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px;
+      flex-wrap:wrap; margin-bottom:26px; }
+.top h1{ font-size:1.7rem; font-weight:600; letter-spacing:-.025em; margin:0 0 4px; }
+.top .sub{ font-size:.95rem; color:var(--inkt-3); }
+.knoprij{ display:flex; gap:10px; flex-wrap:wrap; }
+
+.groepen{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.groepkaart{ background:var(--vlak); border-radius:var(--rond-m); box-shadow:var(--schaduw-1);
+             padding:18px 20px; display:flex; flex-direction:column; gap:12px;
+             border-top:4px solid var(--groepkleur,#3b6ff0); }
+.groepkaart.dit{ box-shadow:0 0 0 2px var(--accent), var(--schaduw-2); }
+.groepkop{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.groepkaart-naam{ font-size:1.15rem; font-weight:600; letter-spacing:-.015em; }
+.ditlabel{ font-size:.68rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+           color:var(--accent); background:var(--accent-zacht); padding:2px 8px; border-radius:var(--rond-vol); }
+.cijfers{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.cijfer .n{ font-size:1.3rem; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.1; }
+.cijfer .l{ font-size:.72rem; color:var(--inkt-3); }
+/* Voortgangsbalkje op een groepskaart. Bewust NIET '.balk': zo heet de
+   bovenbalk van het bord al, en niet '.voortgang': zo heet de ring om een
+   picto al. In de voorvertoning staan alle stijlen samen op één pagina,
+   dus een dubbele naam sloopt daar het andere scherm. */
+.groepbalkje{ height:7px; border-radius:99px; background:var(--vlak-2); overflow:hidden; }
+.groepbalkje span{ display:block; height:100%; background:var(--goed); border-radius:99px; }
+.beurtregel{ font-size:.8rem; color:var(--inkt-3); }
+.groepacties{ display:flex; gap:8px; flex-wrap:wrap; margin-top:auto; padding-top:4px; }
+
+.paneel{ background:var(--vlak); border-radius:var(--rond-m); box-shadow:var(--schaduw-1);
+         padding:20px 22px; margin-top:22px; }
+.paneelkop{ font-size:.74rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+            color:var(--inkt-3); margin-bottom:10px; }
+.hint{ font-size:.87rem; color:var(--inkt-3); line-height:1.55; max-width:66ch; }
+.leegvak{ padding:30px; border:1.5px dashed var(--lijn); border-radius:var(--rond-m); text-align:center; }
+.knoprij-onder{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+</style>
+</head>
+<body class="school">
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Schoolbeheer</h1>
+      <div class="sub" id="school-sub">De kleutergroepen van de school</div>
+    </div>
+    <div class="knoprij" id="school-acties"></div>
+  </div>
+  <div id="school-inhoud"></div>
+</div>
+
+<div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
+<div class="melding" id="melding"></div>
+
+<script src="src/kb-data.js"></script>
+<script src="src/kb-supabase.js"></script>
+<script src="src/kb-media.js"></script>
+<script src="src/kb-sync.js"></script>
+<script src="src/kb-verbinding.js"></script>
+<script src="src/kb-school.js"></script>
+</body>
+</html>

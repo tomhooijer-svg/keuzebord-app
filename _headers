@@ -1,0 +1,23 @@
+# Cloudflare Pages leest dit bestand en zet deze headers op elk antwoord.
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  # Zoekmachines mogen deze app niet opnemen: er staan klaslijsten in.
+  X-Robots-Tag: noindex, nofollow, noarchive
+  # De app mag alleen bij zichzelf en straks bij de eigen Supabase-database.
+  # fonts.googleapis.com staat er nog in zolang Inter extern geladen wordt;
+  # die twee regels vervallen zodra we op systeemletters overstappen.
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; base-uri 'self'; form-action 'none'; frame-ancestors 'self'
+
+# De app zelf nooit uit de cache serveren, anders zien leerkrachten dagen
+# later pas een wijziging.
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/
+  Cache-Control: no-cache, must-revalidate

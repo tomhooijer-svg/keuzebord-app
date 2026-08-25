@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Keuzebord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- optical sizing laat Inter zich aanpassen aan de tekstgrootte: grote koppen
+     krijgen strakkere letters. display=optional voorkomt dat de bladzijde
+     verspringt als het lettertype later binnenkomt. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=optional">
+<link rel="stylesheet" href="src/kb-stijl.css">
+<style>
+/* ── het bord ─────────────────────────────────────────── */
+/* Een zachte, warme ondergrond met een vleugje kleur in de hoeken —
+   vrolijk zonder dat het onrustig wordt achter de picto's. */
+body.bord{
+  background:
+    radial-gradient(1100px 620px at 8% -12%,  #ffeede 0%, transparent 62%),
+    radial-gradient(1000px 560px at 96% 4%,   #e2f0fb 0%, transparent 58%),
+    radial-gradient(900px 640px at 42% 110%,  #eaf6ec 0%, transparent 60%),
+    #fbf8f4;
+  background-attachment: fixed;
+}
+.scherm{ display: none; height: 100vh; flex-direction: column; }
+.scherm.aan{ display: flex; }
+
+/* ── bovenbalk ────────────────────────────────── */
+/* Een zwevende balk die losstaat van de schermrand. Op een digibord van
+   70 inch is de uiterste hoek de slechtste plek die er is: je ziet er
+   niets en je raakt er niets. Alles staat daarom een stuk naar binnen,
+   groot genoeg om van achter in de klas te lezen. De hoogte ligt vast en
+   de klok gebruikt cijfers van gelijke breedte, zodat er nooit iets
+   verschuift als de tijd verspringt of een groepsnaam langer is. */
+.balk{
+  flex: none; height: 64px;
+  margin: 16px 22px 2px;
+  padding: 0 12px 0 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  background: rgba(255,255,255,.72);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 24px rgba(20,28,44,.06);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+.balk-links{ display: flex; align-items: center; gap: 13px; min-width: 0; }
+.groepnaam{
+  font-size: 1.34rem; font-weight: 640; letter-spacing: -.028em; color: var(--inkt);
+  line-height: 1; white-space: nowrap;
+}
+.scheiding{
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--inkt-4); flex: none;
+}
+.datum{
+  font-size: 1.02rem; font-weight: 450; color: var(--inkt-2);
+  letter-spacing: -.01em; line-height: 1; white-space: nowrap;
+}
+.balk-rechts{ display: flex; align-items: center; gap: 14px; flex: none; }
+.klok{
+  font-size: 1.14rem; font-weight: 550; color: var(--inkt-2);
+  letter-spacing: -.012em; line-height: 1;
+  /* cijfers van gelijke breedte: "11:11" is even breed als "19:25" */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+.rondje{
+  width: 44px; height: 44px; border-radius: 50%;   /* ruim genoeg voor een vinger */
+  background: rgba(20,28,44,.05); display: flex; align-items: center; justify-content: center;
+  transition: background .16s ease, transform .16s var(--veer);
+}
+.rondje:hover{ background: rgba(20,28,44,.1); }
+.rondje:active{ transform: scale(.92); }
+
+/* ── rooster ──────────────────────────────────────────── */
+.rooster{
+  flex-grow: 1; display: grid; min-height: 0;
+  gap: var(--tussen, 18px); padding: 14px 22px 0;
+  grid-template-columns: repeat(var(--kolommen, 3), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rijen, 2), minmax(0, 1fr));
+}
+
+/* ── hoekkaart ────────────────────────────────────────── */
+.hoek{
+  display: flex; flex-direction: column; min-height: 0; cursor: pointer;
+  position: relative; overflow: hidden;
+  background: var(--hoekzacht, #fff);
+  border-radius: var(--kaartrond, 22px);
+  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 22px var(--hoekschaduw, rgba(20,28,44,.06));
+  transition: transform .2s var(--veer), box-shadow .2s ease;
+}
+.hoek:active{ transform: scale(.988); }
+.hoek.doelwit{
+  box-shadow: 0 0 0 4px var(--hoekkleur), 0 16px 34px var(--hoekschaduw);
+  transform: translateY(-4px) scale(1.014);
+}
+.hoek.vol{ opacity: .96; }
+.hoek.vol.doelwit{ box-shadow: 0 0 0 4px var(--let-op), 0 16px 34px rgba(200,130,10,.3); }
+
+.hoek-beeld{
+  height: var(--beeldhoogte, 100px); flex: none;
+  background: var(--hoektint, #f2f4f7);
+  display: flex; align-items: center; justify-content: center;
+  background-size: cover; background-position: center;
+}
+.hoek-beeld svg{ width: var(--icoongrootte, 56px); height: var(--icoongrootte, 56px); }
+
+.hoek-onder{
+  padding: var(--onderpad, 12px) calc(var(--onderpad, 12px) + 4px);
+  display: flex; flex-direction: column; gap: calc(var(--onderpad, 12px) * .7);
+  flex-grow: 1; min-height: 0; justify-content: space-between;
+}
+.hoek-kop{ display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.hoek-naam{
+  font-size: var(--naamgrootte, 20px); font-weight: 600; letter-spacing: -.02em;
+  color: var(--hoektekst, var(--inkt));
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hoek-telling{
+  font-size: var(--tellinggrootte, 17px); font-weight: 600; flex: none;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.hoek-telling .bezet{ color: var(--hoektekst, var(--inkt)); }
+.hoek-telling .van{ color: var(--inkt-4); font-weight: 500; }
+
+/* zoveel plekken als de hoek heeft, altijd zichtbaar */
+.hoek-plekken{
+  display: flex; flex-wrap: nowrap; align-items: center;
+  gap: calc(var(--slot, 40px) * .16);
+}
+.plek{
+  width: var(--slot, 40px); height: var(--slot, 40px); border-radius: 50%;
+  flex: none; display: flex; align-items: center; justify-content: center;
+}
+.plek.vrij{
+  border: 2px dashed var(--hoekkleur, rgba(20,28,44,.2));
+  opacity: .35; box-sizing: border-box;
+}
+.plek.gereserveerd{
+  border: 2px dashed var(--hoekkleur); box-sizing: border-box; padding: 2px;
+}
+.plek.gereserveerd .picto-rond{
+  width: 100%; height: 100%; opacity: .45; box-shadow: none;
+  font-size: calc(var(--slot, 40px) * .38);
+}
+.plek.bezet .picto-rond{
+  width: var(--slot, 40px); height: var(--slot, 40px);
+  font-size: calc(var(--slot, 40px) * .42);
+}
+.plek.bezet .picto-naam{ display: none; }
+
+.wacht-merk{
+  position: absolute; top: 10px; right: 10px;
+  font-size: .74rem; font-weight: 600; letter-spacing: -.01em;
+  padding: 4px 11px; border-radius: 999px;
+  background: rgba(255,255,255,.86); color: var(--let-op);
+  box-shadow: 0 1px 3px rgba(20,28,44,.12);
+  backdrop-filter: blur(6px);
+}
+.wacht-merk.beurt{ color: var(--hoekkleur); }
+
+.strook{
+  flex: none; margin: 16px 26px 20px; padding: 14px 22px;
+  display: flex; align-items: center; gap: 26px; min-height: 0;
+  background: rgba(255,255,255,.72); border-radius: var(--rond-l);
+  box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 20px rgba(20,28,44,.05);
+}
+.strook-kop{ font-size: .96rem; font-weight: 550; color: var(--inkt-3); white-space: nowrap;
+             flex: none; letter-spacing: -.012em; }
+.strook-kinderen{ display: flex; gap: 20px; overflow-x: auto; padding: 4px 2px; }
+.strook .picto-rond{ width: 62px; height: 62px; font-size: 1.4rem; }
+.hoek-kinderen .picto-rond{ width: 46px; height: 46px; font-size: 1.05rem; }
+.hoek-kinderen .picto-naam{ display: none; }
+
+/* ── klas kiezen ──────────────────────────────────────── */
+#scherm-klassen{ align-items: center; justify-content: center; padding: 30px; }
+.klas-titel{ font-size: 2.6rem; font-weight: 650; letter-spacing: -.03em; margin: 0 0 8px;
+              background: linear-gradient(96deg, #3b6ff0, #17a9bd 42%, #37ab74 72%, #e79a1f);
+              -webkit-background-clip: text; background-clip: text; color: transparent; }
+.klas-sub{ font-size: 1.05rem; color: var(--inkt-3); margin: 0 0 36px; }
+.klas-rooster{ display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 220px)); gap: 18px; justify-content: center; }
+.klas-kaart{ padding: 22px; text-align: left; transition: transform .2s var(--veer); }
+.klas-kaart:hover{ transform: translateY(-3px); }
+.klas-kaart .n{ font-size: 1.2rem; font-weight: 600; margin-bottom: 3px; }
+.klas-kaart .s{ font-size: .9rem; color: var(--inkt-3); }
+
+/* ── hoekdetail ───────────────────────────────────────── */
+.detail-kop{ display: flex; align-items: center; gap: 18px; margin-bottom: 26px; }
+.detail-icoon{ width: 62px; height: 62px; border-radius: 20px; background: var(--vlak-2);
+               display: flex; align-items: center; justify-content: center; flex: none;
+               background-size: cover; background-position: center; }
+.detail-plekken{ display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 18px; }
+.detail-plek{ display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.detail-plek .picto-rond{ width: 84px; height: 84px; font-size: 2rem; }
+.detail-plek .ring{ top: -10px; right: -10px; bottom: -10px; left: -10px; }
+.detail-plek .ring circle{ stroke-width: 5; }
+.detail-stand{ font-size: .85rem; color: var(--inkt-3); text-align: center; }
+.detail-stand.vrij{ color: var(--goed); font-weight: 600; }
+.detail-leeg{ width: 104px; height: 104px; border-radius: 50%;
+              border: 3px dashed rgba(20,28,44,.15); display: flex;
+              align-items: center; justify-content: center; }
+
+.rij-wacht{ display: flex; align-items: flex-end; justify-content: center; gap: 24px; margin: 26px 0; }
+.rij-plek{ display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rij-nummer{ font-size: .9rem; font-weight: 600; color: var(--inkt-3); }
+.rij-plek.ikzelf .rij-nummer{ color: var(--accent); font-weight: 700; }
+.rij-plek .picto-rond{ width: 62px; height: 62px; font-size: 1.4rem; }
+.rij-plek.ikzelf .picto-rond{ width: 84px; height: 84px; font-size: 2rem; }
+.rij-ring{ padding: 5px; border-radius: 50%; background: rgba(59,111,240,.14); }
+
+/* Het picto dat je optilt: alleen de bol, iets groter, met een schaduw
+   die meegroeit. Dat leest als oppakken in plaats van als slepen. */
+.sleep-geest{
+  position: fixed; z-index: 500; pointer-events: none;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  filter: drop-shadow(0 2px 6px rgba(20,28,44,.18));
+  transition: transform .18s var(--veer), filter .18s ease, left .16s ease-out, top .16s ease-out;
+}
+.sleep-geest.opgetild{
+  transform: translate(-50%, -50%) scale(1.22) rotate(-4deg);
+  filter: drop-shadow(0 16px 26px rgba(20,28,44,.3));
+  transition: transform .18s var(--veer), filter .18s ease;
+}
+.sleep-geest.landt{
+  transform: translate(-50%, -50%) scale(.9) rotate(0deg);
+  filter: drop-shadow(0 3px 8px rgba(20,28,44,.16));
+  opacity: .7;
+}
+.sleep-geest.valt-terug{
+  transform: translate(-50%, -50%) scale(.8);
+  opacity: 0;
+}
+.picto.sleept .picto-rond{ transition: transform .2s var(--veer); transform: scale(.9); }
+
+/* wie vandaag aan de beurt is in de werkplaats staat er alvast, wachtend */
+.gereserveerd{
+  position: relative; flex: none;
+  padding: 3px; border-radius: 50%;
+  border: 2px dashed rgba(59,111,240,.45);
+}
+.gereserveerd .picto-rond{ opacity: .45; box-shadow: none; }
+.beurt-label{ background: rgba(59,111,240,.12); color: var(--accent); }
+
+@media (max-width: 760px){
+  .balk{ height: 52px; margin: 10px 12px 0; padding: 0 6px 0 16px; }
+  .scheiding{ display: none; }
+  .rooster{ padding: 10px 12px 0; }
+  .strook{ margin: 10px 12px 12px; padding: 10px 14px; gap: 14px; }
+  .groepnaam{ font-size: 1.06rem; } .datum{ display: none; }
+  .rondje{ width: 40px; height: 40px; }
+}
+</style>
+</head>
+<body class="bord">
+
+<!-- klas kiezen -->
+<div id="scherm-klassen" class="scherm">
+  <h1 class="klas-titel">Keuzebord</h1>
+  <p class="klas-sub" id="klas-datum"></p>
+  <div class="klas-rooster" id="klas-rooster"></div>
+  <div style="margin-top:34px;display:flex;gap:10px">
+    <a class="knop knop-stil" href="beheer.html">Beheer</a>
+  </div>
+</div>
+
+<!-- het bord -->
+<div id="scherm-bord" class="scherm">
+  <div class="balk">
+    <div class="balk-links">
+      <div class="groepnaam" id="bord-groep"></div>
+      <div class="scheiding" aria-hidden="true"></div>
+      <div class="datum" id="bord-datum"></div>
+    </div>
+    <div class="balk-rechts">
+      <div class="klok" id="bord-klok"></div>
+      <button class="rondje" id="knop-menu" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="4.5"  cy="12" r="2" fill="#5b6678"></circle>
+          <circle cx="12"   cy="12" r="2" fill="#5b6678"></circle>
+          <circle cx="19.5" cy="12" r="2" fill="#5b6678"></circle>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="rooster" id="rooster"></div>
+  <div class="strook">
+    <div class="strook-kop" id="strook-kop"></div>
+    <div class="strook-kinderen" id="strook"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
+<div class="melding" id="melding"></div>
+
+<script src="src/kb-data.js"></script>
+<script src="src/kb-supabase.js"></script>
+<script src="src/kb-media.js"></script>
+<script src="src/kb-sync.js"></script>
+<script src="src/kb-verbinding.js"></script>
+<script src="src/kb-bord.js"></script>
+</body>
+</html>
