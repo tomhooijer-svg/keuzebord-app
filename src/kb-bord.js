@@ -101,7 +101,11 @@ function toonKlassen(){
   pasUiterlijkToe(KB.klas());
   var rooster = $('klas-rooster');
   rooster.innerHTML = '';
-  KB.G.klassen.forEach(function (k) {
+  // Alleen de groepen die bij deze persoon horen. Wie is ingelogd ziet
+  // hier niet de groepen die ooit alleen in deze browser zijn gemaakt --
+  // die horen thuis in het schoolbeheer, niet op het digibord.
+  var lijst = (window.KBV && KBV.mijnKlassen) ? KBV.mijnKlassen() : KB.G.klassen;
+  lijst.forEach(function (k) {
     var kaart = el('button', 'kaart klas-kaart');
     kaart.appendChild(el('div', 'n', k.naam));
     kaart.appendChild(el('div', 's', (k.leerlingen || []).length + ' kinderen · ' +
@@ -130,14 +134,43 @@ function pasUiterlijkToe(k){
   catch (e) { /* dan blijft de standaardachtergrond staan */ }
 }
 
+/* Nog geen hoeken? Dan staat er niets om te kiezen. In plaats van een
+   leeg raster zeggen we wat er moet gebeuren. */
+function toonNogNiets(k){
+  var rooster = $('rooster');
+  rooster.innerHTML = '';
+  rooster.style.gridTemplateColumns = '1fr';
+  rooster.style.gridTemplateRows = '1fr';
+  var vak = el('div', 'nogniets');
+  vak.appendChild(el('div', 'nogniets-kop', 'Er zijn nog geen hoeken'));
+  vak.appendChild(el('div', 'nogniets-sub',
+    (k.leerlingen || []).length
+      ? 'Zet de hoeken klaar in het beheer, dan kunnen de kinderen kiezen.'
+      : 'Zet de kinderen en de hoeken klaar in het beheer.'));
+  var naarBeheer = el('a', 'knop knop-primair', 'Naar het beheer');
+  naarBeheer.href = 'beheer.html';
+  naarBeheer.style.marginTop = '18px';
+  vak.appendChild(naarBeheer);
+  rooster.appendChild(vak);
+  var balk = document.querySelector('.strook');
+  if (balk) balk.style.display = 'none';
+}
+
 function tekenBord(){
   var k = KB.klas(), b = KB.bord(k);
   $('bord-groep').textContent = k.naam;
   pasUiterlijkToe(k);
 
   var hoeken = KB.bordHoeken(b, k);
+  if (!hoeken.length) { toonNogNiets(k); return; }
+
+  var balk = document.querySelector('.strook');
+  if (balk) balk.style.display = '';
+
   var rooster = $('rooster');
   rooster.innerHTML = '';
+  rooster.style.gridTemplateColumns = '';
+  rooster.style.gridTemplateRows = '';
   // Eerst rekenen, dan tekenen: zo staan de kaarten meteen op hun eindmaat
   // in plaats van dat ze na het verschijnen nog een keer verspringen.
   var indeling = berekenIndeling(rooster, hoeken.length);
@@ -853,6 +886,16 @@ KB.doelenZorg()
     var bestaat = !!onthouden;
     if (bestaat) { KB.G.activeKlasId = onthouden; KB.bewaar(); }
 
+    // Heeft deze persoon maar één groep, dan valt er niets te kiezen.
+    var mijn = (window.KBV && KBV.mijnKlassen) ? KBV.mijnKlassen() : KB.G.klassen;
+    if (!bestaat && mijn.length === 1) {
+      KB.zetBeheerKlas(mijn[0].id);
+      KB.G.activeKlasId = mijn[0].id;
+      KB.bewaar();
+      onthouden = mijn[0].id;
+      bestaat = true;
+    }
+
     var k = KB.klas();
     // Nieuwe dag of nieuw dagdeel? Dan begint het bord blanco.
     if (KB.moetLegen(k)) {
@@ -861,7 +904,11 @@ KB.doelenZorg()
         meld('Nieuwe start — iedereen mag opnieuw kiezen');
       }, 900);
     }
-    if ((bestaat || KB.G.klassen.length === 1) && (k.hoekLib || []).length) toonBord();
+    // Eén groep is geen keuze, en een groep zonder hoeken ook niet. In
+    // beide gevallen gaan we gewoon naar het bord; dat zegt zelf wel wat
+    // er nog moet gebeuren. Kiezen doe je alleen als er echt iets te
+    // kiezen valt.
+    if (bestaat || mijn.length === 1) toonBord();
     else toonKlassen();
     setInterval(tik, 1000);
     setInterval(ververTimers, 1000);

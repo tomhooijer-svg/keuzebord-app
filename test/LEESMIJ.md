@@ -104,3 +104,15 @@ is aangevinkt -- vroeger kon je dan niets kiezen. Nu staat de hele lijst
 open: bladeren via domein en leerlijn, zoeken op een woord, en suggesties
 uit wat je hebt opgeschreven. Typ "de kinderen knippen een blad uit" en
 "Experimenteren met knippen" staat er als suggestie onder.
+
+## Alles één keer langs
+
+`test/doorloop.test.js` opent elk scherm en elk paneel één keer, en let
+onderweg op alles wat omvalt: fouten op de pagina, fouten in de console,
+en panelen die leeg blijven. Niet op zoek naar één ding, maar naar wat er
+kapot is zonder dat iemand het weet.
+
+Drieëntwintig punten: de drie onderdelen van het schoolbeheer, alle elf
+panelen van het groepsbeheer, het bord met een kind dat een hoek kiest, het
+bordmenu, het testbord, en tot slot dezelfde ronde als leerkracht om te
+zien dat zij alleen haar eigen groep krijgt en meteen op het bord uitkomt.

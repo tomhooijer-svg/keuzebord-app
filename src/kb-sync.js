@@ -39,8 +39,11 @@ function opLokaal(serverId){
   for (var l in k) if (k[l] === serverId) return l;
   return null;
 }
+/* Een koppeling leggen, of met serverId leeg weer losmaken. */
 function koppel(lokaalId, serverId){
-  var k = koppelingen(); k[lokaalId] = serverId; bewaarKoppelingen(k);
+  var k = koppelingen();
+  if (serverId == null) delete k[lokaalId]; else k[lokaalId] = serverId;
+  bewaarKoppelingen(k);
 }
 
 /* ── de afdruk ───────────────────────────────────────────────────────── */
@@ -92,7 +95,12 @@ function naarRijen(k){
     uit.borden.push({ _id:b.id, naam:b.naam || 'Keuzebord', volgorde:i,
                       actief:b.id === k.activeBordId,
                       stand:{ dagOpen:!!b.dagOpen, dagGesloten:!!b.dagGesloten,
-                              dagStart:b.dagStart || null, thema:b.thema || 'geen' } });
+                              dagStart:b.dagStart || null, thema:b.thema || 'geen',
+                              // wanneer het bord voor het laatst is leeggemaakt.
+                              // Ging dit niet mee, dan dacht elk apparaat dat het
+                              // nog moest gebeuren en veegde het bord bij het
+                              // openen leeg -- ook wat de kinderen net kozen.
+                              laatstGeleegd: b.laatstGeleegd || 0 } });
     (b.hoekLibIds || []).forEach(function (hid, j) {
       uit.bord_hoeken.push({ _id:b.id + '~' + hid, _bord:b.id, _hoek:hid, volgorde:j });
     });
@@ -207,7 +215,8 @@ function naarKlas(rijen, bestaande){
       });
     return { id:bordId, naam:r.naam, hoekLibIds:hoekIds, plaatsingen:plaatsingen,
              dagOpen:!!stand.dagOpen, dagGesloten:!!stand.dagGesloten,
-             dagStart:stand.dagStart || null, thema:stand.thema || 'geen' };
+             dagStart:stand.dagStart || null, thema:stand.thema || 'geen',
+             laatstGeleegd: stand.laatstGeleegd || 0 };
   });
   // Een groep die op de server is aangemaakt heeft nog geen bord. De app
   // gaat er wel altijd van uit dat er eentje is, dus die maken we hier --
@@ -215,7 +224,7 @@ function naarKlas(rijen, bestaande){
   if (!k.borden.length) {
     k.borden = [{ id:'b' + Math.random().toString(36).slice(2, 9), naam:'Keuzebord',
                   hoekLibIds:[], plaatsingen:{}, dagOpen:false, dagGesloten:false,
-                  dagStart:null, thema:'geen' }];
+                  dagStart:null, thema:'geen', laatstGeleegd: Date.now() }];
   }
   var actief = (rijen.borden || []).filter(function (r) { return r.actief; })[0];
   k.activeBordId = actief ? lok(actief.id) : k.borden[0].id;
@@ -555,6 +564,7 @@ function stuurOp(klasId, groepId, schoolId){
 }
 
 global.KBSYNC = {
+  markeerWachtend: markeerWachtend,
   haal: haal, haalBinnen: haalBinnen, duw: duw, stuurOp: stuurOp,
   verschil: verschil, naarRijen: naarRijen, naarKlas: naarKlas,
   zorgVoorDoelen: zorgVoorDoelen,

@@ -932,7 +932,7 @@ function moetLegen(k){
   var iemand = Object.keys(b.plaatsingen || {}).some(function (h) {
     return (b.plaatsingen[h] || []).length;
   });
-  if (!iemand) { b.laatstGeleegd = Date.now(); return false; }
+  if (!iemand) { b.laatstGeleegd = Date.now(); bewaar(); return false; }
   return true;
 }
 

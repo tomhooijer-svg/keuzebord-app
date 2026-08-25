@@ -38,6 +38,26 @@ function meldStand(stand, extra){
 
 function zorgVoorGroepen(){
   var gemaakt = false;
+
+  // Twee lokale groepen aan dezelfde servergroep gekoppeld kan niet. Komt
+  // voor als er onderweg iets is misgegaan; dan houden we degene waar het
+  // meeste in staat en laten de ander los.
+  var perServer = {};
+  (KB.G.klassen || []).forEach(function (k) {
+    var op = KBSYNC.opServer(k.id);
+    if (!op) return;
+    var vorige = perServer[op];
+    if (!vorige) { perServer[op] = k; return; }
+    var telling = function (x) {
+      return (x.leerlingen || []).length + (x.hoekLib || []).length + (x.taken || []).length;
+    };
+    var houden = telling(k) >= telling(vorige) ? k : vorige;
+    var los    = houden === k ? vorige : k;
+    KBSYNC.koppel(los.id, null);
+    perServer[op] = houden;
+    gemaakt = true;
+  });
+
   (ik.groepen || []).forEach(function (g) {
     var lokaal = KBSYNC.opLokaal(g.id);
     var bestaat = lokaal && (KB.G.klassen || []).some(function (k) { return k.id === lokaal; });
@@ -66,16 +86,33 @@ function zorgVoorGroepen(){
   if (gemaakt) KB.bewaar();
 }
 
+/* De groepen die bij deze persoon horen. Zodra je bent ingelogd is de
+   server de waarheid: alleen groepen die daar staan tellen mee. Groepen
+   die alleen in deze browser leven -- van vóór het inloggen, of van een
+   collega die hier ooit heeft ingelogd -- horen niet op het bord en niet
+   in het beheer. Het schoolbeheer laat ze wel zien, met een knop om ze
+   alsnog over te brengen of weg te gooien. */
+function mijnKlassen(){
+  var alle = (KB.G && KB.G.klassen) || [];
+  if (!ik || !ik.profiel) return alle;
+  var magBij = {};
+  (ik.groepen || []).forEach(function (g) { magBij[g.id] = true; });
+  return alle.filter(function (k) {
+    var op = KBSYNC.opServer(k.id);
+    return op && magBij[op];
+  });
+}
+
 /* Welke groep hoort bij dit scherm? Een leerkracht heeft er meestal maar
    één; op het digibord is er ooit een gekozen en die onthouden we. */
 function kiesGroep(){
+  var mijn = mijnKlassen();
   var onthouden = KB.beheerKlasId();
-  if (onthouden && KBSYNC.opServer(onthouden)) return onthouden;
-  var eerste = (ik.groepen || [])[0];
+  if (onthouden && mijn.some(function (k) { return k.id === onthouden; })) return onthouden;
+  var eerste = mijn[0];
   if (!eerste) return null;
-  var lokaal = KBSYNC.opLokaal(eerste.id);
-  if (lokaal) KB.zetBeheerKlas(lokaal);
-  return lokaal;
+  KB.zetBeheerKlas(eerste.id);
+  return eerste.id;
 }
 
 /* ── heen en weer ────────────────────────────────────────────────────── */
@@ -95,14 +132,23 @@ function stuurNu(){
   });
 }
 
+/* Zodra er iets is opgeslagen staat er iets klaar om te versturen. Dat
+   leggen we meteen vast, niet pas als het versturen mislukt. Anders zou
+   ophalen van de server een wijziging kunnen overschrijven die nog in de
+   wachtrij stond -- een kind dat net een hoek koos en meteen weer in de
+   rij belandt. */
 function planOpsturen(){
+  if (klasId) KBSYNC.markeerWachtend(klasId, true);
   clearTimeout(timer);
   timer = setTimeout(function () { stuurNu().catch(function () {}); }, WACHT_NA_OPSLAAN);
 }
 
 function haalOp(){
   if (bezig || !klasId || !groepId) return Promise.resolve();
-  // eerst wat hier klaarstaat wegbrengen; anders overschrijft de server het
+  // Eerst wat hier klaarstaat wegbrengen; anders overschrijft de server
+  // het. Dat geldt ook voor een wijziging die nog op zijn beurt wacht,
+  // dus zetten we een eventuele wachttijd meteen stop.
+  clearTimeout(timer);
   var eerst = KBSYNC.wachtErIetsOp(klasId) ? stuurNu().catch(function () {}) : Promise.resolve();
   return eerst.then(function () {
     return KBSYNC.haalBinnen(klasId, groepId).then(function () {
@@ -360,6 +406,7 @@ global.KBV = {
   collegas: collegas, ledenPerGroep: ledenPerGroep,
   koppelAanGroep: koppelAanGroep, ontkoppelVanGroep: ontkoppelVanGroep,
   wie: function () { return ik; },
+  mijnKlassen: mijnKlassen,
   groepId: function () { return groepId; },
   klasId: function () { return klasId; },
   opStand: function (fn) { luisteraars.push(fn); }
