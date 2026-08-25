@@ -52,6 +52,9 @@ function maakPicto(leerling, opties){
   opties = opties || {};
   var wrap = el('div', 'picto');
   wrap.dataset.leerlingId = leerling.id;
+  // de eigen kleur van het kind, zodat de gloed bij aanwijzen erbij past
+  wrap.style.setProperty('--kindkleur', leerling.kleur || '#3b6ff0');
+  wrap.title = leerling.naam || '';
 
   var rond = el('div', 'picto-rond');
   rond.style.background = leerling.kleur || '#3b6ff0';
@@ -750,6 +753,22 @@ $('knop-menu').addEventListener('click', function () {
     beheer.href = 'beheer.html';
     lijst.appendChild(beheer);
     blad.appendChild(lijst);
+
+    // Wie er op dit apparaat is ingelogd, en de weg naar buiten. Op een
+    // digibord log je zelden uit, dus het staat onderaan en niet in beeld.
+    var wie = window.KBV && KBV.wie();
+    if (wie && wie.profiel) {
+      var voet = el('div');
+      voet.style.cssText = 'margin-top:22px;padding-top:16px;border-top:1px solid var(--vlak-2)';
+      voet.appendChild(el('div', 'hint',
+        'Ingelogd als ' + (wie.profiel.naam || wie.profiel.email) +
+        (wie.school ? ' · ' + wie.school.naam : '')));
+      var uit = el('button', 'knop knop-stil', 'Uitloggen');
+      uit.style.marginTop = '10px';
+      uit.addEventListener('click', function () { sluitBlad(); KBV.afmelden(); });
+      voet.appendChild(uit);
+      blad.appendChild(voet);
+    }
   });
 });
 

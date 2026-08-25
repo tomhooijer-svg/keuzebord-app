@@ -216,8 +216,11 @@ panelen.vandaag = function (v){
   naarBord.href = 'bord.html';
   v.appendChild(kopregel('Vandaag', k.naam + ' · ' + KB.DAGEN_LANG[dag], naarBord));
 
+  // Zolang er geen server is, is een back-up het enige vangnet en zeuren we
+  // erom. Staat alles op de server, dan hoeft dat niet meer -- dan is een
+  // back-up nog wel handig, maar niet spannend.
   var backupStand = backupTekst();
-  if (backupStand.dringend) {
+  if (backupStand.dringend && !opServer()) {
     var waarschuwing = paneel();
     waarschuwing.style.borderLeft = '3px solid var(--let-op)';
     var kop = el('div', 'rij-naam', 'Maak even een back-up');
@@ -1301,19 +1304,34 @@ function backupTekst(){
   return { tekst:'Laatste back-up: ' + dagen + ' dagen geleden.', dringend: dagen >= 14 };
 }
 
+/* Is dit apparaat met de server verbonden? Dat verandert wat een back-up
+   betekent: op de server is hij een extra, zonder server is hij alles. */
+function opServer(){
+  return !!(window.KBV && window.SB && SB.ingelogd() && KBV.groepId());
+}
+
 function backupPaneel(){
   var p = paneel('Back-up');
   var stand = backupTekst();
-  var regel = el('p', 'hint', stand.tekst +
-    ' Alle gegevens staan nu in de browser van dit apparaat. Een back-up is je enige vangnet: ' +
-    'hij bevat de groepen, kinderen, planning, doelen, observaties en de foto\'s.');
-  p.appendChild(regel);
-  if (stand.dringend) {
-    var waarschuwing = el('div', 'signaal');
-    waarschuwing.appendChild(el('div', 'signaal-kop', 'Maak even een back-up'));
-    waarschuwing.appendChild(el('div', 'hint',
-      'Raakt dit apparaat kwijt of wordt de browser opgeschoond, dan is je werk weg.'));
-    p.appendChild(waarschuwing);
+  if (opServer()) {
+    p.appendChild(el('p', 'hint',
+      'Je werk staat op de server en gaat vanzelf mee naar je andere apparaten. ' +
+      'Een back-up hoeft dus niet, maar kan wel: je krijgt er een bestand mee in ' +
+      'handen dat je zelf bewaart, met de groepen, kinderen, planning, doelen, ' +
+      'observaties en de foto\'s. Handig voor het archief aan het eind van een jaar.'));
+    if (stand.tekst.indexOf('Laatste') === 0) p.appendChild(el('p', 'hint', stand.tekst));
+  } else {
+    p.appendChild(el('p', 'hint', stand.tekst +
+      ' Dit apparaat is niet met de server verbonden, dus alles staat in de browser. ' +
+      'Een back-up is dan je enige vangnet: hij bevat de groepen, kinderen, planning, ' +
+      'doelen, observaties en de foto\'s.'));
+    if (stand.dringend) {
+      var waarschuwing = el('div', 'signaal');
+      waarschuwing.appendChild(el('div', 'signaal-kop', 'Maak even een back-up'));
+      waarschuwing.appendChild(el('div', 'hint',
+        'Raakt dit apparaat kwijt of wordt de browser opgeschoond, dan is je werk weg.'));
+      p.appendChild(waarschuwing);
+    }
   }
   var rij = el('div', 'knoprij');
   rij.appendChild(knop('Back-up downloaden', 'primair', downloadBackup));
@@ -1398,7 +1416,29 @@ function functieRij(k, sleutel, naam, uitleg){
 }
 
 /* ── naar buiten, voor kb-plan.js ────────────────────────── */
+/* Onderin de zijbalk: wie er is ingelogd, met de weg naar buiten. Een
+   schoolbeheerder die hier via het schoolbeheer terechtkwam krijgt er de
+   weg terug bij. */
+function zetAccountknop(){
+  var vak = document.getElementById('zij-onder');
+  if (!vak || !window.KBV) return;
+  var oud = vak.querySelector('.account');
+  if (oud) oud.parentNode.removeChild(oud);
+
+  var wie = KBV.wie();
+  if (!wie || !wie.profiel) return;
+
+  var extra = [];
+  if (wie.profiel.rol === 'schoolbeheerder') {
+    extra.push({ tekst: 'Naar het schoolbeheer',
+                 doen: function () { location.href = 'school.html'; } });
+  }
+  var knop = KBV.maakAccountknop({ klasse: 'omhoog', extra: extra });
+  if (knop) vak.insertBefore(knop, vak.firstChild);
+}
+
 global.BH = {
+  zetAccountknop: zetAccountknop,
   $:$, el:el, leeg:leeg, meld:meld, bewaarOfKlaag:bewaarOfKlaag,
   toonBlad:toonBlad, sluitBlad:sluitBlad, vraagBevestiging:vraagBevestiging, bladTitel:bladTitel,
   paneel:paneel, knop:knop, schakelaar:schakelaar, teller:teller,
@@ -1418,6 +1458,7 @@ global.BH = {
       .then(function () {
         var gekozen = KB.beheerKlasId();
         if (gekozen) KB.G.activeKlasId = gekozen;
+        zetAccountknop();
         return KB.fkLees();
       })
       .then(function (m) { if (m) KB.fkPasToe(m); })

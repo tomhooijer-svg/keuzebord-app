@@ -62,10 +62,20 @@ function pakUit(zip, item){
 
   if (item.methode === 0) return Promise.resolve(ruw.slice());
   if (item.methode !== 8) return Promise.reject(new Error('onbekende compressie in het bestand'));
-  if (!global.DecompressionStream) {
-    return Promise.reject(new Error('deze browser kan het bestand niet uitpakken'));
+  // Een .docx is een zip. Uitpakken kan de browser zelf, maar niet elke
+  // browser kende dat al: Chrome en Edge sinds 2022, Safari sinds 16.4 en
+  // Firefox sinds versie 113. Op een oudere zeggen we netjes wat er aan de
+  // hand is in plaats van een onbegrijpelijke fout.
+  var uitpakker;
+  try {
+    if (!global.DecompressionStream) throw new Error('geen DecompressionStream');
+    uitpakker = new DecompressionStream('deflate-raw');
+  } catch (e) {
+    return Promise.reject(new Error(
+      'Deze browser kan een Word-bestand niet uitpakken. Het lukt wel in een ' +
+      'recente Chrome, Edge, Firefox of Safari — of voeg de kinderen met de hand toe.'));
   }
-  var stroom = new Blob([ruw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  var stroom = new Blob([ruw]).stream().pipeThrough(uitpakker);
   return new Response(stroom).arrayBuffer().then(function (b) { return new Uint8Array(b); });
 }
 

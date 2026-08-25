@@ -65,3 +65,24 @@ ziet alle zes de groepen, opent het bord van een groep die niet van hem is
 en ziet daar de kinderen van de juf, opent het beheer van weer een andere
 groep, hangt de juf aan een tweede groep waarna die ook bij haar opduikt,
 en een leerkracht die zelf iemand probeert toe te wijzen wordt geweigerd.
+
+## Accounts
+
+`test/accounts.test.js` gaat de hele weg langs die een nieuwe collega
+aflegt: de beheerder ziet zijn eigen naam staan, nodigt iemand uit op haar
+e-mailadres met een groep erbij, en die uitnodiging verschijnt in de lijst.
+Zij meldt zich aan en komt binnen bij precies die groep, met haar naam en
+rol onderin het scherm. De uitnodiging verdwijnt uit de lijst en zij staat
+tussen de accounts. Daarna uitloggen, als iemand anders inloggen, en
+controleren dat het bordmenu ook een uitlogknop heeft.
+
+## Browsers
+
+`test/browsers.test.js` opent het bord en loopt achttien dingen af die deze
+app van een browser vraagt.
+
+Let op wat dit wel en niet zegt. Het draait in Chromium, en dat is de motor
+van zowel Chrome als Edge -- die twee zijn daarmee gedekt. **Firefox en
+Safari zijn hier niet te installeren**, dus die zijn niet nagelopen. Draai
+daarvoor `testbord.html` op zo'n browser en druk op "Wat kan dit bord?":
+daar staat dezelfde lijst, met de naam van de browser erboven.

@@ -45,8 +45,6 @@
 
 /* ── inhoud ───────────────────────────────────────────── */
 .inhoud{ flex-grow: 1; padding: 34px 38px 72px; min-width: 0; max-width: 1180px; }
-.kopregel{ display: flex; align-items: flex-start; justify-content: space-between;
-           gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
 .titel{ font-size: 1.62rem; font-weight: 600; letter-spacing: -.028em; }
 .ondertitel{ font-size: .92rem; color: var(--inkt-3); margin-top: 4px; }
 
@@ -90,10 +88,6 @@
 .teller button{ width: 34px; height: 34px; border-radius: 50%; background: var(--vlak-2); font-size: 1.1rem; font-weight: 600; }
 .teller .w{ min-width: 42px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-.chips{ display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.chip{ font-size: .82rem; font-weight: 600; padding: 7px 14px; border-radius: var(--rond-vol);
-       background: var(--vlak-2); color: var(--inkt-2); }
-.chip.aan{ background: var(--accent); color: #fff; }
 
 .doelrij{ display: flex; gap: 10px; align-items: flex-start; padding: 8px 11px; border-radius: var(--rond-s);
           cursor: pointer; font-size: .87rem; line-height: 1.45; border: 1.5px solid transparent; }
@@ -124,7 +118,6 @@
 /* ── nieuwe onderdelen ───────────────────────────────────── */
 .zij-scheiding{ height:1px; background:var(--lijn); margin:8px 10px; }
 .knoprij{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
-.kopregel .knoprij{ margin-top:0; }
 .stip{ width:11px; height:11px; border-radius:50%; flex:none; }
 .merkje{ font-size:.68rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
          background:var(--accent-zacht); color:var(--accent); padding:2px 8px;
@@ -280,7 +273,7 @@
       <div class="s">Beheer</div>
     </div>
     <div class="zij-menu" id="zij-menu"></div>
-    <div class="zij-onder">
+    <div class="zij-onder" id="zij-onder">
       <a class="zij-link" href="bord.html">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 l-7 7 7 7"></path></svg>
         Terug naar het bord

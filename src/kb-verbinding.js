@@ -197,7 +197,101 @@ function naarGroep(nieuwKlasId){
 }
 
 function afmelden(){
-  return SB.afmelden().then(function () { location.href = 'inloggen.html'; });
+  // Wat nog niet weg is proberen we eerst nog te versturen -- anders raakt
+  // het werk van vanmiddag kwijt aan een klik op uitloggen.
+  var eerst = (klasId && KBSYNC.wachtErIetsOp(klasId))
+    ? stuurNu().catch(function () {}) : Promise.resolve();
+  return eerst.then(function () {
+    return SB.afmelden();
+  }).then(function () {
+    // De groepen van deze persoon horen niet op het scherm van de
+    // volgende. Wat er nog niet weg was blijft in de opslag staan, dus we
+    // gooien niets weg -- we halen het alleen uit beeld.
+    try {
+      localStorage.removeItem('kb_beheer_klas');
+    } catch (e) {}
+    location.href = 'inloggen.html';
+  });
+}
+
+/* ── het naamplaatje met uitloggen ────────────────────────────────────
+   Elk scherm laat zien wie er is ingelogd en biedt de weg naar buiten.
+   Dat is één stukje, hier, zodat het overal hetzelfde werkt en er niet
+   drie versies van rondzwerven. */
+
+function maakAccountknop(opties){
+  opties = opties || {};
+  if (!ik || !ik.profiel) return null;
+
+  var naam = ik.profiel.naam || ik.profiel.email || 'ingelogd';
+  var rol  = ik.profiel.rol === 'schoolbeheerder' ? 'Schoolbeheerder' : 'Leerkracht';
+
+  var doos = document.createElement('div');
+  doos.className = 'account' + (opties.klasse ? ' ' + opties.klasse : '');
+
+  var knop = document.createElement('button');
+  knop.className = 'account-knop';
+  knop.type = 'button';
+  knop.setAttribute('aria-haspopup', 'true');
+  knop.setAttribute('aria-expanded', 'false');
+
+  var bol = document.createElement('span');
+  bol.className = 'account-bol';
+  bol.textContent = (naam.charAt(0) || '?').toUpperCase();
+  knop.appendChild(bol);
+
+  var tekst = document.createElement('span');
+  tekst.className = 'account-tekst';
+  var r1 = document.createElement('span'); r1.className = 'account-naam'; r1.textContent = naam;
+  var r2 = document.createElement('span'); r2.className = 'account-rol';  r2.textContent = rol;
+  tekst.appendChild(r1); tekst.appendChild(r2);
+  knop.appendChild(tekst);
+  doos.appendChild(knop);
+
+  var menu = document.createElement('div');
+  menu.className = 'account-menu';
+
+  var kop = document.createElement('div');
+  kop.className = 'account-menukop';
+  kop.textContent = ik.profiel.email + (ik.school ? ' · ' + ik.school.naam : '');
+  menu.appendChild(kop);
+
+  (opties.extra || []).forEach(function (item) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = item.tekst;
+    b.addEventListener('click', function () { dicht(); item.doen(); });
+    menu.appendChild(b);
+  });
+
+  var wissel = document.createElement('button');
+  wissel.type = 'button';
+  wissel.textContent = 'Wisselen van account';
+  wissel.addEventListener('click', function () { dicht(); afmelden(); });
+  menu.appendChild(wissel);
+
+  var uit = document.createElement('button');
+  uit.type = 'button'; uit.className = 'uitloggen';
+  uit.textContent = 'Uitloggen';
+  uit.addEventListener('click', function () { dicht(); afmelden(); });
+  menu.appendChild(uit);
+
+  doos.appendChild(menu);
+
+  function open(){ doos.classList.add('open'); knop.setAttribute('aria-expanded', 'true'); }
+  function dicht(){ doos.classList.remove('open'); knop.setAttribute('aria-expanded', 'false'); }
+
+  knop.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (doos.classList.contains('open')) dicht(); else open();
+  });
+  document.addEventListener('click', function (e) {
+    if (!doos.contains(e.target)) dicht();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') dicht();
+  });
+
+  return doos;
 }
 
 /* ── wie mag bij welke groep ──────────────────────────────────────────
@@ -248,6 +342,7 @@ global.KBV = {
   haalOp: haalOp,
   naarGroep: naarGroep,
   afmelden: afmelden,
+  maakAccountknop: maakAccountknop,
   collegas: collegas, ledenPerGroep: ledenPerGroep,
   koppelAanGroep: koppelAanGroep, ontkoppelVanGroep: ontkoppelVanGroep,
   wie: function () { return ik; },

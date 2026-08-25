@@ -66,16 +66,18 @@ async function inloggen(p, email, waarheen){
   // ── het paneel met leerkrachten ──
   const mensen = await baas.evaluate(() => {
     const p = [...document.querySelectorAll('.paneel')]
-      .filter(x => (x.querySelector('.paneelkop')||{}).textContent === 'Leerkrachten')[0];
+      .filter(x => (x.querySelector('.paneelkop')||{}).textContent === 'Accounts')[0];
     if (!p) return null;
-    return { rijen: [...p.querySelectorAll('.ledenrij')].map(r => r.textContent),
-             hint: (p.querySelector('.hint')||{}).textContent || '' };
+    return { rijen: [...p.querySelectorAll('.ledenrij')].map(r => r.textContent) };
   });
-  zeg('er is een overzicht per leerkracht', !!mensen && mensen.rijen.length === 1,
-      mensen ? mensen.rijen.join(' / ') : 'geen paneel');
-  zeg('en de beheerder staat erbij als iemand die bij alle groepen mag',
-      !!mensen && /Schoolbeheerder:.*mag bij alle groepen/.test(mensen.hint),
-      mensen ? mensen.hint.slice(0,70) : '');
+  zeg('er is een overzicht van de accounts', !!mensen && mensen.rijen.length >= 2,
+      mensen ? mensen.rijen.join(' / ').slice(0,80) : 'geen paneel');
+  zeg('met de juf en haar groep erbij',
+      !!mensen && mensen.rijen.some(r => /juf@mijnschool\.nl/.test(r) && /Groep 1A/.test(r)),
+      mensen ? (mensen.rijen.filter(r => /juf@/.test(r))[0] || '').slice(0,60) : '');
+  zeg('en de beheerder als iemand die bij alle groepen mag',
+      !!mensen && mensen.rijen.some(r => /mag bij alle groepen/.test(r)),
+      mensen ? (mensen.rijen.filter(r => /alle groepen/.test(r))[0] || '').slice(0,60) : '');
 
   // ── een tweede groep toewijzen aan dezelfde juf ──
   const toegewezen = await baas.evaluate(async () => {

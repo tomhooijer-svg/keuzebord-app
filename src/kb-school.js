@@ -103,9 +103,11 @@ function maakSchoolgroepen(metTestkinderen){
 /* ── tekenen ─────────────────────────────────────────────── */
 /* Wat we van de server weten over wie waar bij mag. Wordt bij het openen
    opgehaald en na elke wijziging bijgewerkt. */
-var alleCollegas  = [];
-var perProfiel    = {};
-var ledenVanGroep = {};
+var alleCollegas       = [];
+var perProfiel         = {};
+var ledenVanGroep      = {};
+var openUitnodigingen  = [];
+var naamVanGroep       = {};
 
 function metServer(){
   return !!(window.KBV && window.SB && window.KBSYNC && SB.ingelogd());
@@ -113,11 +115,24 @@ function metServer(){
 
 function haalMensen(){
   if (!metServer()) return Promise.resolve();
-  return Promise.all([KBV.collegas(), KBV.ledenPerGroep()]).then(function (uit) {
+  return Promise.all([
+    KBV.collegas(),
+    KBV.ledenPerGroep(),
+    // alleen wat nog openstaat: een verzilverde uitnodiging is een account
+    SB.lees('uitnodigingen', { kies:'id,email,rol,groep_id',
+                               waar:{ verzilverd:'is.null' }, volgorde:'email' })
+      .catch(function () { return []; })
+  ]).then(function (uit) {
     alleCollegas = uit[0] || [];
     perProfiel = {};
     alleCollegas.forEach(function (p) { perProfiel[p.id] = p; });
     ledenVanGroep = uit[1] || {};
+    openUitnodigingen = uit[2] || [];
+    naamVanGroep = {};
+    KB.G.klassen.forEach(function (k) {
+      var sid = KBSYNC.opServer(k.id);
+      if (sid) naamVanGroep[sid] = k.naam;
+    });
   }, function () { /* zonder verbinding tonen we het gewoon niet */ });
 }
 
@@ -134,6 +149,10 @@ function teken(){
     var a = el('a', 'knop knop-primair knop-klein', 'Naar het groepsbeheer');
     a.href = 'beheer.html'; return a;
   })());
+  if (metServer()) {
+    var plaat = KBV.maakAccountknop({});
+    if (plaat) acties.appendChild(plaat);
+  }
 
   var klassen = KB.G.klassen;
 
@@ -361,13 +380,16 @@ function toonLeden(k){
    oogopslag te zien wie er nog nergens bij hoort. */
 function mensenPaneel(){
   var p = el('div', 'paneel');
-  p.appendChild(el('div', 'paneelkop', 'Leerkrachten'));
-
-  var naamVanGroep = {};
-  KB.G.klassen.forEach(function (k) {
-    var sid = KBSYNC.opServer(k.id);
-    if (sid) naamVanGroep[sid] = k.naam;
-  });
+  var kop = el('div', 'kopregel');
+  kop.appendChild(el('div', 'paneelkop', 'Accounts'));
+  var kopknoppen = el('div', 'knoprij');
+  kopknoppen.appendChild(knop('Iemand uitnodigen', 'primair', function () { toonUitnodigen(); }));
+  kop.appendChild(kopknoppen);
+  p.appendChild(kop);
+  p.appendChild(el('p', 'hint',
+    'Een account maak je niet hier, maar door iemand uit te nodigen op haar ' +
+    'e-mailadres. Zodra zij naar de site gaat en op "Er een maken" klikt met datzelfde ' +
+    'adres, staat ze meteen bij de goede school en groep.'));
 
   var leerkrachten = alleCollegas.filter(function (x) { return x.rol === 'leerkracht'; });
   if (!leerkrachten.length) {
@@ -395,13 +417,121 @@ function mensenPaneel(){
   });
 
   var beheerders = alleCollegas.filter(function (x) { return x.rol === 'schoolbeheerder'; });
-  if (beheerders.length) {
-    p.appendChild(el('p', 'hint',
-      'Schoolbeheerder: ' + beheerders.map(function (x) { return x.naam || x.email; }).join(', ') +
-      ' — die mag bij alle groepen.'));
+  beheerders.forEach(function (mens) {
+    var rij = el('div', 'ledenrij');
+    var links = el('div');
+    links.appendChild(el('div', 'ledennaam', mens.naam || mens.email));
+    links.appendChild(el('div', 'ledenmail', 'schoolbeheerder — mag bij alle groepen'));
+    rij.appendChild(links);
+    p.appendChild(rij);
+  });
+
+  if (openUitnodigingen.length) {
+    p.appendChild(el('div', 'restvak-kop', 'Nog niet aangemeld'));
+    openUitnodigingen.forEach(function (u) {
+      var rij = el('div', 'ledenrij wacht');
+      var links = el('div');
+      links.appendChild(el('div', 'ledennaam', u.email));
+      links.appendChild(el('div', 'ledenmail',
+        (u.rol === 'schoolbeheerder' ? 'schoolbeheerder' : 'leerkracht') +
+        (u.groep_id && naamVanGroep[u.groep_id] ? ' · ' + naamVanGroep[u.groep_id] : '') +
+        ' — wacht tot zij een account maakt'));
+      rij.appendChild(links);
+      rij.appendChild(knop('Intrekken', 'gevaar', function () {
+        SB.wis('uitnodigingen', { id:'eq.' + u.id }).then(haalMensen).then(function () {
+          teken(); meld('Uitnodiging voor ' + u.email + ' ingetrokken');
+        }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+      }));
+      p.appendChild(rij);
+    });
   }
   return p;
 }
+
+/* ── iemand uitnodigen ────────────────────────────────────────────────
+   Een account aanmaken kan alleen de persoon zelf, met haar eigen
+   wachtwoord. Wat wij hier doen is de plek klaarzetten: e-mailadres, rol
+   en eventueel een groep. Zodra zij zich aanmeldt valt alles op zijn
+   plaats. */
+
+function toonUitnodigen(concept){
+  concept = concept || { email:'', rol:'leerkracht', groepId:'' };
+  toonBlad(function (blad) {
+    blad.appendChild(el('h3', 'titel', 'Iemand uitnodigen'));
+    blad.appendChild(el('p', 'hint',
+      'Vul het e-mailadres in waarmee zij een account gaat maken. Ze krijgt van ons ' +
+      'geen mailtje — geef haar zelf even het adres van de site door.'));
+
+    var veld = el('div', 'veldrij');
+    veld.appendChild(el('label', 'veldlabel', 'E-mailadres'));
+    var invoer = el('input', 'invoer');
+    invoer.type = 'email'; invoer.placeholder = 'juf.marieke@school.nl';
+    invoer.autocapitalize = 'off'; invoer.spellcheck = false;
+    invoer.value = concept.email;
+    invoer.addEventListener('input', function () { concept.email = invoer.value; });
+    veld.appendChild(invoer);
+    blad.appendChild(veld);
+
+    var rolrij = el('div', 'veldrij');
+    rolrij.appendChild(el('label', 'veldlabel', 'Wat mag zij?'));
+    var chips = el('div', 'knoprij');
+    [['leerkracht', 'Leerkracht — alleen haar eigen groepen'],
+     ['schoolbeheerder', 'Schoolbeheerder — alles']].forEach(function (paar) {
+      var c = el('button', 'chip' + (concept.rol === paar[0] ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () {
+        concept.rol = paar[0]; sluitBlad(); toonUitnodigen(concept);
+      });
+      chips.appendChild(c);
+    });
+    rolrij.appendChild(chips);
+    blad.appendChild(rolrij);
+
+    if (concept.rol === 'leerkracht') {
+      var grij = el('div', 'veldrij');
+      grij.appendChild(el('label', 'veldlabel', 'Meteen bij welke groep? (mag ook later)'));
+      var gchips = el('div', 'knoprij');
+      var geen = el('button', 'chip' + (concept.groepId ? '' : ' aan'), 'Nog geen');
+      geen.addEventListener('click', function () {
+        concept.groepId = ''; sluitBlad(); toonUitnodigen(concept);
+      });
+      gchips.appendChild(geen);
+      KB.G.klassen.forEach(function (k) {
+        var sid = KBSYNC.opServer(k.id);
+        if (!sid) return;
+        var c = el('button', 'chip' + (concept.groepId === sid ? ' aan' : ''), k.naam);
+        c.addEventListener('click', function () {
+          concept.groepId = sid; sluitBlad(); toonUitnodigen(concept);
+        });
+        gchips.appendChild(c);
+      });
+      grij.appendChild(gchips);
+      blad.appendChild(grij);
+    }
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    rij.appendChild(knop('Uitnodigen', 'primair', function () {
+      var email = (concept.email || '').trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        meld('Dat lijkt geen geldig e-mailadres'); return;
+      }
+      var rijGegevens = { school_id: KBV.wie().profiel.school_id, email: email, rol: concept.rol };
+      if (concept.rol === 'leerkracht' && concept.groepId) rijGegevens.groep_id = concept.groepId;
+      SB.schrijf('uitnodigingen', [rijGegevens]).then(haalMensen).then(function () {
+        sluitBlad(); teken();
+        meld(email + ' is uitgenodigd. Geef haar het adres van de site door.');
+      }, function (e) {
+        meld(/duplicate|unique/i.test(e && e.message || '')
+          ? 'Voor dat adres staat al een uitnodiging klaar.'
+          : 'Dat lukte niet: ' + (e && e.message));
+      });
+    }));
+    blad.appendChild(rij);
+    setTimeout(function () { invoer.focus(); }, 60);
+  });
+}
+
+
 
 KB.laad();
 KB.doelenLaad();

@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="src/kb-stijl.css">
 <style>
 /* het testbord gebruikt exact dezelfde stijl als het echte bord */
+.uitleg{ font-size:13px; color:var(--inkt-3); margin:-6px 0 18px; }
 </style>
 <style>
 /* ── het bord ─────────────────────────────────────────── */
@@ -184,6 +185,7 @@ body.bord{
   background: rgba(20,28,44,.9); color: #e7eaf2; border-radius: 16px;
   padding: 14px 16px; font: 500 12px/1.5 var(--letter);
   box-shadow: 0 10px 30px rgba(20,28,44,.3); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 #meter h2{ font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
            color: #8a94a6; margin: 0 0 10px; font-weight: 600; }
@@ -410,6 +412,20 @@ body.bord{
     return m ? parseInt(m[1], 10) : null;
   }
 
+  /* Welke browser is dit eigenlijk? De volgorde telt: Edge en Chrome
+     noemen zich allebei ook Chrome, en Safari staat in bijna elke
+     gebruikersnaam. */
+  function browserNaam(){
+    var u = navigator.userAgent;
+    var m;
+    if ((m = u.match(/Edg\/(\d+)/)))                 return 'Edge ' + m[1];
+    if ((m = u.match(/OPR\/(\d+)/)))                 return 'Opera ' + m[1];
+    if ((m = u.match(/Firefox\/(\d+)/)))             return 'Firefox ' + m[1];
+    if ((m = u.match(/Chrom(?:e|ium)\/(\d+)/)))      return 'Chrome ' + m[1];
+    if (/Safari/.test(u) && (m = u.match(/Version\/(\d+\.\d+)/))) return 'Safari ' + m[1];
+    return 'onbekende browser';
+  }
+
   function verzamel(){
     var v = chromeVersie();
     return {
@@ -442,10 +458,19 @@ body.bord{
          'Alleen nodig in het beheer, niet op het bord zelf.'],
         ['Versleutelde back-up', !!(window.crypto && crypto.subtle && window.isSecureContext),
          'Vraagt een https-adres. Zonder dit kan een back-up wel, maar niet met wachtwoord.'],
-        ['Wazige achtergrond', kanCss('backdrop-filter', 'blur(4px)'),
-         'Puur mooi. Zonder dit zijn de schermpjes gewoon effen.']
+        ['Wazige achtergrond',
+         kanCss('backdrop-filter', 'blur(4px)') || kanCss('-webkit-backdrop-filter', 'blur(4px)'),
+         'Puur mooi. Zonder dit zijn de schermpjes gewoon effen.'],
+        ['Word-bestand echt uitpakken', (function(){ try {
+           new DecompressionStream('deflate-raw'); return true; } catch(e){ return false; } })(),
+         'Nodig om kinderen en picto\'s uit een Word-bestand te halen.'],
+        ['Muis herkennen', window.matchMedia('(hover: hover)').media !== 'not all',
+         'Hiermee licht een picto op als je erover gaat met de muis. Op een aanraakscherm hoeft dat niet.'],
+        ['Verbinding met de server', !!window.fetch && window.isSecureContext,
+         'Nodig om in te loggen en te synchroniseren. Vraagt een https-adres.']
       ],
-      versie: v
+      versie: v,
+      browser: browserNaam()
     };
   }
 
@@ -461,6 +486,12 @@ body.bord{
     var titel = document.createElement('h2');
     titel.textContent = 'Wat kan dit bord?';
     blad.appendChild(titel);
+
+    var welke = document.createElement('p');
+    welke.className = 'uitleg';
+    welke.textContent = 'Deze browser: ' + g.browser + ' · ' +
+      (vingers >= 2 ? vingers + ' vingers tegelijk' : 'geen aanraakscherm gevonden');
+    blad.appendChild(welke);
     var sub = document.createElement('div');
     sub.className = 'kop-sub';
     sub.textContent = 'Zo kunnen we zien of dit digibord de app aankan, zonder te gokken.';
