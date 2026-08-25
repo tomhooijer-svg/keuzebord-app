@@ -8,15 +8,21 @@ zijn dus niet nagespeeld maar echt -- dezelfde regels die straks op de
 server staan.
 
 ```sh
-# een keer opzetten
-createdb kb
-psql -d kb -f supabase/test-01-nepsupabase.sql
-psql -d kb -f supabase/schema.sql
-
-# draaien
-node test/nep-supabase-server.js &      # luistert op 5455
-python3 -m http.server 8899 &           # de app zelf
+sh test/opzetten.sh        # database, nabootsing (5455) en webserver (8899)
+sh test/proefschool.sh     # twee accounts en de zes groepen
 node test/inloggen.test.js
+```
+
+`opzetten.sh` maakt de database elke keer opnieuw leeg, dus `proefschool.sh`
+hoort er meteen achteraan: die maakt `beheerder@mijnschool.nl` en
+`juf@mijnschool.nl` aan (wachtwoord `proefproef`) en draait `inrichten.sql`.
+Zonder die stap is er niets om mee in te loggen en valt elke proef om op
+"KB is not defined".
+
+Alles achter elkaar, elke proef op een verse database:
+
+```sh
+sh test/alles.sh           # of: sh test/alles.sh doelen verslag
 ```
 
 De test loopt vijftien dingen langs: registreren, een school beginnen,
@@ -48,14 +54,6 @@ met het goede aantal plekken, de zes kinderen die nog moeten kiezen, en de
 timer die zij aanzette. Een kind kiest de bouwhoek, en dat ziet de juf op
 haar laptop. Tot slot logt de beheerder in en ziet alle zes de groepen.
 
-Draai eerst `inrichten.sql` en maak de twee accounts aan, anders is er
-niets om mee in te loggen:
-
-```sh
-sh test/opzetten.sh
-psql -h /var/tmp -p 5439 -U postgres -d kb -f supabase/inrichten.sql
-node test/keten.test.js
-```
 
 ## De schoolbeheerder
 
@@ -105,6 +103,22 @@ open: bladeren via domein en leerlijn, zoeken op een woord, en suggesties
 uit wat je hebt opgeschreven. Typ "de kinderen knippen een blad uit" en
 "Experimenteren met knippen" staat er als suggestie onder.
 
+## Werkmomenten en de verdeling
+
+`test/werkmomenten.test.js` gaat over de week zoals hij op school loopt:
+twee werkmomenten op maandag, dinsdag en donderdag, één op woensdag en
+vrijdag. De proef kijkt of het automatisch verdelen daar rekening mee
+houdt, of je die aantallen zelf kunt bijstellen, of de tweede ronde in het
+grijs achter de eerste verschijnt zodra een kind zijn plaatje weghaalt, en
+of alles ook weer uit te zetten is.
+
+## Statistieken
+
+`test/statistiek.test.js` zet een week aan gebeurtenissen klaar en telt na:
+hoe vaak een kind koos en welke hoek zijn favoriet is, welk tweetal het
+meest samen zat, wie niemand tegenkwam, wie helemaal niets koos, en of dat
+alles ook op het scherm terechtkomt.
+
 ## Alles één keer langs
 
 `test/doorloop.test.js` opent elk scherm en elk paneel één keer, en let
@@ -116,3 +130,26 @@ Drieëntwintig punten: de drie onderdelen van het schoolbeheer, alle elf
 panelen van het groepsbeheer, het bord met een kind dat een hoek kiest, het
 bordmenu, het testbord, en tot slot dezelfde ronde als leerkracht om te
 zien dat zij alleen haar eigen groep krijgt en meteen op het bord uitkomt.
+
+## Het verslag voor het oudergesprek
+
+`test/verslag.test.js` gaat na of er uit de observaties een blaadje komt
+dat je aan een ouder kunt meegeven. Eenendertig dingen: welke doelen als
+behaald en welke als "bezig" op het blad komen (ook een taak waar geen doel
+aan hangt), dat "waar we nog aan gaan werken" alleen pakt wat nog open
+staat, dat de hoeken op volgorde van vaak naar minder vaak staan met het
+speelmaatje en de minuten erbij, dat elk kind zijn eigen blad krijgt, dat
+de stukken die je uitzet er ook echt uit gaan, dat een naam met een `<`
+erin veilig door de opmaak komt, en dat een kind dat nog niets koos een
+nette zin krijgt in plaats van een lege lijst.
+
+Onderweg gaat alles ook één keer naar de server en terug. Dat is geen
+bijvangst: een taak zonder doel staat in de beoordelingen als
+`<kind>|taak:<taak>`, en dat is geen uuid. Zonder de vertaling naar een
+observatie zonder `doel_id` viel de hele push om.
+
+Daarna de weg ernaartoe: de knop in Observaties opent het venster met alle
+kinderen aangevinkt, "Niemand" vinkt ze uit, en bij een kind in
+Statistieken staat een knop die alleen dát kind aanvinkt. Afdrukken zelf
+gebeurt in een verborgen kader dat zichzelf daarna opruimt -- de proef
+kijkt of het blad erin staat en op A4 gezet is.

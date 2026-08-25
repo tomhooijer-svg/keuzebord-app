@@ -33,7 +33,7 @@ async function metSB(p){
   await p.fill('#naam','Tom Hooijer');
   await p.fill('#email','tom2@school.nl');
   await p.fill('#ww','eenwachtwoord');
-  await p.screenshot({ path:'inlog-1.png' });
+  await p.screenshot({ path:'/tmp/inlog-1.png' });
   await p.click('#verstuur');
   await p.waitForURL(/school\.html/, { timeout: 9000 }).catch(()=>{});
   zeg('nieuw account komt bij het schoolbeheer uit', /school\.html/.test(p.url()), p.url().split('/').pop());
@@ -87,7 +87,7 @@ async function metSB(p){
   await r.waitForTimeout(900);
   const fout = await r.textContent('#melder');
   zeg('verkeerd wachtwoord geeft nette uitleg', /klopt niet/.test(fout||''), (fout||'').slice(0,50));
-  await r.screenshot({ path:'inlog-fout.png' });
+  await r.screenshot({ path:'/tmp/inlog-fout.png' });
 
   // ── 4. daarna wel goed, en de sessie blijft staan ──
   await r.fill('#ww','ookwachtwoord');

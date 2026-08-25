@@ -11,11 +11,6 @@
 <link rel="stylesheet" href="src/kb-stijl.css">
 <style>
 body{ background: var(--vlak-2); }
-body.wrap{ max-width:1080px; margin:0 auto; padding:34px 24px 70px; }
-.top{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px;
-      flex-wrap:wrap; margin-bottom:26px; }
-.top h1{ font-size:1.7rem; font-weight:600; letter-spacing:-.025em; margin:0 0 4px; }
-.top .sub{ font-size:.95rem; color:var(--inkt-3); }
 .knoprij{ display:flex; gap:10px; flex-wrap:wrap; }
 
 .groepen{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
@@ -27,9 +22,6 @@ body.wrap{ max-width:1080px; margin:0 auto; padding:34px 24px 70px; }
 .groepkaart-naam{ font-size:1.15rem; font-weight:600; letter-spacing:-.015em; }
 .ditlabel{ font-size:.68rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
            color:var(--accent); background:var(--accent-zacht); padding:2px 8px; border-radius:var(--rond-vol); }
-.cijfers{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-.cijfer .n{ font-size:1.3rem; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.1; }
-.cijfer .l{ font-size:.72rem; color:var(--inkt-3); }
 /* Voortgangsbalkje op een groepskaart. Bewust NIET '.balk': zo heet de
    bovenbalk van het bord al, en niet '.voortgang': zo heet de ring om een
    picto al. In de voorvertoning staan alle stijlen samen op één pagina,
@@ -92,6 +84,7 @@ body.wrap{ max-width:1080px; margin:0 auto; padding:34px 24px 70px; }
 <script src="src/kb-media.js"></script>
 <script src="src/kb-sync.js"></script>
 <script src="src/kb-verbinding.js"></script>
+<script src="src/kb-statistiek.js"></script>
 <script src="src/kb-doelzoeker.js"></script>
 <script src="src/kb-school.js"></script>
 </body>

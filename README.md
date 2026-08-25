@@ -37,19 +37,23 @@ adres van je site in te vullen, anders weigert het inloggen.
 - `src/kb-sync.js` — heen en weer: wat verschilt met de vorige keer gaat mee
 - `src/kb-media.js` — de foto's, naar de opslag en terug
 - `src/kb-verbinding.js` — de lijm: elk scherm begint hiermee
+- `src/kb-statistiek.js` — wie kiest wat, en wie speelt met wie
+- `src/kb-verslag.js` — een blad per kind voor het oudergesprek, af te
+  drukken of te bewaren als PDF
 
 Het bord blijft werken als de verbinding wegvalt. Een klas wacht niet.
 
 ## Zelf nakijken
 
 In `test/` staat een nabootsing van Supabase — een servertje met daarachter
-een gewone Postgres waarin het echte schema draait — plus vijf reeksen die
-de app in een browser bedienen. Zie `test/LEESMIJ.md`.
+een gewone Postgres waarin het echte schema draait — plus een reeks proeven
+die de app in een browser bedienen. Zie `test/LEESMIJ.md`.
 
 ```sh
 npm install
-sh test/opzetten.sh
-npm test
+sh test/opzetten.sh      # database, nabootsing en webserver
+sh test/proefschool.sh   # twee accounts en zes groepen om mee te proeven
+sh test/alles.sh         # alle proeven, elk op een verse database
 ```
 
 ## Wat er niet in staat

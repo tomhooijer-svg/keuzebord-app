@@ -247,6 +247,9 @@ create table if not exists public.taak_toewijzing (
   weekplan_taak_id uuid not null references public.weekplan_taken(id) on delete cascade,
   leerling_id      uuid not null references public.leerlingen(id) on delete cascade,
   dag              int check (dag between 1 and 7),   -- null = deze week, dag vrij
+  -- op welke dag dit kind al in de werkplaats is geweest; daarna schuift
+  -- het volgende werkmoment op het bord naar voren
+  geweest          date,
   stand            text not null default 'nog'
                      check (stand in ('nog','bezig','behaald')),
   bijgewerkt       timestamptz not null default now(),
@@ -295,6 +298,7 @@ alter table public.taken  add column if not exists plekken int not null default 
 alter table public.taken  add column if not exists kleur   text;
 alter table public.borden add column if not exists volgorde int not null default 0;
 alter table public.borden add column if not exists stand   jsonb not null default '{}'::jsonb;
+alter table public.taak_toewijzing add column if not exists geweest date;
 
 do $$
 begin
@@ -317,6 +321,19 @@ end $$;
 
 create unique index if not exists weekplan_per_maandag
   on public.weekplannen (groep_id, maandag);
+
+-- Aan een taak hoeft geen doel te hangen; die beoordeel je dan als taak.
+-- Zo'n observatie heeft geen doel_id, dus de index hierboven op
+-- (leerling_id, doel_id) vangt hem niet. Ook daarvan één stand per kind.
+-- Staan er in een oudere database al dubbele rijen, dan lukt het aanmaken
+-- niet -- dat mag de rest van dit bestand niet tegenhouden.
+do $$
+begin
+  create unique index if not exists een_stand_per_taak
+    on public.observaties (leerling_id, taak_id) where doel_id is null;
+exception when others then
+  raise notice 'Index een_stand_per_taak niet aangemaakt: %', sqlerrm;
+end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Wie mag wat

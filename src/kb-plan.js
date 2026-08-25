@@ -718,25 +718,55 @@ function tekenWeekTaak(wt, k){
   kop.appendChild(acties);
   p.appendChild(kop);
 
+  var plekken = (t && t.plekken) || KB.WERKPLAATS_PLEKKEN;
+  var metMomenten = KB.instelling('werkmomentenAan', k);
+  var momenten = KB.werkmomenten(k);
+
   var rooster = el('div', 'weekrooster');
   KB.DAGEN_KORT.forEach(function (dag) {
     var kolom = el('div', 'weekdag');
+    var ruimte = KB.dagRuimte(dag, plekken, k);
+    var lijst = wt.verdeling[dag] || [];
+    var aantal = lijst.length;
+
     var dagKop = el('div', 'weekdag-kop');
     dagKop.appendChild(el('span', null, KB.DAGEN_LANG[dag]));
-    var plekken = (t && t.plekken) || KB.WERKPLAATS_PLEKKEN;
-    var aantal = (wt.verdeling[dag] || []).length;
-    dagKop.appendChild(el('span', 'weekdag-telling' + (aantal >= plekken ? ' vol' : ''),
-                          aantal + '/' + plekken));
+    dagKop.appendChild(el('span', 'weekdag-telling' + (aantal >= ruimte ? ' vol' : ''),
+                          aantal + '/' + ruimte));
     kolom.appendChild(dagKop);
 
     var vak = el('div', 'weekdag-vak');
-    (wt.verdeling[dag] || []).forEach(function (id) {
+    lijst.forEach(function (id, nr) {
+      // Bij twee werkmomenten een streepje tussen de rondes, zodat je ziet
+      // wie er in het eerste moment gaat en wie in het tweede.
+      if (metMomenten && nr > 0 && nr % plekken === 0) {
+        var ronde = Math.floor(nr / plekken) + 1;
+        vak.appendChild(el('div', 'rondekop',
+          ronde <= (momenten[dag] || 1) ? ronde + 'e werkmoment' : 'past er niet meer bij'));
+      }
       var l = KB.leerling(id, k);
       if (!l) return;
-      var chip = el('button', 'kindchip');
+      var chip = el('div', 'kindchip' +
+        (metMomenten && nr >= ruimte ? ' teveel' : ''));
       chip.appendChild(BH.pictoBol(l, 26));
-      chip.appendChild(el('span', null, l.naam));
-      chip.addEventListener('click', function () { verplaatsKind(wt, l, dag); });
+      var naam = el('button', 'kindchip-naam', l.naam);
+      naam.addEventListener('click', function () { verplaatsKind(wt, l, dag); });
+      chip.appendChild(naam);
+
+      // Wie eerder in de rij staat gaat in het eerste werkmoment. Met deze
+      // pijltjes bepaal je dat zelf.
+      if (metMomenten && lijst.length > 1) {
+        var omhoog = el('button', 'kindchip-pijl', '\u2191');
+        omhoog.title = 'Eerder aan de beurt';
+        omhoog.disabled = nr === 0;
+        omhoog.addEventListener('click', function () { schuif(wt, dag, nr, -1); });
+        chip.appendChild(omhoog);
+        var omlaag = el('button', 'kindchip-pijl', '\u2193');
+        omlaag.title = 'Later aan de beurt';
+        omlaag.disabled = nr === lijst.length - 1;
+        omlaag.addEventListener('click', function () { schuif(wt, dag, nr, 1); });
+        chip.appendChild(omlaag);
+      }
       vak.appendChild(chip);
     });
     if (!aantal) vak.appendChild(el('div', 'weekdag-leeg', 'niemand'));
@@ -744,6 +774,14 @@ function tekenWeekTaak(wt, k){
     rooster.appendChild(kolom);
   });
   p.appendChild(rooster);
+
+  if (metMomenten) {
+    p.appendChild(el('p', 'hint',
+      'Op een dag met twee werkmomenten passen er ' + (plekken * 2) + ' kinderen: ' +
+      'de eerste ' + plekken + ' gaan in de ochtend, de rest daarna. Met de pijltjes ' +
+      'bepaal je wie in welk moment gaat; klik op een naam om iemand naar een andere ' +
+      'dag te verplaatsen.'));
+  }
 
   /* wie is er deze week niet aan de beurt */
   var niet = (k.leerlingen || []).filter(function (l) {
@@ -804,93 +842,460 @@ var oTaakId = null;
 BH.panelen.observaties = function (v){
   var k = KB.klas();
   var ws = KB.weekSleutel();
-  var w = KB.week(ws, k);
-  var geplandeTaken = w.taken.map(function (wt) { return KB.taakVan(wt.taakId, k); }).filter(Boolean);
   var alleTaken = KB.taken(k);
-  var keuze = geplandeTaken.length ? geplandeTaken : alleTaken;
 
   v.appendChild(BH.kopregel('Observaties',
-    'Vink per kind af wat het doel heeft bereikt'));
+    'Vink per kind af hoe het ging',
+    knop('Verslag afdrukken', 'stil', function () { verslagBlad(null); })));
 
-  if (!keuze.length) {
+  if (!alleTaken.length) {
     var leegP = paneel();
     leegP.appendChild(BH.leegBericht(
-      'Er zijn nog geen taken om op te beoordelen. Maak eerst een taak met een doel eraan, ' +
-      'en plan die in bij het weekplan.',
+      'Er zijn nog geen taken om op te beoordelen. Maak eerst een taak; een doel eraan ' +
+      'hangen mag, maar hoeft niet.',
       knop('Naar Taken', 'primair', function () { BH.ga('taken'); })));
     v.appendChild(leegP);
     return;
   }
 
-  if (!oTaakId || !keuze.some(function (t) { return t.id === oTaakId; })) oTaakId = keuze[0].id;
+  if (!oTaakId || !alleTaken.some(function (t) { return t.id === oTaakId; })) {
+    // liefst een taak die deze week gepland staat
+    var gepland = alleTaken.filter(function (t) { return KB.weekTaakAls(ws, t.id, k); });
+    oTaakId = (gepland[0] || alleTaken[0]).id;
+  }
   var taak = KB.taakVan(oTaakId, k);
 
+  /* ── kiezen welke taak ── */
   var balk = paneel();
   var chips = el('div', 'chips');
-  keuze.forEach(function (t) {
-    var c = el('button', 'chip' + (t.id === oTaakId ? ' aan' : ''), t.naam);
+  alleTaken.forEach(function (t) {
+    var staatGepland = !!KB.weekTaakAls(ws, t.id, k);
+    var c = el('button', 'chip' + (t.id === oTaakId ? ' aan' : ''),
+               t.naam + (staatGepland ? ' \u00b7 deze week' : ''));
     c.addEventListener('click', function () { oTaakId = t.id; teken(); });
     chips.appendChild(c);
   });
   balk.appendChild(chips);
   v.appendChild(balk);
 
-  var doelen = (taak.doelIds || []).map(doelVan).filter(Boolean);
-  if (!doelen.length) {
-    var geenDoel = paneel();
-    geenDoel.appendChild(BH.leegBericht(
-      'Aan deze taak hangt nog geen doel, dus valt er niets te beoordelen.',
-      knop('Doel koppelen', 'primair', function () { bewerkTaak(taak); })));
-    v.appendChild(geenDoel);
-    return;
-  }
-
-  var wt = KB.weekTaak(ws, taak.id, k);
-  var ingedeeld = KB.toegewezen(wt);
+  /* ── wie beoordelen we ── */
+  var wt = KB.weekTaakAls(ws, taak.id, k);
+  var ingedeeld = wt ? KB.toegewezen(wt) : [];
   var kinderen = (k.leerlingen || []).filter(function (l) { return l.lid !== false; });
   var gesorteerd = kinderen.slice().sort(function (a, b) {
     var ia = ingedeeld.indexOf(a.id) >= 0 ? 0 : 1;
     var ib = ingedeeld.indexOf(b.id) >= 0 ? 0 : 1;
     if (ia !== ib) return ia - ib;
-    return a.naam.localeCompare(b.naam);
+    return (a.naam || '').localeCompare(b.naam || '');
   });
 
-  doelen.forEach(function (d) {
-    var p = paneel();
-    var kop = el('div');
-    kop.style.marginBottom = '12px';
-    kop.appendChild(el('div', 'rij-naam', doelTekst(d)));
-    var tellingen = { nog:0, bezig:0, behaald:0 };
-    gesorteerd.forEach(function (l) { tellingen[KB.standVan(l.id, d.id, k)]++; });
-    kop.appendChild(el('div', 'rij-sub',
-      d.niveau + ' · ' + d.domein + ' · ' + d.leerlijn + ' — ' +
-      tellingen.behaald + ' behaald, ' + tellingen.bezig + ' bezig, ' + tellingen.nog + ' nog niet'));
-    p.appendChild(kop);
+  if (!kinderen.length) {
+    var geenKind = paneel();
+    geenKind.appendChild(BH.leegBericht('Er staan nog geen kinderen in deze groep.',
+      knop('Naar Leerlingen', 'primair', function () { BH.ga('leerlingen'); })));
+    v.appendChild(geenKind);
+    return;
+  }
 
-    var rooster = el('div', 'observatierooster');
-    gesorteerd.forEach(function (l) {
-      var stand = KB.standVan(l.id, d.id, k);
-      var kaart = el('button', 'observatiekaart stand-' + stand);
-      if (ingedeeld.indexOf(l.id) < 0) kaart.classList.add('nietingedeeld');
-      kaart.appendChild(BH.pictoBol(l, 34));
-      var tekst = el('div', 'observatietekst');
-      tekst.appendChild(el('div', 'observatienaam', l.naam));
-      tekst.appendChild(el('div', 'observatiestand',
-        { nog:'nog niet', bezig:'bezig', behaald:'behaald' }[stand]));
-      kaart.appendChild(tekst);
-      kaart.addEventListener('click', function () {
-        var nieuw = KB.volgendeStand(KB.standVan(l.id, d.id, k));
-        KB.zetStand(l.id, d.id, nieuw, taak.id, k);
-        bewaar();
-        kaart.className = 'observatiekaart stand-' + nieuw +
-          (ingedeeld.indexOf(l.id) < 0 ? ' nietingedeeld' : '');
-        tekst.lastChild.textContent = { nog:'nog niet', bezig:'bezig', behaald:'behaald' }[nieuw];
-      });
-      rooster.appendChild(kaart);
-    });
-    p.appendChild(rooster);
-    v.appendChild(p);
+  /* ── de doelen van deze taak, of de taak zelf ──
+     Doelen zijn niet verplicht. Hangt er geen doel aan, dan beoordeel je
+     de taak als geheel: heeft dit kind eraan gewerkt, en is het af. */
+  var doelen = (taak.doelIds || []).map(doelVan).filter(Boolean);
+  var onderwerpen = doelen.length
+    ? doelen.map(function (d) {
+        return { id:d.id, kop:doelTekst(d),
+                 sub:d.niveau + ' \u00b7 ' + d.domein + ' \u00b7 ' + d.leerlijn };
+      })
+    : [{ id:'taak:' + taak.id, kop:taak.naam,
+         sub:'Geen doel aan deze taak \u2014 je beoordeelt de taak zelf' }];
+
+  onderwerpen.forEach(function (o) {
+    v.appendChild(beoordeelPaneel(o, gesorteerd, ingedeeld, taak, k));
   });
+
+  if (!doelen.length) {
+    var tip = paneel();
+    tip.appendChild(el('p', 'hint',
+      'Wil je per doel bijhouden hoe het ging, hang dan een doel aan deze taak. ' +
+      'Dat komt ook terug in het verslag voor een oudergesprek.'));
+    tip.appendChild(knop('Doel koppelen', 'stil', function () { bewerkTaak(taak); }));
+    v.appendChild(tip);
+  }
 };
+
+/* Eén raster: per kind een kaartje dat je aantikt om van "nog niet" naar
+   "bezig" naar "behaald" te gaan. */
+function beoordeelPaneel(onderwerp, kinderen, ingedeeld, taak, k){
+  var p = paneel();
+  var kop = el('div');
+  kop.style.marginBottom = '12px';
+  kop.appendChild(el('div', 'rij-naam', onderwerp.kop));
+  var tellingen = { nog:0, bezig:0, behaald:0 };
+  kinderen.forEach(function (l) { tellingen[KB.standVan(l.id, onderwerp.id, k)]++; });
+  kop.appendChild(el('div', 'rij-sub', onderwerp.sub + ' \u2014 ' +
+    tellingen.behaald + ' behaald, ' + tellingen.bezig + ' bezig, ' + tellingen.nog + ' nog niet'));
+  p.appendChild(kop);
+
+  var namen = { nog:'nog niet', bezig:'bezig', behaald:'behaald' };
+  var rooster = el('div', 'observatierooster');
+  kinderen.forEach(function (l) {
+    var stand = KB.standVan(l.id, onderwerp.id, k);
+    var kaart = el('button', 'observatiekaart stand-' + stand);
+    if (ingedeeld.length && ingedeeld.indexOf(l.id) < 0) kaart.classList.add('nietingedeeld');
+    kaart.appendChild(BH.pictoBol(l, 34));
+    var tekst = el('div', 'observatietekst');
+    tekst.appendChild(el('div', 'observatienaam', l.naam));
+    var standRegel = el('div', 'observatiestand', namen[stand]);
+    tekst.appendChild(standRegel);
+    kaart.appendChild(tekst);
+    kaart.addEventListener('click', function () {
+      var nieuw = KB.volgendeStand(KB.standVan(l.id, onderwerp.id, k));
+      KB.zetStand(l.id, onderwerp.id, nieuw, taak.id, k);
+      bewaar();
+      kaart.className = 'observatiekaart stand-' + nieuw +
+        (ingedeeld.length && ingedeeld.indexOf(l.id) < 0 ? ' nietingedeeld' : '');
+      standRegel.textContent = namen[nieuw];
+      // de telling in de kop meelopen
+      var t = { nog:0, bezig:0, behaald:0 };
+      kinderen.forEach(function (x) { t[KB.standVan(x.id, onderwerp.id, k)]++; });
+      kop.lastChild.textContent = onderwerp.sub + ' \u2014 ' +
+        t.behaald + ' behaald, ' + t.bezig + ' bezig, ' + t.nog + ' nog niet';
+    });
+    rooster.appendChild(kaart);
+  });
+  p.appendChild(rooster);
+  return p;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   STATISTIEKEN
+   Wat je in de drukte van een schooldag niet ziet: wie waar
+   vaak zit, wie elkaar nooit tegenkomt, welke hoek leeg blijft.
+   Geen oordeel -- tellingen. De juf weet wat ze betekenen.
+   ══════════════════════════════════════════════════════════ */
+
+var statPeriode = 21;      // over hoeveel dagen we kijken
+var statKind = null;       // welk kind is uitgeklapt
+
+BH.panelen.statistiek = function (v){
+  var k = KB.klas();
+  var opties = { dagen: statPeriode };
+
+  var keuze = el('div', 'chips');
+  [[7,'Deze week'],[21,'Drie weken'],[90,'Dit kwartaal'],[0,'Alles']].forEach(function (paar) {
+    var c = el('button', 'chip' + (statPeriode === paar[0] ? ' aan' : ''), paar[1]);
+    c.addEventListener('click', function () { statPeriode = paar[0]; teken(); });
+    keuze.appendChild(c);
+  });
+  v.appendChild(BH.kopregel('Statistieken',
+    'Uit wat er op het bord gebeurde', keuze));
+
+  var bezoeken = KBSTAT.bezoekjes(k, statPeriode ? Date.now() - statPeriode * 864e5 : null);
+  if (!bezoeken.length) {
+    var leegP = paneel();
+    leegP.appendChild(BH.leegBericht(
+      'Er is in deze periode nog niets op het bord gebeurd. Zodra de kinderen hoeken ' +
+      'kiezen, staat hier wie waar vaak zit en wie met wie speelt.'));
+    v.appendChild(leegP);
+    return;
+  }
+
+  /* ── wat valt op ── */
+  var opval = KBSTAT.opvallend(k, opties);
+  if (opval.length) {
+    var p0 = paneel('Wat opvalt');
+    opval.slice(0, 8).forEach(function (o) {
+      var rij = el('div', 'statrij');
+      rij.appendChild(el('span', 'statmerk ' + o.soort, merkTeken(o.soort)));
+      rij.appendChild(el('span', 'stattekst', o.tekst));
+      p0.appendChild(rij);
+    });
+    v.appendChild(p0);
+  }
+
+  /* ── per hoek ── */
+  var hoeken = KBSTAT.perHoek(k, opties);
+  var hoekLijst = Object.keys(hoeken).map(function (id) { return hoeken[id]; })
+    .sort(function (a, b) { return b.keuzes - a.keuzes; });
+  var meest = Math.max.apply(null, hoekLijst.map(function (h) { return h.keuzes; }).concat([1]));
+
+  var p1 = paneel('Hoe vaak elke hoek wordt gekozen');
+  hoekLijst.forEach(function (h) {
+    var rij = el('div', 'staafrij');
+    rij.appendChild(el('div', 'staafnaam', h.naam));
+    var baan = el('div', 'staafbaan');
+    var vul = el('span');
+    vul.style.width = Math.round((h.keuzes / meest) * 100) + '%';
+    if (!h.keuzes) vul.style.background = 'var(--lijn)';
+    baan.appendChild(vul);
+    rij.appendChild(baan);
+    rij.appendChild(el('div', 'staafgetal',
+      h.keuzes + ' × · ' + h.verschillendeKinderen + ' kind' +
+      (h.verschillendeKinderen === 1 ? '' : 'eren')));
+    p1.appendChild(rij);
+  });
+  v.appendChild(p1);
+
+  /* ── wie speelt met wie ── */
+  var stellen = KBSTAT.paren(k, opties);
+  var p2 = paneel('Wie speelt met wie');
+  if (!stellen.length) {
+    p2.appendChild(el('p', 'hint',
+      'Nog geen twee kinderen tegelijk in dezelfde hoek gezien in deze periode.'));
+  } else {
+    p2.appendChild(el('p', 'hint',
+      'Twee kinderen "speelden samen" als ze op hetzelfde moment in dezelfde hoek zaten. ' +
+      'De minuten tellen mee, want een uur samen is iets anders dan vijf minuten.'));
+    var meesteMin = stellen[0].minuten || 1;
+    stellen.slice(0, 12).forEach(function (r) {
+      var a = KB.leerling(r.a, k), b = KB.leerling(r.b, k);
+      if (!a || !b) return;
+      var rij = el('div', 'staafrij');
+      var naam = el('div', 'staafnaam');
+      naam.appendChild(BH.pictoBol(a, 22));
+      naam.appendChild(BH.pictoBol(b, 22));
+      naam.appendChild(el('span', null, a.naam + ' en ' + b.naam));
+      rij.appendChild(naam);
+      var baan = el('div', 'staafbaan');
+      var vul = el('span'); vul.style.width = Math.round((r.minuten / meesteMin) * 100) + '%';
+      baan.appendChild(vul); rij.appendChild(baan);
+      rij.appendChild(el('div', 'staafgetal', r.minuten + ' min · ' + r.keren + ' ×'));
+      p2.appendChild(rij);
+    });
+  }
+
+  var nooit = KBSTAT.nooitSamen(k, opties);
+  if (nooit.length) {
+    var vak = el('div', 'restvak');
+    vak.appendChild(el('div', 'restvak-kop', 'Kwamen elkaar nooit tegen'));
+    vak.appendChild(el('p', 'hint',
+      'Deze kinderen kozen allebei wel hoeken, maar nooit tegelijk dezelfde.'));
+    var rij2 = el('div', 'kindrij');
+    nooit.slice(0, 24).forEach(function (r) {
+      var a = KB.leerling(r.a, k), b = KB.leerling(r.b, k);
+      if (!a || !b) return;
+      rij2.appendChild(el('div', 'kindchip', a.naam + ' · ' + b.naam));
+    });
+    vak.appendChild(rij2);
+    if (nooit.length > 24) {
+      vak.appendChild(el('p', 'hint', 'en nog ' + (nooit.length - 24) + ' paren'));
+    }
+    p2.appendChild(vak);
+  }
+  v.appendChild(p2);
+
+  /* ── per kind ── */
+  var telling = KBSTAT.perKind(k, opties);
+  var p3 = paneel('Per kind');
+  p3.appendChild(el('p', 'hint', 'Klik op een kind voor zijn hoeken en zijn maatjes.'));
+  (k.leerlingen || []).filter(function (l) { return l.lid !== false; })
+    .sort(function (a, b) { return (telling[b.id].keuzes || 0) - (telling[a.id].keuzes || 0); })
+    .forEach(function (l) {
+      var r = telling[l.id];
+      var rij = el('button', 'kindrij-knop' + (statKind === l.id ? ' uitgeklapt' : ''));
+      rij.appendChild(BH.pictoBol(l, 30));
+      var tekst = el('div', 'kindrij-tekst');
+      tekst.appendChild(el('div', 'rij-naam', l.naam));
+      tekst.appendChild(el('div', 'rij-sub', r.keuzes
+        ? r.keuzes + ' keer gekozen · ' + r.hoekenBezocht + ' verschillende hoeken' +
+          (r.favoriet ? ' · vaakst ' + (KB.hoekVan(r.favoriet, k) || {}).naam : '')
+        : 'nog niet gekozen in deze periode'));
+      rij.appendChild(tekst);
+      rij.addEventListener('click', function () {
+        statKind = statKind === l.id ? null : l.id; teken();
+      });
+      p3.appendChild(rij);
+      if (statKind === l.id) p3.appendChild(kindDetail(l, k, opties));
+    });
+  v.appendChild(p3);
+};
+
+function merkTeken(soort){
+  if (soort === 'vast')        return '↺';
+  if (soort === 'stil')        return '!';
+  if (soort === 'lege-hoek')   return '∅';
+  if (soort === 'smalle-hoek') return '↓';
+  if (soort === 'maatjes')     return '♥';
+  if (soort === 'alleen')      return '○';
+  return '·';
+}
+
+function kindDetail(l, k, opties){
+  var vak = el('div', 'kinddetail');
+  var telling = KBSTAT.perKind(k, opties)[l.id];
+
+  var hoeken = Object.keys(telling.perHoek || {})
+    .map(function (id) { return { id:id, n:telling.perHoek[id] }; })
+    .sort(function (a, b) { return b.n - a.n; });
+  if (hoeken.length) {
+    vak.appendChild(el('div', 'restvak-kop', 'Hoeken'));
+    var rij = el('div', 'kindrij');
+    hoeken.forEach(function (h) {
+      var naam = (KB.hoekVan(h.id, k) || {}).naam || 'weggehaalde hoek';
+      rij.appendChild(el('div', 'kindchip', naam + ' · ' + h.n + '×'));
+    });
+    vak.appendChild(rij);
+  }
+
+  var maatjes = KBSTAT.maatjesVan(l.id, k, opties)
+    .sort(function (a, b) { return b.minuten - a.minuten; });
+  vak.appendChild(el('div', 'restvak-kop', 'Speelt samen met'));
+  if (!maatjes.length) {
+    vak.appendChild(el('p', 'hint',
+      l.naam + ' zat in deze periode nooit tegelijk met een ander kind in dezelfde hoek.'));
+  } else {
+    var rij2 = el('div', 'kindrij');
+    maatjes.slice(0, 10).forEach(function (m) {
+      var ander = KB.leerling(m.leerlingId, k);
+      if (!ander) return;
+      var chip = el('div', 'kindchip');
+      chip.appendChild(BH.pictoBol(ander, 22));
+      chip.appendChild(el('span', null, ander.naam + ' · ' + m.minuten + ' min'));
+      rij2.appendChild(chip);
+    });
+    vak.appendChild(rij2);
+  }
+
+  var rij3 = el('div', 'kindrij');
+  rij3.style.marginTop = '10px';
+  rij3.appendChild(knop('Verslag van ' + l.naam, 'stil', function () {
+    verslagBlad(l.id);
+  }));
+  vak.appendChild(rij3);
+  return vak;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   VERSLAG VOOR HET OUDERGESPREK
+   Wat er op het scherm staat is voor de juf; een verslag is voor
+   de ouders. Je kiest wie, over welke periode, en wat erin komt --
+   en de browser drukt het af of bewaart het als PDF.
+   ══════════════════════════════════════════════════════════ */
+var vKeuze = null;          // welke kinderen aangevinkt staan
+var vPeriode = 90;
+var vExtra = { nogNiet:false, spel:true, opval:true, ruimte:true, fotos:true };
+
+function verslagBlad(startKind){
+  var k = KB.klas();
+  var kinderen = (k.leerlingen || []).filter(function (l) { return l.lid !== false; })
+    .sort(function (a, b) { return (a.naam || '').localeCompare(b.naam || ''); });
+
+  if (!kinderen.length) {
+    BH.toonBlad(function (blad) {
+      blad.appendChild(BH.bladTitel('Verslag'));
+      blad.appendChild(el('p', 'hint', 'Er staan nog geen kinderen in deze groep.'));
+      var r = el('div', 'knoprij');
+      r.appendChild(knop('Sluiten', 'stil', BH.sluitBlad));
+      blad.appendChild(r);
+    });
+    return;
+  }
+
+  vKeuze = {};
+  if (startKind) vKeuze[startKind] = true;
+  else kinderen.forEach(function (l) { vKeuze[l.id] = true; });
+
+  BH.toonBlad(function (blad) { bouwVerslagBlad(blad, k, kinderen); }, true);
+}
+
+function bouwVerslagBlad(blad, k, kinderen){
+  var gekozen = function () {
+    return kinderen.filter(function (l) { return vKeuze[l.id]; }).map(function (l) { return l.id; });
+  };
+  var opnieuw = function () { BH.sluitBlad(); BH.toonBlad(function (b) { bouwVerslagBlad(b, k, kinderen); }, true); };
+
+  blad.appendChild(BH.bladTitel('Verslag voor het oudergesprek',
+    'Per kind één blad: wat al goed gaat, waar we mee bezig zijn, en waar en met wie het speelt.'));
+
+  /* ── wie ── */
+  var kop = el('div', 'kopregel');
+  kop.style.marginBottom = '8px';
+  var links = el('div');
+  links.appendChild(el('div', 'paneelkop', 'Voor wie'));
+  kop.appendChild(links);
+  var rechts = el('div', 'knoprij');
+  rechts.appendChild(knop('Iedereen', 'stil', function () {
+    kinderen.forEach(function (l) { vKeuze[l.id] = true; }); opnieuw();
+  }));
+  rechts.appendChild(knop('Niemand', 'stil', function () { vKeuze = {}; opnieuw(); }));
+  kop.appendChild(rechts);
+  blad.appendChild(kop);
+
+  var lijst = el('div', 'chips');
+  lijst.style.marginBottom = '18px';
+  kinderen.forEach(function (l) {
+    var c = el('button', 'chip' + (vKeuze[l.id] ? ' aan' : ''), l.naam);
+    c.addEventListener('click', function () {
+      vKeuze[l.id] = !vKeuze[l.id];
+      c.classList.toggle('aan', !!vKeuze[l.id]);
+      tel();
+    });
+    lijst.appendChild(c);
+  });
+  blad.appendChild(lijst);
+
+  /* ── periode ── */
+  blad.appendChild(el('div', 'paneelkop', 'Over welke periode'));
+  var per = el('div', 'chips');
+  per.style.marginBottom = '18px';
+  [[30,'Een maand'],[90,'Een kwartaal'],[180,'Een half jaar'],[0,'Alles']].forEach(function (paar) {
+    var c = el('button', 'chip' + (vPeriode === paar[0] ? ' aan' : ''), paar[1]);
+    c.addEventListener('click', function () { vPeriode = paar[0]; opnieuw(); });
+    per.appendChild(c);
+  });
+  blad.appendChild(per);
+
+  /* ── wat komt erin ── */
+  blad.appendChild(el('div', 'paneelkop', 'Wat komt erin'));
+  [['spel',    'Hoeken en speelmaatjes',
+               'Waar het kind graag speelt, en met wie het dan zit.'],
+   ['opval',   'Wat opvalt',
+               'De opmerkingen die ook bij Statistieken staan, voor zover ze over dit kind gaan.'],
+   ['nogNiet', 'Doelen waar we nog aan gaan werken',
+               'De doelen die je voor de groep hebt aangezet en waar bij dit kind nog niets op staat.'],
+   ['ruimte',  'Ruimte voor aantekeningen',
+               'Zes lege lijnen onderaan het blad, om tijdens het gesprek op te schrijven.'],
+   ['fotos',   'Foto van het kind erbij',
+               'Zet uit als je het blad zonder foto wilt meegeven.']
+  ].forEach(function (rijGegevens) {
+    var sleutel = rijGegevens[0];
+    var rij = el('div', 'rij');
+    var tekst = el('div');
+    tekst.style.flexGrow = '1';
+    tekst.appendChild(el('div', 'rij-naam', rijGegevens[1]));
+    tekst.appendChild(el('div', 'rij-sub', rijGegevens[2]));
+    rij.appendChild(tekst);
+    rij.appendChild(BH.schakelaar(vExtra[sleutel], function (aan) { vExtra[sleutel] = aan; }));
+    blad.appendChild(rij);
+  });
+
+  /* ── afdrukken ── */
+  var uitleg = el('p', 'hint');
+  uitleg.style.margin = '18px 0 10px';
+  blad.appendChild(uitleg);
+  function tel(){
+    var n = gekozen().length;
+    uitleg.textContent = n
+      ? n + (n === 1 ? ' blad' : ' bladen') + '. In het venster dat opengaat kies je bij ' +
+        '"Bestemming" of "Printer" de optie "Bewaren als PDF" — dan krijg je een bestand ' +
+        'in plaats van papier.'
+      : 'Vink hierboven aan voor wie je een verslag wilt.';
+  }
+  tel();
+
+  var knoppen = el('div', 'knoprij');
+  knoppen.appendChild(knop('Sluiten', 'stil', BH.sluitBlad));
+  knoppen.appendChild(knop('Afdrukken of als PDF bewaren', 'primair', function () {
+    var wie = gekozen();
+    if (!wie.length) { meld('Kies eerst voor wie'); return; }
+    var opties = { dagen: vPeriode, nogNiet: vExtra.nogNiet, spel: vExtra.spel,
+                   opval: vExtra.opval, ruimte: vExtra.ruimte, fotos: vExtra.fotos };
+    KBVERSLAG.druk(wie, k, opties);
+    meld(wie.length === 1 ? 'Het verslag staat klaar' : wie.length + ' verslagen staan klaar');
+  }));
+  blad.appendChild(knoppen);
+}
 
 })();

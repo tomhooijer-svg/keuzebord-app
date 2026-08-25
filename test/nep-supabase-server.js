@@ -190,8 +190,17 @@ const server = http.createServer(async (req, res) => {
         const w = []; const stukken = rijen.map(rij =>
           '(' + kols.map(k => { w.push(rij[k] === null || typeof rij[k] !== 'object' ? rij[k] : JSON.stringify(rij[k])); return '$' + w.length; }).join(',') + ')');
         const bots = u.searchParams.get('on_conflict');
-        const opBotsing = bots ? ` on conflict (${bots.split(',').map(k=>`"${k}"`).join(',')}) do update set ` +
-          kols.filter(k => !bots.split(',').includes(k)).map(k => `"${k}"=excluded."${k}"`).join(',') : '';
+        // Zijn alle kolommen onderdeel van de sleutel, dan valt er niets bij te
+        // werken en moet het 'do nothing' zijn -- 'do update set' zonder
+        // kolommen is geen geldige SQL.
+        let opBotsing = '';
+        if (bots) {
+          const sleutels = bots.split(',');
+          const rest = kols.filter(k => !sleutels.includes(k));
+          opBotsing = ` on conflict (${sleutels.map(k=>`"${k}"`).join(',')}) ` +
+            (rest.length ? 'do update set ' + rest.map(k => `"${k}"=excluded."${k}"`).join(',')
+                         : 'do nothing');
+        }
         const r = await metRol(uid, c => c.query(
           `insert into public."${tabel}" (${kols.map(k=>`"${k}"`).join(',')}) values ${stukken.join(',')}${opBotsing} returning *`, w));
         return stuur(201, r.rows);

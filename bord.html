@@ -66,6 +66,64 @@ body.bord{
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
+/* Aan- en uitzetten van het bord. Tussen twee speelmomenten door zet de
+   juf hem uit; dan kan er niemand meer slepen en staat het beeld stil. */
+.bordknop{
+  display: flex; align-items: center; gap: 9px;
+  height: 40px; padding: 0 16px 0 13px; border-radius: 999px;
+  font-size: .92rem; font-weight: 550; letter-spacing: -.01em;
+  background: var(--goed-zacht); color: var(--goed);
+  transition: background .16s ease, transform .16s var(--veer);
+}
+.bordknop:active{ transform: scale(.96); }
+.bordknop-stip{
+  width: 9px; height: 9px; border-radius: 50%; flex: none;
+  background: var(--goed); box-shadow: 0 0 0 3px rgba(46,158,107,.2);
+}
+.bordknop.uit{ background: rgba(20,28,44,.06); color: var(--inkt-3); }
+.bordknop.uit .bordknop-stip{ background: var(--inkt-4); box-shadow: none; }
+
+/* Het bord staat uit: alles blijft staan, maar er valt niets te slepen. */
+.scherm.gepauzeerd .rooster,
+.scherm.gepauzeerd .strook{ opacity: .4; pointer-events: none; filter: saturate(.55); }
+.pauzevlak{
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 300;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(251,248,244,.35);
+}
+.scherm.gepauzeerd ~ .pauzevlak,
+.pauzevlak.aan{ display: flex; }
+.pauzekaart{
+  text-align: center; padding: 34px 46px; border-radius: var(--rond-l);
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 14px 40px rgba(20,28,44,.1);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+.pauzekaart .kop{ font-size: 1.6rem; font-weight: 600; letter-spacing: -.026em; color: var(--inkt); }
+.pauzekaart .sub{ font-size: 1rem; color: var(--inkt-3); margin-top: 8px; }
+
+/* het codeslot voor de instellingen */
+.pinvak{ text-align: center; }
+.pincijfers{ display: flex; gap: 12px; justify-content: center; margin: 24px 0 8px; }
+.pincijfer{
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--vlak-2); box-shadow: inset 0 0 0 1.5px var(--lijn);
+  transition: background .14s ease;
+}
+.pincijfer.vol{ background: var(--accent); box-shadow: none; }
+.pintoetsen{ display: grid; grid-template-columns: repeat(3, 76px); gap: 12px;
+             justify-content: center; margin-top: 22px; }
+.pintoets{
+  height: 62px; border-radius: 16px; background: var(--vlak-2);
+  font-size: 1.5rem; font-weight: 500; color: var(--inkt);
+  transition: background .12s ease, transform .12s var(--veer);
+}
+.pintoets:hover{ background: rgba(20,28,44,.1); }
+.pintoets:active{ transform: scale(.94); }
+.pintoets.leeg{ background: none; }
+.pinmis{ color: var(--stop); font-size: .9rem; min-height: 1.3em; margin-top: 12px; }
+
 .rondje{
   width: 44px; height: 44px; border-radius: 50%;   /* ruim genoeg voor een vinger */
   background: rgba(20,28,44,.05); display: flex; align-items: center; justify-content: center;
@@ -107,6 +165,36 @@ body.bord{
 }
 .hoek-beeld svg{ width: var(--icoongrootte, 56px); height: var(--icoongrootte, 56px); }
 
+/* ── een hoek met een foto ────────────────────────────────
+   Heeft een hoek een foto, dan is die foto de kaart. De naam en de plekken
+   liggen eroverheen op een donkere waas, zodat je ze leest zonder dat de
+   foto half wegvalt achter een balk. Foto's uit een telefoon zijn breder
+   dan hoog; de kaart vult zich met de foto en snijdt zo min mogelijk weg. */
+.hoek.fotohoek{ background: var(--hoektint, #f2f4f7); }
+.hoek.fotohoek .hoek-beeld{
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  height: auto; z-index: 0;
+}
+.hoek.fotohoek .hoek-onder{
+  position: relative; z-index: 1; margin-top: auto;
+  flex-grow: 0;                       /* alleen zo hoog als de tekst vraagt */
+  background: linear-gradient(to top,
+    rgba(12,17,28,.86) 0%, rgba(12,17,28,.7) 48%, rgba(12,17,28,0) 100%);
+  padding-top: calc(var(--onderpad, 12px) * 2.6);
+}
+/* de naam bovenaan zetten mag ook: dan blijft het midden van de foto vrij */
+.hoek.fotohoek .hoek-kop{ margin-bottom: calc(var(--onderpad, 12px) * .5); }
+.hoek.fotohoek .hoek-naam{
+  color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.45);
+}
+.hoek.fotohoek .hoek-telling .bezet{ color: #fff; }
+.hoek.fotohoek .hoek-telling .van{ color: rgba(255,255,255,.65); }
+.hoek.fotohoek .plek.vrij{
+  border-color: rgba(255,255,255,.75); opacity: .8;
+}
+.hoek.fotohoek .plek.gereserveerd{ border-color: rgba(255,255,255,.8); }
+.hoek.fotohoek .wacht-merk{ background: rgba(12,17,28,.72); color: #fff; }
+
 .hoek-onder{
   padding: var(--onderpad, 12px) calc(var(--onderpad, 12px) + 4px);
   display: flex; flex-direction: column; gap: calc(var(--onderpad, 12px) * .7);
@@ -144,6 +232,25 @@ body.bord{
 .plek.gereserveerd .picto-rond{
   width: 100%; height: 100%; opacity: .45; box-shadow: none;
   font-size: calc(var(--slot, 40px) * .38);
+}
+
+/* Wie in het volgende werkmoment aan de beurt is: alleen de naam, grijs,
+   zodat je ziet wie er straks komt zonder dat het lijkt alsof hij er al
+   zit. Zodra iemand van de ronde ervoor zijn plaatje eruit haalt, schuift
+   deze naam naar voren. */
+.plek.straks{
+  border: 2px dashed var(--inkt-4); box-sizing: border-box;
+  background: rgba(20,28,44,.035);
+  color: var(--inkt-3); overflow: hidden;
+}
+.plek-naam{
+  font-size: calc(var(--slot, 40px) * .3); font-weight: 600;
+  letter-spacing: -.01em; line-height: 1; text-align: center;
+  padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hoek.fotohoek .plek.straks{
+  border-color: rgba(255,255,255,.5); background: rgba(12,17,28,.3);
+  color: rgba(255,255,255,.85);
 }
 .plek.bezet .picto-rond{
   width: var(--slot, 40px); height: var(--slot, 40px);
@@ -264,6 +371,8 @@ body.bord{
   .strook{ margin: 10px 12px 12px; padding: 10px 14px; gap: 14px; }
   .groepnaam{ font-size: 1.06rem; } .datum{ display: none; }
   .rondje{ width: 40px; height: 40px; }
+  .bordknop{ padding: 0 12px 0 10px; font-size: .84rem; }
+  .bordknop #knop-aanuit-tekst{ display: none; }
 }
 </style>
 </head>
@@ -288,6 +397,10 @@ body.bord{
       <div class="datum" id="bord-datum"></div>
     </div>
     <div class="balk-rechts">
+      <button class="bordknop" id="knop-aanuit">
+        <span class="bordknop-stip"></span>
+        <span id="knop-aanuit-tekst">Bord aan</span>
+      </button>
       <div class="klok" id="bord-klok"></div>
       <button class="rondje" id="knop-menu" aria-label="Menu">
         <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
@@ -302,6 +415,13 @@ body.bord{
   <div class="strook">
     <div class="strook-kop" id="strook-kop"></div>
     <div class="strook-kinderen" id="strook"></div>
+  </div>
+</div>
+
+<div class="pauzevlak" id="pauzevlak">
+  <div class="pauzekaart">
+    <div class="kop">Het bord staat uit</div>
+    <div class="sub">De juf zet hem zo weer aan.</div>
   </div>
 </div>
 

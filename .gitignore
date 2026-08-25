@@ -16,3 +16,10 @@ design/keuzebord-v2-ontwerp.html
 
 # Alleen voor het testen; de app zelf heeft geen pakketten nodig.
 node_modules/
+
+# Voorvertoning: alle schermen samengevoegd tot één bestand, opnieuw te maken.
+keuzebord-preview.html
+keuzebord-testbord.html
+
+# Schermafdrukken die de proeven maken; die horen in /tmp, niet hier.
+inlog-*.png

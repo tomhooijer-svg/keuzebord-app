@@ -150,7 +150,11 @@ async function inloggen(p, email, waarheen){
     knoppen: [...document.querySelectorAll('#blad button')].map(x=>x.textContent)
   }));
   zeg('het bordmenu heeft een uitlogknop', bordmenu.knoppen.includes('Uitloggen'), bordmenu.knoppen.join(', '));
-  zeg('en zegt wie er is ingelogd', /Ingelogd als/.test(bordmenu.tekst), '');
+  // Bewust niet: bij het bord staat het digibord voor de klas, en dan hoeft
+  // er niet in beeld te komen op wiens account het draait.
+  zeg('maar zegt niet wie er is ingelogd',
+      !/Ingelogd als/.test(bordmenu.tekst) &&
+      !/@mijnschool\.nl/.test(bordmenu.tekst), bordmenu.tekst.slice(0, 80));
 
   console.log(uit.join('\n'));
   const goed = uit.filter(x => x.startsWith('  goed')).length;

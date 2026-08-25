@@ -130,7 +130,72 @@
            display:flex; align-items:center; justify-content:center; color:transparent; margin-top:1px; }
 .doelkaart.aan .doelvink{ background:var(--accent); border-color:var(--accent); color:#fff; }
 
-/* ── doelen kiezen: zoeken, suggesties, en bladeren ── */
+/* ── het Vandaag-overzicht ── */
+.checkrij{ display:flex; align-items:flex-start; gap:12px; padding:11px 0;
+           border-bottom:1px solid var(--vlak-2); }
+.checkrij:last-child{ border-bottom:none; }
+.checkmerk{ width:24px; height:24px; border-radius:50%; flex:none; margin-top:1px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:.85rem; font-weight:700;
+            background:var(--let-op-zacht); color:var(--let-op); }
+.checkrij.goed .checkmerk{ background:var(--goed-zacht); color:var(--goed); }
+.checktekst{ flex-grow:1; min-width:0; }
+
+.weekbalkjes{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
+              gap:8px; margin-top:14px; }
+.weekbalkje{ background:var(--vlak-2); border-radius:10px; padding:9px 4px; text-align:center; }
+.weekbalkje.vandaag{ background:var(--accent-zacht); }
+.weekbalkje-dag{ font-size:.7rem; color:var(--inkt-3); text-transform:uppercase;
+                 letter-spacing:.05em; font-weight:600; }
+.weekbalkje-getal{ font-size:1.15rem; font-weight:600; font-variant-numeric:tabular-nums;
+                   margin-top:2px; }
+.weekbalkje.vandaag .weekbalkje-getal{ color:var(--accent); }
+
+/* ── statistieken ── */
+.statrij{ display:flex; align-items:flex-start; gap:11px; padding:9px 0;
+          border-bottom:1px solid var(--vlak-2); }
+.statrij:last-child{ border-bottom:none; }
+.statmerk{ width:24px; height:24px; border-radius:50%; flex:none;
+           display:flex; align-items:center; justify-content:center;
+           font-size:.82rem; font-weight:700;
+           background:var(--vlak-2); color:var(--inkt-3); }
+.statmerk.stil, .statmerk.alleen{ background:var(--let-op-zacht); color:var(--let-op); }
+.statmerk.maatjes{ background:var(--goed-zacht); color:var(--goed); }
+.statmerk.lege-hoek, .statmerk.smalle-hoek{ background:var(--stop-zacht); color:var(--stop); }
+.stattekst{ font-size:.9rem; color:var(--inkt); line-height:1.5; }
+
+.staafrij{ display:grid; grid-template-columns:minmax(140px,1.4fr) minmax(80px,2fr) auto;
+           align-items:center; gap:14px; padding:7px 0; }
+.staafnaam{ display:flex; align-items:center; gap:6px; font-size:.88rem;
+            color:var(--inkt); min-width:0; }
+.staafnaam span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.staafbaan{ height:9px; border-radius:99px; background:var(--vlak-2); overflow:hidden; }
+.staafbaan span{ display:block; height:100%; background:var(--accent); border-radius:99px; }
+.staafgetal{ font-size:.78rem; color:var(--inkt-3); white-space:nowrap;
+             font-variant-numeric:tabular-nums; }
+
+.kindrij-knop{ display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+               padding:9px 12px; border-radius:11px; transition:background .12s ease; }
+.kindrij-knop:hover{ background:var(--vlak-2); }
+.kindrij-knop.uitgeklapt{ background:var(--accent-zacht); }
+.kindrij-tekst{ min-width:0; }
+.kinddetail{ padding:6px 12px 16px 54px; }
+
+.rondekop{ font-size:.68rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+           color:var(--inkt-4); margin:10px 0 5px; padding-top:8px;
+           border-top:1px dashed var(--lijn); }
+.kindchip-naam{ font-size:inherit; color:inherit; text-align:left; flex-grow:1; }
+.kindchip-pijl{ width:20px; height:20px; border-radius:6px; flex:none;
+                font-size:.8rem; line-height:1; color:var(--inkt-3);
+                background:rgba(20,28,44,.05); transition:background .12s ease; }
+.kindchip-pijl:hover:not(:disabled){ background:rgba(20,28,44,.12); color:var(--inkt); }
+.kindchip-pijl:disabled{ opacity:.25; cursor:default; }
+.kindchip.teveel{ opacity:.5; }
+
+.dagvak{ background:var(--vlak-2); border-radius:12px; padding:12px 10px; text-align:center; }
+.dagkop{ font-size:.8rem; font-weight:600; color:var(--inkt-2); margin-bottom:8px; }
+.daghint{ font-size:.72rem; color:var(--inkt-3); margin-top:7px; }
+
 .doelbalk{ margin-bottom:10px; }
 .doelbalk .invoer{ font-size:.95rem; padding:10px 13px; }
 .doelbladeraar{ margin-top:14px; }
@@ -282,7 +347,9 @@
 <script src="src/kb-media.js"></script>
 <script src="src/kb-sync.js"></script>
 <script src="src/kb-verbinding.js"></script>
+<script src="src/kb-statistiek.js"></script>
 <script src="src/kb-doelzoeker.js"></script>
+<script src="src/kb-verslag.js"></script>
 <script src="src/kb-docx.js"></script>
 <script src="src/kb-beheer.js"></script>
 <script src="src/kb-plan.js"></script>

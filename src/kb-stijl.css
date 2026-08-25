@@ -319,3 +319,10 @@ input, select, textarea{ font: inherit; color: inherit; }
          background: #fff; transition: border-color .16s ease, box-shadow .16s ease; }
 .invoer:focus{ outline: none; border-color: var(--accent);
                box-shadow: 0 0 0 3.5px var(--accent-zacht); }
+
+/* Een rijtje kerncijfers, zoals boven een overzicht. */
+.cijfers{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px; margin: 14px 0 12px; }
+.cijfer .n{ font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em;
+            font-variant-numeric: tabular-nums; line-height: 1.1; }
+.cijfer .l{ font-size: .74rem; color: var(--inkt-3); margin-top: 2px; line-height: 1.3; }

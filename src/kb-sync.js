@@ -145,17 +145,25 @@ function naarRijen(k){
         (wt.verdeling && wt.verdeling[dag] || []).forEach(function (lid) {
           uit.taak_toewijzing.push({
             _id:wtId + '~' + lid, _weekplantaak:wtId, _leerling:lid, dag:nr + 1,
+            geweest:(wt.geweest && wt.geweest[lid]) || null,
             stand:(wt.afgerond && wt.afgerond[lid]) ? 'behaald' : 'nog' });
         });
       });
     });
   });
 
+  /* Aan een taak hoeft geen doel te hangen. Beoordeel je zo'n taak, dan
+     staat hij in de beoordelingen als "<kind>|taak:<taak>". Op de server
+     is dat een observatie zonder doel_id, met alleen de taak erbij --
+     anders zou 'taak:t2' als uuid de deur uit gaan en de hele push omvallen. */
   Object.keys(k.beoordelingen || {}).forEach(function (sleutel) {
     var deel = sleutel.split('|'), b = k.beoordelingen[sleutel];
     if (deel.length !== 2 || !b) return;
-    uit.observaties.push({ _id:'o~' + sleutel, _leerling:deel[0], _doel:deel[1],
-                           _taak:b.taakId || null, stand:b.stand,
+    var losseTaak = deel[1].indexOf('taak:') === 0 ? deel[1].slice(5) : null;
+    uit.observaties.push({ _id:'o~' + sleutel, _leerling:deel[0],
+                           _doel: losseTaak ? null : deel[1],
+                           _taak: losseTaak || b.taakId || null,
+                           stand:b.stand,
                            datum:new Date(b.datum || Date.now()).toISOString().slice(0,10) });
   });
 
@@ -251,14 +259,16 @@ function naarKlas(rijen, bestaande){
       .sort(function (a, b) { return a.volgorde - b.volgorde; })
       .map(function (wt) {
         var verdeling = {}; DAGEN.forEach(function (d) { verdeling[d] = []; });
-        var afgerond = {};
+        var afgerond = {}, geweest = {};
         (rijen.taak_toewijzing || []).filter(function (t) { return t.weekplan_taak_id === wt.id; })
           .forEach(function (t) {
             var dag = DAGEN[(t.dag || 1) - 1] || 'ma';
             verdeling[dag].push(lok(t.leerling_id));
             if (t.stand === 'behaald') afgerond[lok(t.leerling_id)] = true;
+            if (t.geweest) geweest[lok(t.leerling_id)] = String(t.geweest).slice(0, 10);
           });
-        return { taakId:lok(wt.taak_id), verdeling:verdeling, afgerond:afgerond };
+        return { taakId:lok(wt.taak_id), verdeling:verdeling,
+                 afgerond:afgerond, geweest:geweest };
       });
     k.weken[sleutel] = {
       notitie: r.notitie,
@@ -268,10 +278,34 @@ function naarKlas(rijen, bestaande){
     };
   });
 
+  // Het logboek van de server erbij. Wat hier lokaal al stond en nog niet
+  // verstuurd is blijft staan; dubbele regels vallen op tijd en soort weg.
+  if (rijen.gebeurtenissen) {
+    var vanServer = (rijen.gebeurtenissen || []).map(function (r) {
+      var g = { soort:r.soort, tijd:new Date(r.tijd).getTime() };
+      Object.keys(r.gegevens || {}).forEach(function (veld) {
+        g[veld] = (veld === 'leerlingId' || veld === 'hoekId')
+          ? lok(r.gegevens[veld]) : r.gegevens[veld];
+      });
+      return g;
+    });
+    var gezien = {};
+    var alles = vanServer.concat(k.gebeurtenissen || []);
+    k.gebeurtenissen = alles.filter(function (g) {
+      var s2 = g.tijd + '|' + g.soort + '|' + (g.leerlingId || '') + '|' + (g.hoekId || '');
+      if (gezien[s2]) return false;
+      gezien[s2] = true;
+      return true;
+    }).sort(function (a, b) { return a.tijd - b.tijd; }).slice(-4000);
+  }
+
   k.beoordelingen = {};
   (rijen.observaties || []).forEach(function (r) {
-    if (!r.doel_id) return;
-    k.beoordelingen[lok(r.leerling_id) + '|' + lok(r.doel_id)] = {
+    // zonder doel is het de beoordeling van de taak zelf
+    var waarover = r.doel_id ? lok(r.doel_id)
+                 : r.taak_id ? 'taak:' + lok(r.taak_id) : null;
+    if (!waarover) return;
+    k.beoordelingen[lok(r.leerling_id) + '|' + waarover] = {
       stand:r.stand, taakId:r.taak_id ? lok(r.taak_id) : null,
       datum:new Date(r.datum).getTime() };
   });
@@ -344,7 +378,11 @@ function verschil(nu, toen){
    taken en observaties er gewoon naar wijzen. */
 
 function zorgVoorDoelen(schoolId){
-  var lokaal = (KB.doelenLaad() || []);
+  // doelenLaad() geeft { meta, lijst } terug -- niet de lijst zelf. Dat
+  // verschil kostte ons de hele doelenlijst: hij werd nooit verstuurd, en
+  // alles wat ernaar verwees viel daarna om.
+  var pak = KB.doelenLaad() || {};
+  var lokaal = pak.lijst || (KB.doelen && KB.doelen.lijst) || [];
   if (!lokaal.length) return Promise.resolve();
   return SB.lees('doelen', { kies:'id,code' }).then(function (bestaand) {
     var perCode = {};
@@ -366,6 +404,57 @@ function zorgVoorDoelen(schoolId){
         });
       });
     }, Promise.resolve());
+  });
+}
+
+/* ── het logboek ──────────────────────────────────────────────────────
+   Wie wanneer welke hoek koos. Dat groeit alleen maar aan en wordt nooit
+   gewijzigd, dus we vergelijken het niet met een afdruk -- we sturen wat
+   er sinds de vorige keer bij is gekomen. Anders zouden duizenden regels
+   elke keer opnieuw langs de vergelijking moeten. */
+
+var LOGGRENS = 'kb_loggrens';
+
+function loggrens(klasId){
+  try { return JSON.parse(localStorage.getItem(LOGGRENS) || '{}')[klasId] || 0; }
+  catch (e) { return 0; }
+}
+function zetLoggrens(klasId, tijd){
+  try {
+    var g = JSON.parse(localStorage.getItem(LOGGRENS) || '{}');
+    g[klasId] = tijd;
+    localStorage.setItem(LOGGRENS, JSON.stringify(g));
+  } catch (e) {}
+}
+
+function stuurLogOp(k, klasId, groepId){
+  var grens = loggrens(klasId);
+  var nieuwe = (k.gebeurtenissen || []).filter(function (g) { return g.tijd > grens; });
+  if (!nieuwe.length) return Promise.resolve(0);
+
+  var hoogste = grens;
+  var rijen = nieuwe.map(function (g) {
+    if (g.tijd > hoogste) hoogste = g.tijd;
+    var gegevens = {};
+    Object.keys(g).forEach(function (veld) {
+      if (veld === 'soort' || veld === 'tijd') return;
+      // verwijzingen vertalen naar wat de server kent
+      if (veld === 'leerlingId' || veld === 'hoekId') {
+        gegevens[veld] = opServer(g[veld]) || g[veld];
+      } else gegevens[veld] = g[veld];
+    });
+    return { groep_id:groepId, tijd:new Date(g.tijd).toISOString(),
+             soort:g.soort, gegevens:gegevens };
+  });
+
+  // in stukken, anders wordt het één heel groot verzoek
+  var stukken = [];
+  for (var i = 0; i < rijen.length; i += 200) stukken.push(rijen.slice(i, i + 200));
+  return stukken.reduce(function (rij, stuk) {
+    return rij.then(function () { return SB.schrijf('gebeurtenissen', stuk); });
+  }, Promise.resolve()).then(function () {
+    zetLoggrens(klasId, hoogste);
+    return rijen.length;
   });
 }
 
@@ -416,9 +505,16 @@ function duw(klasId, groepId, schoolId){
         var stappen = [];
         if (d.nieuw.length) {
           stappen.push(function () {
+            // Een tabel met een samengestelde sleutel kan dezelfde rij niet
+            // twee keer hebben. Ging er onderweg iets mis en proberen we het
+            // opnieuw, dan staat een deel er al -- dus laten we de server
+            // botsingen opvangen in plaats van eraan stuk te gaan.
+            var opties = tabel.samengesteld
+              ? { opKolommen: tabel.samengesteld.join(','), bijBotsing: true }
+              : {};
             return SB.schrijf(tabel.naam, d.nieuw.map(function (r) {
               return serverRij(r, tabel, groepId, schoolId);
-            })).then(function (terug) {
+            }), opties).then(function (terug) {
               // de server gaf ons uuid's; onthouden welke bij welke horen
               if (tabel.samengesteld) return;
               (terug || []).forEach(function (r, i) {
@@ -454,6 +550,8 @@ function duw(klasId, groepId, schoolId){
     });
 
     return rij.then(function () {
+      return stuurLogOp(k, klasId, groepId).catch(function () { return 0; });
+    }).then(function () {
       nu._groep = groepGegevens(k);
       zetAfdruk(klasId, nu);
       return wat;
@@ -488,6 +586,10 @@ function haal(groepId){
         var waar = {}; waar[kolom] = 'in.' + lijstje(ids);
         werk.push(SB.lees(tabel, { kies:'*', waar:waar }).then(function (r) { rijen[tabel] = r || []; }));
       };
+      werk.push(SB.lees('gebeurtenissen', { kies:'tijd,soort,gegevens',
+        waar:{ groep_id:'eq.' + groepId }, volgorde:'tijd', hoeveel:4000 })
+        .then(function (r) { rijen.gebeurtenissen = r || []; })
+        .catch(function () { rijen.gebeurtenissen = []; }));
       haalVoor('bord_hoeken',    'bord_id',     borden);
       haalVoor('plaatsingen',    'bord_id',     borden);
       haalVoor('wachtrij',       'bord_id',     borden);
