@@ -6,7 +6,9 @@
     "opzetten": "sh test/opzetten.sh",
     "test": "node test/inloggen.test.js && node test/sync.test.js",
     "test:rollen": "node test/rollen.test.js",
-    "test:keten": "node test/keten.test.js"
+    "test:keten": "node test/keten.test.js",
+    "test:fotos": "node test/fotos.test.js",
+    "test:beheerder": "node test/beheerder.test.js"
   },
   "devDependencies": {
     "pg": "^8.13.1",

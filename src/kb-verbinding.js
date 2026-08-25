@@ -200,6 +200,36 @@ function afmelden(){
   return SB.afmelden().then(function () { location.href = 'inloggen.html'; });
 }
 
+/* ── wie mag bij welke groep ──────────────────────────────────────────
+   Het schoolbeheer regelt dit. De database bewaakt het: alleen een
+   schoolbeheerder mag koppelen, en alleen binnen haar eigen school. Een
+   groep kan meer dan één leerkracht hebben, en een leerkracht meer dan
+   één groep. */
+
+function collegas(){
+  return SB.lees('profielen', { kies:'id,naam,email,rol', volgorde:'rol,naam' });
+}
+
+/* Alle koppelingen van de school in één keer: {groepId: [profielId, ...]} */
+function ledenPerGroep(){
+  return SB.lees('groep_leden', { kies:'groep_id,profiel_id' }).then(function (rijen) {
+    var uit = {};
+    (rijen || []).forEach(function (r) {
+      (uit[r.groep_id] = uit[r.groep_id] || []).push(r.profiel_id);
+    });
+    return uit;
+  });
+}
+
+function koppelAanGroep(serverGroepId, profielId){
+  return SB.schrijf('groep_leden', [{ groep_id:serverGroepId, profiel_id:profielId }]);
+}
+
+function ontkoppelVanGroep(serverGroepId, profielId){
+  return SB.wis('groep_leden', { groep_id:'eq.' + serverGroepId,
+                                 profiel_id:'eq.' + profielId });
+}
+
 /* Elk scherm begint hiermee. Is er geen server ingesteld -- de
    voorvertoning, of een losse kopie op een stick -- dan gaat het scherm
    gewoon door op wat er in de browser staat. */
@@ -218,6 +248,8 @@ global.KBV = {
   haalOp: haalOp,
   naarGroep: naarGroep,
   afmelden: afmelden,
+  collegas: collegas, ledenPerGroep: ledenPerGroep,
+  koppelAanGroep: koppelAanGroep, ontkoppelVanGroep: ontkoppelVanGroep,
   wie: function () { return ik; },
   groepId: function () { return groepId; },
   klasId: function () { return klasId; },

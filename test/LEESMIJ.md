@@ -56,3 +56,12 @@ sh test/opzetten.sh
 psql -h /var/tmp -p 5439 -U postgres -d kb -f supabase/inrichten.sql
 node test/keten.test.js
 ```
+
+## De schoolbeheerder
+
+`test/beheerder.test.js` gaat na of een schoolbeheerder werkelijk overal
+bij mag, en of hij leerkrachten aan groepen kan hangen. Dertien dingen: hij
+ziet alle zes de groepen, opent het bord van een groep die niet van hem is
+en ziet daar de kinderen van de juf, opent het beheer van weer een andere
+groep, hangt de juf aan een tweede groep waarna die ook bij haar opduikt,
+en een leerkracht die zelf iemand probeert toe te wijzen wordt geweigerd.

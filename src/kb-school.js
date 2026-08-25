@@ -101,6 +101,26 @@ function maakSchoolgroepen(metTestkinderen){
 }
 
 /* ── tekenen ─────────────────────────────────────────────── */
+/* Wat we van de server weten over wie waar bij mag. Wordt bij het openen
+   opgehaald en na elke wijziging bijgewerkt. */
+var alleCollegas  = [];
+var perProfiel    = {};
+var ledenVanGroep = {};
+
+function metServer(){
+  return !!(window.KBV && window.SB && window.KBSYNC && SB.ingelogd());
+}
+
+function haalMensen(){
+  if (!metServer()) return Promise.resolve();
+  return Promise.all([KBV.collegas(), KBV.ledenPerGroep()]).then(function (uit) {
+    alleCollegas = uit[0] || [];
+    perProfiel = {};
+    alleCollegas.forEach(function (p) { perProfiel[p.id] = p; });
+    ledenVanGroep = uit[1] || {};
+  }, function () { /* zonder verbinding tonen we het gewoon niet */ });
+}
+
 function teken(){
   var v = leeg($('school-inhoud'));
   var acties = leeg($('school-acties'));
@@ -154,6 +174,8 @@ function teken(){
   });
   v.appendChild(rooster);
 
+  if (metServer()) v.appendChild(mensenPaneel());
+
   var opnieuw = el('div', 'paneel');
   opnieuw.appendChild(el('div', 'paneelkop', 'Opnieuw beginnen'));
   opnieuw.appendChild(el('p', 'hint',
@@ -178,9 +200,17 @@ function teken(){
   var uitleg = el('div', 'paneel');
   uitleg.appendChild(el('div', 'paneelkop', 'Hoe dit werkt'));
   uitleg.appendChild(el('p', 'hint',
-    'Elk apparaat beheert één groep. Op het digibord van 1A zet je hier "Dit apparaat beheert 1A"; ' +
-    'de leerkracht van 1A ziet daarna alleen haar eigen groep en kan niet per ongeluk in een andere ' +
-    'groep terechtkomen. Deze pagina is voor jou als beheerder — die hoef je niet met iedereen te delen.'));
+    'Wie waar bij mag regel je met "Leerkrachten" op een groepskaart. Een leerkracht ziet ' +
+    'alleen de groepen die aan haar zijn toegewezen en kan niet per ongeluk in een andere ' +
+    'groep terechtkomen. Een groep mag meer dan één leerkracht hebben, en een leerkracht ' +
+    'meer dan één groep — handig bij een duobaan of een invaller.'));
+  uitleg.appendChild(el('p', 'hint',
+    'Jij als schoolbeheerder mag overal bij: met "Beheer openen" en "Bord openen" ga je naar ' +
+    'elke groep, ook de groepen die niet van jou zijn.'));
+  uitleg.appendChild(el('p', 'hint',
+    '"Dit apparaat hierop zetten" is voor het digibord in een lokaal: dat onthoudt welke groep ' +
+    'het bij het opstarten laat zien, zodat er \u2019s ochtends niemand hoeft te kiezen. ' +
+    'Deze pagina is voor jou als beheerder — die hoef je niet met iedereen te delen.'));
   v.appendChild(uitleg);
 }
 
@@ -231,24 +261,152 @@ function groepKaart(k, beheerd){
     kaart.appendChild(el('div', 'beurtregel', 'Nog geen taak ingepland deze week'));
   }
 
+  // Wie mag er bij deze groep. Een schoolbeheerder mag overal bij en staat
+  // er daarom niet apart bij -- die zou anders bij elke groep staan.
+  if (metServer()) {
+    var eigen = (ledenVanGroep[KBSYNC.opServer(k.id)] || [])
+      .map(function (id) { return (perProfiel[id] || {}).naam ||
+                                  (perProfiel[id] || {}).email || 'onbekend'; });
+    kaart.appendChild(el('div', 'beurtregel',
+      eigen.length ? 'Leerkracht: ' + eigen.join(', ')
+                   : 'Nog geen leerkracht toegewezen'));
+  }
+
   var acties = el('div', 'groepacties');
+  acties.appendChild(knop('Beheer openen', 'primair', function () {
+    ganaarGroep(k, 'beheer.html');
+  }));
+  acties.appendChild(knop('Bord openen', 'stil', function () {
+    ganaarGroep(k, 'bord.html');
+  }));
+  if (metServer()) {
+    acties.appendChild(knop('Leerkrachten', 'stil', function () { toonLeden(k); }));
+  }
   if (k.id !== beheerd) {
-    acties.appendChild(knop('Dit apparaat beheert deze groep', 'stil', function () {
+    acties.appendChild(knop('Dit apparaat hierop zetten', 'stil', function () {
       KB.zetBeheerKlas(k.id); bewaar(); teken();
       meld('Dit apparaat beheert nu ' + k.naam);
     }));
   }
-  acties.appendChild(knop('Openen', 'primair', function () {
-    KB.zetBeheerKlas(k.id); bewaar();
-    gaNaar('beheer.html');
-  }));
   kaart.appendChild(acties);
   return kaart;
+}
+
+/* ── van groep wisselen ───────────────────────────────────────────────
+   Als beheerder mag je bij elke groep. Voor je naar het beheer of het
+   bord gaat halen we die groep eerst binnen, anders kijk je naar wat er
+   toevallig nog in deze browser stond. */
+
+function ganaarGroep(k, pagina){
+  if (!metServer()) { KB.zetBeheerKlas(k.id); bewaar(); gaNaar(pagina); return; }
+  meld('Bezig met ' + k.naam + ' ophalen…');
+  KBV.naarGroep(k.id).then(function () {
+    gaNaar(pagina);
+  }, function (e) {
+    if (e && e.offline) { KB.zetBeheerKlas(k.id); bewaar(); gaNaar(pagina); return; }
+    meld('Dat lukte niet: ' + (e && e.message || 'onbekende fout'));
+  });
+}
+
+/* ── leerkrachten aan een groep hangen ───────────────────────────────── */
+
+function toonLeden(k){
+  var serverId = KBSYNC.opServer(k.id);
+  toonBlad(function (blad) {
+    blad.appendChild(el('h3', 'titel', 'Wie mag bij ' + k.naam + '?'));
+    blad.appendChild(el('p', 'hint',
+      'Een groep mag meer dan één leerkracht hebben, en een leerkracht mag meer dan ' +
+      'één groep hebben. Schoolbeheerders staan er niet bij: die mogen overal bij.'));
+
+    var lijst = el('div', 'ledenlijst');
+    var leerkrachten = alleCollegas.filter(function (p) { return p.rol === 'leerkracht'; });
+    if (!leerkrachten.length) {
+      lijst.appendChild(el('p', 'hint',
+        'Er zijn nog geen leerkrachten. Nodig ze uit met hun e-mailadres; ' +
+        'zodra ze een account maken staan ze hier.'));
+    }
+    leerkrachten.forEach(function (p) {
+      var aan = (ledenVanGroep[serverId] || []).indexOf(p.id) >= 0;
+      var rij = el('div', 'ledenrij' + (aan ? ' aan' : ''));
+      var links = el('div');
+      links.appendChild(el('div', 'ledennaam', p.naam || p.email));
+      if (p.naam) links.appendChild(el('div', 'ledenmail', p.email));
+      rij.appendChild(links);
+      rij.appendChild(knop(aan ? 'Weghalen' : 'Toewijzen', aan ? 'gevaar' : 'primair',
+        function () {
+          var werk = aan ? KBV.ontkoppelVanGroep(serverId, p.id)
+                         : KBV.koppelAanGroep(serverId, p.id);
+          werk.then(function () {
+            return KBV.ledenPerGroep();
+          }).then(function (nieuw) {
+            ledenVanGroep = nieuw;
+            sluitBlad(); teken(); toonLeden(k);
+            meld(aan ? (p.naam || p.email) + ' is weggehaald bij ' + k.naam
+                     : (p.naam || p.email) + ' hoort nu bij ' + k.naam);
+          }, function (e) {
+            meld('Dat lukte niet: ' + (e && e.message || 'onbekende fout'));
+          });
+        }));
+      lijst.appendChild(rij);
+    });
+    blad.appendChild(lijst);
+
+    var rij2 = el('div', 'knoprij-onder');
+    rij2.appendChild(knop('Klaar', 'stil', sluitBlad));
+    blad.appendChild(rij2);
+  });
+}
+
+/* Andersom gezien: welke groepen heeft elke leerkracht? Handig om in één
+   oogopslag te zien wie er nog nergens bij hoort. */
+function mensenPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'Leerkrachten'));
+
+  var naamVanGroep = {};
+  KB.G.klassen.forEach(function (k) {
+    var sid = KBSYNC.opServer(k.id);
+    if (sid) naamVanGroep[sid] = k.naam;
+  });
+
+  var leerkrachten = alleCollegas.filter(function (x) { return x.rol === 'leerkracht'; });
+  if (!leerkrachten.length) {
+    p.appendChild(el('p', 'hint',
+      'Er zijn nog geen leerkrachten met een account. Nodig ze uit met hun ' +
+      'e-mailadres; zodra ze zich aanmelden staan ze hier en kun je ze aan een ' +
+      'groep hangen.'));
+    return p;
+  }
+
+  leerkrachten.forEach(function (mens) {
+    var groepen = [];
+    Object.keys(ledenVanGroep).forEach(function (gid) {
+      if (ledenVanGroep[gid].indexOf(mens.id) >= 0 && naamVanGroep[gid]) {
+        groepen.push(naamVanGroep[gid]);
+      }
+    });
+    var rij = el('div', 'ledenrij');
+    var links = el('div');
+    links.appendChild(el('div', 'ledennaam', mens.naam || mens.email));
+    links.appendChild(el('div', 'ledenmail',
+      groepen.length ? groepen.sort().join(', ') : 'nog geen groep'));
+    rij.appendChild(links);
+    p.appendChild(rij);
+  });
+
+  var beheerders = alleCollegas.filter(function (x) { return x.rol === 'schoolbeheerder'; });
+  if (beheerders.length) {
+    p.appendChild(el('p', 'hint',
+      'Schoolbeheerder: ' + beheerders.map(function (x) { return x.naam || x.email; }).join(', ') +
+      ' — die mag bij alle groepen.'));
+  }
+  return p;
 }
 
 KB.laad();
 KB.doelenLaad();
 (window.KBV ? KBV.zodraKlaar() : Promise.resolve({ lokaal:true }))
+  .then(haalMensen)
   .then(function () { return KB.fkLees(); })
   .then(function (m) { if (m) KB.fkPasToe(m); })
   .catch(function () {})
