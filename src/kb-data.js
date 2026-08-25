@@ -264,6 +264,30 @@ function doelenBewaar(){
   try { localStorage.setItem(DOELEN_KEY, JSON.stringify(doelen)); return true; }
   catch (e) { return false; }
 }
+/* De doelenlijst hoort er gewoon te zijn. Hij zit als bestand in de app,
+   maar stond tot nu toe pas in de browser als iemand hem met de hand had
+   ingeladen -- en tot die tijd was er niets te kiezen. Dit haalt hem bij
+   het opstarten binnen als hij er nog niet is, één keer. */
+function doelenZorg(){
+  doelenLaad();
+  if (doelen.lijst && doelen.lijst.length) return Promise.resolve(doelen);
+
+  // in de voorvertoning staat de lijst al in de pagina zelf
+  try {
+    var ingebouwd = document.getElementById('doelen-ingebouwd');
+    if (ingebouwd && ingebouwd.textContent) {
+      doelenNeemOver(JSON.parse(ingebouwd.textContent));
+      if (doelen.lijst.length) return Promise.resolve(doelen);
+    }
+  } catch (e) {}
+
+  if (typeof fetch !== 'function') return Promise.resolve(doelen);
+  return fetch('data/doelen-gouwe-academie.json')
+    .then(function (a) { return a.ok ? a.json() : null; })
+    .then(function (pak) { if (pak) doelenNeemOver(pak); return doelen; })
+    .catch(function () { return doelen; });   // zonder lijst werkt de rest gewoon
+}
+
 function doelenNeemOver(pak){
   if (!pak || pak.formaat !== 'keuzebord-doelen' || !Array.isArray(pak.doelen)) return false;
   doelen.meta = { bron: pak.bron || '', versie: pak.versie || 1,
@@ -274,7 +298,10 @@ function doelenNeemOver(pak){
 function klasNiveaus(k){
   k = k || klas();
   if (Array.isArray(k.doelNiveaus) && k.doelNiveaus.length) return k.doelNiveaus;
-  var m = (k.naam || '').match(/\b([123])\b/);
+  // "Groep 1A" en "1/2b" horen allebei bij groep 1 respectievelijk 1 en 2.
+  // Een cijfer met een letter erachter telde eerst niet mee, waardoor 1A
+  // de niveaus van groep 2 kreeg.
+  var m = (k.naam || '').match(/(?:^|[^0-9])([123])(?:[a-dA-D]\b|\b)/);
   return NIVEAUS_PER_GROEP[m ? m[1] : 2] || NIVEAUS_PER_GROEP[2];
 }
 function doelenVanKlas(k){
@@ -992,7 +1019,8 @@ global.KB = {
   wachtrijVoor: wachtrijVoor, inWachtrij: inWachtrij, uitWachtrij: uitWachtrij,
   schuifWachtrijDoor: schuifWachtrijDoor,
   logGebeurtenis: logGebeurtenis,
-  doelen: doelen, doelenLaad: doelenLaad, doelenNeemOver: doelenNeemOver,
+  doelen: doelen, doelenLaad: doelenLaad, doelenZorg: doelenZorg,
+  doelenNeemOver: doelenNeemOver,
   doelenBewaar: doelenBewaar, klasNiveaus: klasNiveaus, doelenVanKlas: doelenVanKlas,
   fkLees: fkLees, fkBewaar: fkBewaar, fkWis: fkWis, fkPasToe: fkPasToe,
   verklein: verklein,

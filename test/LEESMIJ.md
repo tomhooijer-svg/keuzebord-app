@@ -86,3 +86,21 @@ van zowel Chrome als Edge -- die twee zijn daarmee gedekt. **Firefox en
 Safari zijn hier niet te installeren**, dus die zijn niet nagelopen. Draai
 daarvoor `testbord.html` op zo'n browser en druk op "Wat kan dit bord?":
 daar staat dezelfde lijst, met de naam van de browser erboven.
+
+## Groepen die alleen in de browser staan
+
+`test/losgeraakt.test.js` speelt na wat er in de klas misging. Iemand had
+eerst zonder account zitten proeven en groepen aangemaakt; die stonden
+alleen in die ene browser. Na het inloggen zag hij ze wél staan, maar
+openen en een leerkracht toewijzen ketsten af met "staat niet op de
+server". De test zet zulke losse groepen klaar, logt in, en kijkt of ze nu
+apart staan met uitleg, of de servergroepen wél werken, en of je een losse
+groep alsnog naar de server kunt brengen.
+
+## Doelen bij een taak
+
+`test/doelen.test.js` maakt een taak in een groep waar nog geen enkel doel
+is aangevinkt -- vroeger kon je dan niets kiezen. Nu staat de hele lijst
+open: bladeren via domein en leerlijn, zoeken op een woord, en suggesties
+uit wat je hebt opgeschreven. Typ "de kinderen knippen een blad uit" en
+"Experimenteren met knippen" staat er als suggestie onder.

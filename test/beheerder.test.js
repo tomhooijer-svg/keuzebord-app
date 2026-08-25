@@ -64,6 +64,14 @@ async function inloggen(p, email, waarheen){
       /Leerkracht:/.test(kaarten.leerkrachtregel), kaarten.leerkrachtregel.slice(0,70));
 
   // ── het paneel met leerkrachten ──
+  // het accountoverzicht staat onder zijn eigen onderdeel in de zijbalk
+  await baas.evaluate(() => {
+    [...document.querySelectorAll('.zij-knop')]
+      .filter(b => /Accounts/.test(b.textContent))[0].click();
+  });
+  await baas.waitForTimeout(600);
+  await baas.screenshot({ path:'/tmp/beheer-accounts.png', fullPage:true });
+
   const mensen = await baas.evaluate(() => {
     const p = [...document.querySelectorAll('.paneel')]
       .filter(x => (x.querySelector('.paneelkop')||{}).textContent === 'Accounts')[0];
@@ -78,6 +86,12 @@ async function inloggen(p, email, waarheen){
   zeg('en de beheerder als iemand die bij alle groepen mag',
       !!mensen && mensen.rijen.some(r => /mag bij alle groepen/.test(r)),
       mensen ? (mensen.rijen.filter(r => /alle groepen/.test(r))[0] || '').slice(0,60) : '');
+
+  await baas.evaluate(() => {
+    [...document.querySelectorAll('.zij-knop')]
+      .filter(b => /Groepen/.test(b.textContent))[0].click();
+  });
+  await baas.waitForTimeout(500);
 
   // ── een tweede groep toewijzen aan dezelfde juf ──
   const toegewezen = await baas.evaluate(async () => {

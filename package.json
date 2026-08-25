@@ -10,7 +10,9 @@
     "test:fotos": "node test/fotos.test.js",
     "test:beheerder": "node test/beheerder.test.js",
     "test:accounts": "node test/accounts.test.js",
-    "test:browsers": "node test/browsers.test.js"
+    "test:browsers": "node test/browsers.test.js",
+    "test:losgeraakt": "node test/losgeraakt.test.js",
+    "test:doelen": "node test/doelen.test.js"
   },
   "devDependencies": {
     "pg": "^8.13.1",

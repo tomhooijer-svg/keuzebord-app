@@ -241,14 +241,18 @@ function bewerkTaak(t){
     naamVeld.appendChild(el('label', null, 'Naam van de taak'));
     var invoer = el('input'); invoer.type = 'text'; invoer.value = concept.naam;
     invoer.placeholder = 'Bijvoorbeeld: telspel met kastanjes';
-    invoer.addEventListener('input', function () { concept.naam = invoer.value; });
+    invoer.addEventListener('input', function () {
+      concept.naam = invoer.value; tipsStraks();
+    });
     naamVeld.appendChild(invoer);
     blad.appendChild(naamVeld);
 
     var omschrijvingVeld = el('div', 'veld');
     omschrijvingVeld.appendChild(el('label', null, 'Wat gaan de kinderen doen?'));
     var vak = el('textarea'); vak.className = 'tekstvak'; vak.value = concept.omschrijving;
-    vak.addEventListener('input', function () { concept.omschrijving = vak.value; });
+    vak.addEventListener('input', function () {
+      concept.omschrijving = vak.value; tipsStraks();
+    });
     omschrijvingVeld.appendChild(vak);
     blad.appendChild(omschrijvingVeld);
 
@@ -261,21 +265,54 @@ function bewerkTaak(t){
     blad.appendChild(plekVeld);
 
     var doelVeld = el('div', 'veld');
-    doelVeld.appendChild(el('label', null, 'Doelen waaraan gewerkt wordt'));
+    doelVeld.appendChild(el('label', null, 'Doelen (mag ook later)'));
     var gekozenVak = el('div', 'gekozendoelen');
     doelVeld.appendChild(gekozenVak);
-    doelVeld.appendChild(knop('Doelen kiezen', 'stil', function () {
-      // Het formulier tekent zichzelf opnieuw zodra de kiezer sluit.
-      kiesDoelen(concept.doelIds, function (nieuwe) { concept.doelIds = nieuwe; });
+
+    // Wat de kinderen gaan doen zegt vaak al welke doelen erbij horen.
+    // Die zetten we hier alvast neer; één tik en hij staat erbij.
+    var tipVak = el('div');
+    doelVeld.appendChild(tipVak);
+
+    doelVeld.appendChild(knop('Doelen zoeken', 'stil', function () {
+      kiesDoelen(concept.doelIds, function (nieuwe) { concept.doelIds = nieuwe; },
+                 (concept.naam + ' ' + concept.omschrijving).trim());
     }));
     blad.appendChild(doelVeld);
+
+    function tekenTips(){
+      BH.leeg(tipVak);
+      if (!window.KBDOELZOEKER) return;
+      var tekst = (concept.naam + ' ' + concept.omschrijving).trim();
+      if (tekst.length < 4) return;
+      var voorstellen = KBDOELZOEKER.suggesties(tekst, KB.doelen.lijst || [],
+        { niveaus: KB.klasNiveaus(k), hoeveel: 3 })
+        .filter(function (v) { return concept.doelIds.indexOf(v.doel.id) < 0; });
+      if (!voorstellen.length) return;
+
+      tipVak.appendChild(el('div', 'tipkop', 'Past hier misschien bij'));
+      voorstellen.forEach(function (v) {
+        var tip = el('button', 'doeltip');
+        tip.appendChild(el('span', 'doeltip-plus', '+'));
+        var t = el('span', 'doeltip-tekst');
+        t.appendChild(el('span', 'doeltip-boven', v.doel.niveau + ' · ' + v.doel.leerlijn));
+        t.appendChild(el('span', 'doeltip-zin', v.doel.doel));
+        tip.appendChild(t);
+        tip.addEventListener('click', function () {
+          concept.doelIds.push(v.doel.id);
+          tekenGekozen(); tekenTips();
+        });
+        tipVak.appendChild(tip);
+      });
+    }
 
     function tekenGekozen(){
       BH.leeg(gekozenVak);
       var doelen = concept.doelIds.map(doelVan).filter(Boolean);
       if (!doelen.length) {
         gekozenVak.appendChild(el('p', 'hint',
-          'Nog geen doel gekoppeld. Zonder doel kun je de taak wel plannen, maar niet beoordelen.'));
+          'Nog geen doel. Dat hoeft ook niet nu — je kunt de taak gewoon opslaan en ' +
+          'plannen. Zonder doel kun je alleen niet per kind bijhouden hoe het ging.'));
         return;
       }
       doelen.forEach(function (d) {
@@ -291,7 +328,14 @@ function bewerkTaak(t){
         gekozenVak.appendChild(chip);
       });
     }
+    var tipTimer = null;
+    function tipsStraks(){
+      clearTimeout(tipTimer);
+      tipTimer = setTimeout(tekenTips, 450);   // niet bij elke toetsaanslag
+    }
+
     tekenGekozen();
+    tekenTips();
 
     var rij = el('div', 'knoprij');
     rij.appendChild(knop('Opslaan', 'primair', function () {
@@ -322,63 +366,221 @@ function bewerkTaak(t){
   });
 }
 
-function kiesDoelen(huidig, klaar){
+/* ── doelen kiezen ────────────────────────────────────────────────────
+   Vroeger kon je hier alleen doelen kiezen die je eerst bij Doelen had
+   aangevinkt. Dat was een omweg: bij het maken van een taak weet je vaak
+   nog niet welke doelen je nodig hebt, dat blijkt juist uit de taak.
+
+   Nu staat de hele lijst open, in de vorm waarin hij is opgebouwd:
+   domein, dan leerlijn, dan de doelen. En als je hebt opgeschreven wat de
+   kinderen gaan doen, staan de doelen die daarbij lijken te horen
+   bovenaan -- als suggestie, niet als keuze. */
+
+function kiesDoelen(huidig, klaar, omschrijving){
   var k = KB.klas();
-  var beschikbaar = gekozenDoelen(k);
+  var alles = KB.doelen.lijst || [];
   var selectie = huidig.slice();
+  var niveaus = KB.klasNiveaus(k);
+  var aangevinkt = {};
+  Object.keys(k.doelActief || {}).forEach(function (id) { if (k.doelActief[id]) aangevinkt[id] = true; });
+
+  var alleenNiveau = true;      // standaard alleen de niveaus van deze groep
+  var openDomein = null;
+  var openLeerlijn = null;
+  var zoekterm = '';
+
+  function inBeeld(){
+    return alles.filter(function (d) {
+      return !alleenNiveau || niveaus.indexOf(d.niveau) >= 0;
+    });
+  }
 
   BH.toonBlad(function (blad) {
     blad.appendChild(BH.bladTitel('Doelen kiezen',
-      beschikbaar.length
-        ? 'Dit zijn de doelen die je bij Doelen hebt aangevinkt voor ' + k.naam + '.'
-        : 'Je hebt nog geen doelen aangevinkt voor deze groep.'));
+      'Alle doelen staan open. Zoek, of blader via domein en leerlijn.'));
 
-    if (!beschikbaar.length) {
-      blad.appendChild(knop('Naar Doelen', 'primair', function () {
-        bladLeeg(); BH.ga('doelen');
-      }));
-      return;
-    }
+    /* ── zoeken en filteren ── */
+    var balk = el('div', 'doelbalk');
+    var zoekVak = el('input', 'invoer');
+    zoekVak.type = 'search';
+    zoekVak.placeholder = 'Zoek op woord, bijvoorbeeld knippen of tellen';
+    zoekVak.value = zoekterm;
+    balk.appendChild(zoekVak);
+    blad.appendChild(balk);
 
-    var zoekVak = el('input');
-    zoekVak.type = 'search'; zoekVak.placeholder = 'Zoeken…';
-    zoekVak.style.cssText = 'width:100%;border:1.5px solid var(--lijn);border-radius:10px;padding:9px 12px;margin-bottom:12px';
-    blad.appendChild(zoekVak);
+    var filterRij = el('div', 'chips');
+    var chipNiveau = el('button', 'chip' + (alleenNiveau ? ' aan' : ''),
+      'Alleen ' + niveaus.join('/') );
+    chipNiveau.addEventListener('click', function () {
+      alleenNiveau = !alleenNiveau; zoekterm = zoekVak.value; hertekenen();
+    });
+    filterRij.appendChild(chipNiveau);
+    blad.appendChild(filterRij);
 
-    var lijstVak = el('div', 'kieslijst');
-    blad.appendChild(lijstVak);
+    var gekozenVak = el('div', 'gekozendoelen');
+    blad.appendChild(gekozenVak);
 
-    function tekenKies(){
-      BH.leeg(lijstVak);
-      var term = zoekVak.value.toLowerCase();
-      var vorigeLeerlijn = null;
-      beschikbaar
-        .filter(function (d) { return !term || doelTekst(d).toLowerCase().indexOf(term) >= 0; })
-        .forEach(function (d) {
-          if (d.leerlijn !== vorigeLeerlijn) {
-            lijstVak.appendChild(el('div', 'domeinkop', d.domein + ' · ' + d.leerlijn));
-            vorigeLeerlijn = d.leerlijn;
-          }
-          var aan = selectie.indexOf(d.id) >= 0;
-          var rij = el('button', 'doelkaart' + (aan ? ' aan' : ''));
-          var vinkje = el('span', 'doelvink');
-          vinkje.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" ' +
-            'stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 l4.5 4.5 L19 6.5"></path></svg>';
-          rij.appendChild(vinkje);
-          var tekst = el('span', 'doelinhoud');
-          tekst.appendChild(el('span', 'doelaspect', d.niveau + (d.aspect ? ' · ' + d.aspect : '')));
-          tekst.appendChild(el('span', 'doelzin', d.doel));
-          rij.appendChild(tekst);
-          rij.addEventListener('click', function () {
-            var i = selectie.indexOf(d.id);
-            if (i >= 0) selectie.splice(i, 1); else selectie.push(d.id);
-            rij.classList.toggle('aan');
-          });
-          lijstVak.appendChild(rij);
+    var suggestieVak = el('div');
+    blad.appendChild(suggestieVak);
+
+    var bladerVak = el('div', 'doelbladeraar');
+    blad.appendChild(bladerVak);
+
+    /* ── wat er al gekozen is ── */
+    function tekenGekozenHier(){
+      BH.leeg(gekozenVak);
+      if (!selectie.length) return;
+      gekozenVak.appendChild(el('div', 'restvak-kop', 'Gekozen (' + selectie.length + ')'));
+      selectie.map(doelVan).filter(Boolean).forEach(function (d) {
+        var chip = el('div', 'doelchip');
+        chip.appendChild(el('span', 'doelchip-niveau', d.niveau));
+        chip.appendChild(el('span', null, doelTekst(d)));
+        var weg = el('button', 'doelchip-weg', '×');
+        weg.addEventListener('click', function () {
+          selectie = selectie.filter(function (id) { return id !== d.id; });
+          hertekenen();
         });
+        chip.appendChild(weg);
+        gekozenVak.appendChild(chip);
+      });
     }
-    zoekVak.addEventListener('input', tekenKies);
-    tekenKies();
+
+    /* ── de suggesties ── */
+    function tekenSuggesties(){
+      BH.leeg(suggestieVak);
+      if (!window.KBDOELZOEKER || !omschrijving) return;
+      var voorstellen = KBDOELZOEKER.suggesties(omschrijving, alles,
+        { niveaus: niveaus, hoeveel: 5 });
+      voorstellen = voorstellen.filter(function (v) {
+        return selectie.indexOf(v.doel.id) < 0;
+      });
+      if (!voorstellen.length) return;
+
+      suggestieVak.appendChild(el('div', 'restvak-kop', 'Past bij je omschrijving'));
+      voorstellen.forEach(function (v) {
+        var rij = el('button', 'doelkaart suggestie');
+        var plus = el('span', 'doelvink');
+        plus.textContent = '+';
+        rij.appendChild(plus);
+        var tekst = el('span', 'doelinhoud');
+        tekst.appendChild(el('span', 'doelaspect',
+          v.doel.niveau + ' · ' + v.doel.leerlijn +
+          (v.woorden.length ? ' · op "' + v.woorden.join('", "') + '"' : '')));
+        tekst.appendChild(el('span', 'doelzin', v.doel.doel));
+        rij.appendChild(tekst);
+        rij.addEventListener('click', function () {
+          selectie.push(v.doel.id); hertekenen();
+        });
+        suggestieVak.appendChild(rij);
+      });
+    }
+
+    /* ── bladeren: domein, leerlijn, doelen ── */
+    function tekenBladeren(){
+      BH.leeg(bladerVak);
+      var lijst = inBeeld();
+      var term = (zoekterm || '').trim().toLowerCase();
+
+      if (term) {
+        var treffers = lijst.filter(function (d) {
+          return (d.doel + ' ' + d.aspect + ' ' + d.leerlijn + ' ' + d.domein)
+                   .toLowerCase().indexOf(term) >= 0;
+        });
+        bladerVak.appendChild(el('div', 'restvak-kop',
+          treffers.length ? treffers.length + ' gevonden' : 'Niets gevonden'));
+        if (!treffers.length) {
+          bladerVak.appendChild(el('p', 'hint',
+            alleenNiveau ? 'Probeer het zoekvak leeg te maken, of zet het niveaufilter uit.'
+                         : 'Probeer een ander woord.'));
+        }
+        treffers.slice(0, 60).forEach(function (d) { bladerVak.appendChild(doelRij(d, true)); });
+        return;
+      }
+
+      // domeinen als tabjes
+      var domeinen = [];
+      lijst.forEach(function (d) { if (domeinen.indexOf(d.domein) < 0) domeinen.push(d.domein); });
+      if (!openDomein || domeinen.indexOf(openDomein) < 0) openDomein = domeinen[0];
+
+      var domeinRij = el('div', 'chips');
+      domeinen.forEach(function (dom) {
+        var n = lijst.filter(function (d) { return d.domein === dom; }).length;
+        var c = el('button', 'chip' + (dom === openDomein ? ' aan' : ''), dom + ' ' + n);
+        c.addEventListener('click', function () {
+          openDomein = dom; openLeerlijn = null; hertekenen();
+        });
+        domeinRij.appendChild(c);
+      });
+      bladerVak.appendChild(domeinRij);
+
+      // leerlijnen van dat domein
+      var vanDomein = lijst.filter(function (d) { return d.domein === openDomein; });
+      var lijnen = [];
+      vanDomein.forEach(function (d) { if (lijnen.indexOf(d.leerlijn) < 0) lijnen.push(d.leerlijn); });
+
+      var lijnVak = el('div', 'leerlijnen');
+      lijnen.forEach(function (lijn) {
+        var doelenHier = vanDomein.filter(function (d) { return d.leerlijn === lijn; });
+        var open = openLeerlijn === lijn || lijnen.length === 1;
+        var kop = el('button', 'leerlijnkop' + (open ? ' uitgeklapt' : ''));
+        kop.appendChild(el('span', 'leerlijnnaam', lijn));
+        var gekozenHier = doelenHier.filter(function (d) { return selectie.indexOf(d.id) >= 0; }).length;
+        kop.appendChild(el('span', 'leerlijntel',
+          (gekozenHier ? gekozenHier + ' van ' : '') + doelenHier.length));
+        kop.addEventListener('click', function () {
+          openLeerlijn = open && lijnen.length > 1 ? null : lijn; hertekenen();
+        });
+        lijnVak.appendChild(kop);
+
+        if (!open) return;
+        var inhoud = el('div', 'leerlijninhoud');
+        var vorigAspect = null;
+        doelenHier.forEach(function (d) {
+          if ((d.aspect || '') !== vorigAspect) {
+            vorigAspect = d.aspect || '';
+            if (vorigAspect) inhoud.appendChild(el('div', 'aspectkop', vorigAspect));
+          }
+          inhoud.appendChild(doelRij(d, false));
+        });
+        lijnVak.appendChild(inhoud);
+      });
+      bladerVak.appendChild(lijnVak);
+    }
+
+    function doelRij(d, metLijn){
+      var aan = selectie.indexOf(d.id) >= 0;
+      var rij = el('button', 'doelkaart' + (aan ? ' aan' : ''));
+      var vinkje = el('span', 'doelvink');
+      vinkje.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" ' +
+        'stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 l4.5 4.5 L19 6.5"></path></svg>';
+      rij.appendChild(vinkje);
+      var tekst = el('span', 'doelinhoud');
+      var bovenop = d.niveau + (metLijn ? ' · ' + d.leerlijn : '') +
+                    (d.aspect ? ' · ' + d.aspect : '') +
+                    (aangevinkt[d.id] ? ' · staat bij je groep' : '');
+      tekst.appendChild(el('span', 'doelaspect', bovenop));
+      tekst.appendChild(el('span', 'doelzin', d.doel));
+      rij.appendChild(tekst);
+      rij.addEventListener('click', function () {
+        var i = selectie.indexOf(d.id);
+        if (i >= 0) selectie.splice(i, 1); else selectie.push(d.id);
+        hertekenen();
+      });
+      return rij;
+    }
+
+    function hertekenen(){
+      zoekterm = zoekVak.value;
+      chipNiveau.classList.toggle('aan', alleenNiveau);
+      tekenGekozenHier(); tekenSuggesties(); tekenBladeren();
+    }
+
+    var traag = null;
+    zoekVak.addEventListener('input', function () {
+      clearTimeout(traag);
+      traag = setTimeout(hertekenen, 140);
+    });
+    hertekenen();
 
     var rij = el('div', 'knoprij');
     rij.appendChild(knop('Klaar', 'primair', function () { klaar(selectie); BH.sluitBlad(); }));

@@ -2,18 +2,15 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Keuzebord — schoolbeheer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Schoolbeheer — Keuzebord</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- optical sizing laat Inter zich aanpassen aan de tekstgrootte: grote koppen
-     krijgen strakkere letters. display=optional voorkomt dat de bladzijde
-     verspringt als het lettertype later binnenkomt. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=optional">
 <link rel="stylesheet" href="src/kb-stijl.css">
 <style>
-body.school{ background:#eef0f4; }
-.wrap{ max-width:1080px; margin:0 auto; padding:34px 24px 70px; }
+body{ background: var(--vlak-2); }
+body.wrap{ max-width:1080px; margin:0 auto; padding:34px 24px 70px; }
 .top{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px;
       flex-wrap:wrap; margin-bottom:26px; }
 .top h1{ font-size:1.7rem; font-weight:600; letter-spacing:-.025em; margin:0 0 4px; }
@@ -65,23 +62,25 @@ body.school{ background:#eef0f4; }
 .veldrij{ margin:16px 0; }
 .veldlabel{ display:block; font-size:.83rem; font-weight:550; color:var(--inkt-2);
             margin-bottom:7px; letter-spacing:-.008em; }
-.invoer{ width:100%; font:inherit; font-size:1rem; color:var(--inkt);
-         padding:11px 13px; border-radius:11px; border:1.5px solid var(--lijn);
-         background:#fff; transition:border-color .16s ease, box-shadow .16s ease; }
-.invoer:focus{ outline:none; border-color:var(--accent);
-               box-shadow:0 0 0 3.5px var(--accent-zacht); }
 </style>
 </head>
-<body class="school">
-<div class="wrap">
-  <div class="top">
-    <div>
-      <h1>Schoolbeheer</h1>
-      <div class="sub" id="school-sub">De kleutergroepen van de school</div>
+<body>
+
+<div class="app">
+  <nav class="zijbalk">
+    <div class="zij-kop">
+      <div class="n" id="zij-school">—</div>
+      <div class="s">Schoolbeheer</div>
     </div>
-    <div class="knoprij" id="school-acties"></div>
-  </div>
-  <div id="school-inhoud"></div>
+    <div class="zij-menu" id="zij-menu"></div>
+    <div class="zij-onder" id="zij-onder">
+      <a class="zij-link" href="beheer.html">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 l-7 7 7 7"></path></svg>
+        Naar het groepsbeheer
+      </a>
+    </div>
+  </nav>
+  <main class="inhoud" id="inhoud"></main>
 </div>
 
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
@@ -92,6 +91,7 @@ body.school{ background:#eef0f4; }
 <script src="src/kb-media.js"></script>
 <script src="src/kb-sync.js"></script>
 <script src="src/kb-verbinding.js"></script>
+<script src="src/kb-doelzoeker.js"></script>
 <script src="src/kb-school.js"></script>
 </body>
 </html>

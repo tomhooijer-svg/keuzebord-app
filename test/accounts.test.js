@@ -51,8 +51,13 @@ async function inloggen(p, email, waarheen){
       menu.open && menu.knoppen.includes('Uitloggen'), menu.knoppen.join(', '));
   await p.screenshot({ path:'/tmp/account-menu.png' });
 
-  // ── iemand uitnodigen ──
+  // ── iemand uitnodigen: dat staat onder het onderdeel Accounts ──
   await p.keyboard.press('Escape');
+  await p.evaluate(() => {
+    [...document.querySelectorAll('.zij-knop')]
+      .filter(b => /Accounts/.test(b.textContent))[0].click();
+  });
+  await p.waitForTimeout(600);
   await p.evaluate(() => {
     const b = [...document.querySelectorAll('button')].filter(x => x.textContent === 'Iemand uitnodigen')[0];
     b.click();
@@ -100,6 +105,11 @@ async function inloggen(p, email, waarheen){
 
   // ── de uitnodiging is verdwenen uit het overzicht ──
   await p.reload(); await p.waitForTimeout(2200);
+  await p.evaluate(() => {
+    [...document.querySelectorAll('.zij-knop')]
+      .filter(b => /Accounts/.test(b.textContent))[0].click();
+  });
+  await p.waitForTimeout(600);
   const na = await p.evaluate(() => ({
     wacht: [...document.querySelectorAll('.ledenrij.wacht')].length,
     rijen: [...document.querySelectorAll('.ledenrij')].map(r => r.textContent.slice(0,40))

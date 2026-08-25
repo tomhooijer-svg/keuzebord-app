@@ -72,7 +72,71 @@ function codeVan(klas){
   return m ? m[1].toUpperCase() : null;
 }
 
+/* De zes kleutergroepen neerzetten. Zijn we ingelogd, dan komen ze op de
+   server te staan -- anders zouden ze alleen in deze ene browser bestaan
+   en zou niemand ze kunnen openen. Zonder verbinding maken we ze lokaal,
+   zoals vroeger, zodat je ook zonder account kunt proeven. */
 function maakSchoolgroepen(metTestkinderen){
+  if (!metServer()) { maakLokaleGroepen(metTestkinderen); return Promise.resolve(); }
+
+  var schoolId = KBV.wie().profiel.school_id;
+  meld('Bezig met de zes groepen aanmaken…');
+
+  // eerst weg wat er al staat, anders komen ze er dubbel bij
+  return SB.lees('groepen', { kies:'id' }).then(function (bestaand) {
+    var wissen = (bestaand || []).map(function (g) {
+      return SB.wis('groepen', { id:'eq.' + g.id });
+    });
+    return Promise.all(wissen);
+  }).then(function () {
+    return SB.schrijf('groepen', GROEPCODES.map(function (code, i) {
+      return { school_id: schoolId, naam: 'Groep ' + code, volgorde: i + 1 };
+    }));
+  }).then(function (nieuweGroepen) {
+    // elke groep begint met een leeg keuzebord
+    return SB.schrijf('borden', (nieuweGroepen || []).map(function (g) {
+      return { groep_id: g.id, naam: 'Keuzebord', actief: true };
+    })).then(function () { return nieuweGroepen; });
+  }).then(function (nieuweGroepen) {
+    // de lokale kant opnieuw opbouwen vanaf de server
+    KB.G.klassen = [];
+    try { localStorage.removeItem('kb_koppeling'); } catch (e) {}
+    return KBV.herstart();
+  }).then(function () {
+    // hoeken en eventueel testkinderen erin, en meteen naar de server
+    var werk = Promise.resolve();
+    KB.G.klassen.forEach(function (k) {
+      var code = codeVan(k);
+      k.doelNiveaus = KB.NIVEAUS_PER_GROEP[code.charAt(0)] || KB.NIVEAUS_PER_GROEP[2];
+      k.hoekLib = STANDAARDHOEKEN.map(function (h, i) {
+        return { id:'hl-' + code.toLowerCase() + '-' + i, naam:h[0], maxKinderen:h[1],
+                 timerMinuten:0, fotoId:null };
+      });
+      var b = k.borden[0];
+      b.hoekLibIds = k.hoekLib.map(function (h) { return h.id; });
+      k.hoekLib.forEach(function (h) { b.plaatsingen[h.id] = []; });
+      KB.zorgVoorWerkplaats(k);
+      if (metTestkinderen && code === '1A') {
+        TESTKINDEREN.forEach(function (naam, i) {
+          k.leerlingen.push({ id:'ll-1a-' + i, naam:naam,
+            kleur: KB.KIND_KLEUREN[i % KB.KIND_KLEUREN.length], image:null, lid:true });
+        });
+      }
+      werk = werk.then(function () {
+        return KBSYNC.duw(k.id, KBSYNC.opServer(k.id), schoolId);
+      });
+    });
+    KB.bewaar();
+    return werk;
+  }).then(function () {
+    if (KB.G.klassen[0]) KB.zetBeheerKlas(KB.G.klassen[0].id);
+    bewaar();
+    return haalMensen();
+  });
+}
+
+/* Zonder verbinding: alleen in deze browser. */
+function maakLokaleGroepen(metTestkinderen){
   KB.G.klassen = [];
   GROEPCODES.forEach(function (code) {
     var k = KB.leegKlas('Groep ' + code);
@@ -87,7 +151,6 @@ function maakSchoolgroepen(metTestkinderen){
     KB.G.klassen.push(k);
     KB.G.activeKlasId = k.id;
     KB.zorgVoorWerkplaats(k);
-
     if (metTestkinderen && code === '1A') {
       TESTKINDEREN.forEach(function (naam, i) {
         k.leerlingen.push({ id:'ll-1a-' + i, naam:naam,
@@ -95,22 +158,42 @@ function maakSchoolgroepen(metTestkinderen){
       });
     }
   });
-  // Dit apparaat begint bij de eerste groep.
   KB.zetBeheerKlas(KB.G.klassen[0].id);
   bewaar();
 }
 
-/* ── tekenen ─────────────────────────────────────────────── */
-/* Wat we van de server weten over wie waar bij mag. Wordt bij het openen
-   opgehaald en na elke wijziging bijgewerkt. */
-var alleCollegas       = [];
-var perProfiel         = {};
-var ledenVanGroep      = {};
-var openUitnodigingen  = [];
-var naamVanGroep       = {};
+/* Een groep die alleen in deze browser bestaat alsnog naar de server
+   brengen. Gebeurt bij wie eerst zonder account heeft zitten proeven. */
+function brengNaarServer(k){
+  if (!metServer()) return;
+  var schoolId = KBV.wie().profiel.school_id;
+  meld('Bezig met ' + k.naam + ' naar de server brengen…');
+  SB.schrijf('groepen', [{ school_id: schoolId, naam: k.naam,
+                           volgorde: KB.G.klassen.indexOf(k) + 1 }])
+    .then(function (uit) {
+      var g = uit[0];
+      KBSYNC.koppel(k.id, g.id);
+      return KBSYNC.duw(k.id, g.id, schoolId);
+    })
+    .then(haalMensen)
+    .then(function () { teken(); meld(k.naam + ' staat nu op de server'); })
+    .catch(function (e) { meld('Dat lukte niet: ' + (e && e.message || 'onbekende fout')); });
+}
+
+/* ── wat we van de server weten ───────────────────────────────────────
+   Wie er op deze school werken, wie bij welke groep mag, en welke
+   uitnodigingen nog open staan. Wordt bij het openen opgehaald en na elke
+   wijziging bijgewerkt. */
+
+var alleCollegas      = [];
+var perProfiel        = {};
+var ledenVanGroep     = {};
+var openUitnodigingen = [];
+var naamVanGroep      = {};
 
 function metServer(){
-  return !!(window.KBV && window.SB && window.KBSYNC && SB.ingelogd());
+  return !!(window.KBV && window.SB && window.KBSYNC && SB.ingelogd() &&
+            KBV.wie() && KBV.wie().profiel);
 }
 
 function haalMensen(){
@@ -129,43 +212,96 @@ function haalMensen(){
     ledenVanGroep = uit[1] || {};
     openUitnodigingen = uit[2] || [];
     naamVanGroep = {};
-    KB.G.klassen.forEach(function (k) {
+    (KB.G.klassen || []).forEach(function (k) {
       var sid = KBSYNC.opServer(k.id);
       if (sid) naamVanGroep[sid] = k.naam;
     });
   }, function () { /* zonder verbinding tonen we het gewoon niet */ });
 }
 
-function teken(){
-  var v = leeg($('school-inhoud'));
-  var acties = leeg($('school-acties'));
-  var beheerd = KB.beheerKlasId();
+/* ── de schil ─────────────────────────────────────────────────────────
+   Dezelfde vorm als het groepsbeheer: een zijbalk met onderdelen en de
+   inhoud ernaast. Zo voelt het als één omgeving en niet als twee losse
+   programma's. */
 
-  acties.appendChild((function () {
-    var a = el('a', 'knop knop-stil knop-klein', 'Naar het bord');
-    a.href = 'bord.html'; return a;
-  })());
-  acties.appendChild((function () {
-    var a = el('a', 'knop knop-primair knop-klein', 'Naar het groepsbeheer');
-    a.href = 'beheer.html'; return a;
-  })());
+var ONDERDELEN = [
+  { id:'groepen',  naam:'Groepen',  icoon:'M3 6h7v7H3zM14 6h7v7h-7zM3 15h7v6H3zM14 15h7v6h-7z' },
+  { id:'accounts', naam:'Accounts', icoon:'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6M22 20v-2a4 4 0 0 0-3-3.9M16 4.1a4 4 0 0 1 0 7.8' },
+  { id:'school',   naam:'De school', icoon:'M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5' }
+];
+var huidig = 'groepen';
+
+function tekenMenu(){
+  var vak = leeg($('zij-menu'));
+  ONDERDELEN.forEach(function (o) {
+    var b = el('button', 'zij-knop' + (o.id === huidig ? ' aan' : ''));
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '17'); svg.setAttribute('height', '17');
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.7');
+    svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round');
+    var pad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pad.setAttribute('d', o.icoon);
+    svg.appendChild(pad);
+    b.appendChild(svg);
+    b.appendChild(el('span', null, o.naam));
+    b.addEventListener('click', function () { huidig = o.id; tekenMenu(); teken(); });
+    vak.appendChild(b);
+  });
+
+  var wie = metServer() ? KBV.wie() : null;
+  $('zij-school').textContent = (wie && wie.school && wie.school.naam) || 'Schoolbeheer';
+
+  // het naamplaatje onderin, net als bij het groepsbeheer
+  var onder = $('zij-onder');
+  var oud = onder.querySelector('.account');
+  if (oud) oud.parentNode.removeChild(oud);
   if (metServer()) {
-    var plaat = KBV.maakAccountknop({});
-    if (plaat) acties.appendChild(plaat);
+    var plaat = KBV.maakAccountknop({ klasse:'omhoog' });
+    if (plaat) onder.insertBefore(plaat, onder.firstChild);
   }
+}
 
-  var klassen = KB.G.klassen;
+function kopregel(titel, onder, rechts){
+  var kop = el('div', 'kopregel');
+  var links = el('div');
+  links.appendChild(el('div', 'titel', titel));
+  if (onder) links.appendChild(el('div', 'ondertitel', onder));
+  kop.appendChild(links);
+  if (rechts) {
+    var r = el('div', 'knoprij');
+    [].concat(rechts).forEach(function (x) { r.appendChild(x); });
+    kop.appendChild(r);
+  }
+  return kop;
+}
 
-  // De app maakt bij een lege start altijd één groep aan zodat er iets
-  // te tonen valt. Die telt hier niet mee: zolang er niemand in zit en er
-  // geen hoeken zijn, is de school nog niet ingericht.
-  var nogLeeg = !klassen.length || (klassen.length === 1 &&
-    !(klassen[0].leerlingen || []).length && !(klassen[0].hoekLib || []).length);
+function teken(){
+  var v = leeg($('inhoud'));
+  if (huidig === 'accounts') return tekenAccounts(v);
+  if (huidig === 'school')   return tekenSchool(v);
+  return tekenGroepen(v);
+}
 
-  $('school-sub').textContent = nogLeeg
-    ? 'Nog niet ingericht'
-    : klassen.length + ' groepen · dit apparaat beheert ' +
-      (beheerd ? KB.klas(beheerd).naam : 'nog geen groep');
+/* ── groepen ─────────────────────────────────────────────────────────── */
+
+function tekenGroepen(v){
+  var beheerd = KB.beheerKlasId();
+  var klassen = KB.G.klassen || [];
+
+  var opServer = klassen.filter(function (k) { return !metServer() || KBSYNC.opServer(k.id); });
+  var alleenHier = metServer()
+    ? klassen.filter(function (k) { return !KBSYNC.opServer(k.id); }) : [];
+
+  // De app maakt bij een lege start altijd één groep aan zodat er iets te
+  // tonen valt. Die telt hier niet mee.
+  var nogLeeg = !opServer.length || (opServer.length === 1 &&
+    !(opServer[0].leerlingen || []).length && !(opServer[0].hoekLib || []).length);
+
+  v.appendChild(kopregel('Groepen',
+    nogLeeg ? 'Nog niet ingericht'
+            : opServer.length + ' groepen · dit apparaat toont ' +
+              (beheerd && KB.klas(beheerd) ? KB.klas(beheerd).naam : 'nog geen groep')));
 
   if (nogLeeg) {
     var leegP = el('div', 'paneel');
@@ -176,61 +312,123 @@ function teken(){
     var rij0 = el('div', 'knoprij-onder');
     rij0.style.justifyContent = 'center';
     rij0.appendChild(knop('Zes groepen aanmaken', 'primair', function () {
-      maakSchoolgroepen(false); teken(); meld('Zes groepen klaargezet');
+      maakSchoolgroepen(false).then(function () { teken(); meld('Zes groepen klaargezet'); },
+        function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
     }));
     rij0.appendChild(knop('Met testkinderen in 1A', 'stil', function () {
-      maakSchoolgroepen(true); teken(); meld('Zes groepen klaargezet, 1A gevuld');
+      maakSchoolgroepen(true).then(function () { teken(); meld('Zes groepen klaargezet, 1A gevuld'); },
+        function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
     }));
     vak.appendChild(rij0);
     leegP.appendChild(vak);
     v.appendChild(leegP);
-    return;
+    if (!alleenHier.length) return;
   }
 
-  var rooster = el('div', 'groepen');
-  klassen.forEach(function (k) {
-    rooster.appendChild(groepKaart(k, beheerd));
-  });
-  v.appendChild(rooster);
+  if (!nogLeeg) {
+    var rooster = el('div', 'groepen');
+    opServer.forEach(function (k) { rooster.appendChild(groepKaart(k, beheerd)); });
+    v.appendChild(rooster);
+  }
 
-  if (metServer()) v.appendChild(mensenPaneel());
+  // Groepen die alleen in deze browser staan. Vaak van vóór het inloggen.
+  if (alleenHier.length) {
+    var p = el('div', 'paneel');
+    p.appendChild(el('div', 'paneelkop', 'Staat alleen op dit apparaat'));
+    p.appendChild(el('p', 'hint',
+      'Deze groepen zijn ooit hier gemaakt en staan nog niet op de server. Daardoor ' +
+      'kan niemand anders erbij en kun je er geen leerkracht aan hangen. Breng ze ' +
+      'naar de server, of gooi ze weg als je ze niet meer nodig hebt.'));
+    alleenHier.forEach(function (k) {
+      var rij = el('div', 'ledenrij wacht');
+      var links = el('div');
+      links.appendChild(el('div', 'ledennaam', k.naam));
+      links.appendChild(el('div', 'ledenmail',
+        (k.leerlingen || []).length + ' kinderen · ' + (k.hoekLib || []).length + ' hoeken'));
+      rij.appendChild(links);
+      var knoppen = el('div', 'knoprij');
+      knoppen.appendChild(knop('Naar de server', 'primair', function () { brengNaarServer(k); }));
+      knoppen.appendChild(knop('Weggooien', 'gevaar', function () {
+        vraagBevestiging('Weggooien?',
+          k.naam + ' verdwijnt van dit apparaat, met kinderen, planning en observaties. ' +
+          'Dit kan niet terug.', 'Weggooien', function () {
+            KB.G.klassen = KB.G.klassen.filter(function (x) { return x.id !== k.id; });
+            bewaar(); teken(); meld(k.naam + ' weggegooid');
+          });
+      }));
+      rij.appendChild(knoppen);
+      p.appendChild(rij);
+    });
+    v.appendChild(p);
+  }
+}
+
+/* ── accounts ────────────────────────────────────────────────────────── */
+
+function tekenAccounts(v){
+  if (!metServer()) {
+    v.appendChild(kopregel('Accounts', 'Alleen met een server'));
+    var p0 = el('div', 'paneel');
+    p0.appendChild(el('p', 'hint',
+      'Dit apparaat is niet met de server verbonden, dus er zijn geen accounts om ' +
+      'te tonen. Log in om collega\'s uit te nodigen.'));
+    v.appendChild(p0);
+    return;
+  }
+  v.appendChild(kopregel('Accounts',
+    'Wie mag er bij welke groep', knop('Iemand uitnodigen', 'primair', function () { toonUitnodigen(); })));
+  v.appendChild(mensenPaneel());
+}
+
+/* ── de school ───────────────────────────────────────────────────────── */
+
+function tekenSchool(v){
+  v.appendChild(kopregel('De school', metServer() && KBV.wie().school
+    ? KBV.wie().school.naam : 'Instellingen voor de hele school'));
+
+  var uitleg = el('div', 'paneel');
+  uitleg.appendChild(el('div', 'paneelkop', 'Hoe dit werkt'));
+  uitleg.appendChild(el('p', 'hint',
+    'Wie waar bij mag regel je bij Accounts, of met "Leerkrachten" op een groepskaart. ' +
+    'Een leerkracht ziet alleen de groepen die aan haar zijn toegewezen. Een groep mag ' +
+    'meer dan één leerkracht hebben, en een leerkracht meer dan één groep — handig bij ' +
+    'een duobaan of een invaller.'));
+  uitleg.appendChild(el('p', 'hint',
+    'Jij als schoolbeheerder mag overal bij: met "Beheer openen" en "Bord openen" ga je ' +
+    'naar elke groep, ook die niet van jou zijn.'));
+  uitleg.appendChild(el('p', 'hint',
+    '"Dit apparaat hierop zetten" is voor het digibord in een lokaal: dat onthoudt welke ' +
+    'groep het bij het opstarten laat zien, zodat er \u2019s ochtends niemand hoeft te kiezen.'));
+  v.appendChild(uitleg);
 
   var opnieuw = el('div', 'paneel');
   opnieuw.appendChild(el('div', 'paneelkop', 'Opnieuw beginnen'));
   opnieuw.appendChild(el('p', 'hint',
     'Zet de zes kleutergroepen opnieuw neer: 1A, 1B, 1C, 2A, 2B en 2C, elk met de ' +
     'standaardhoeken en een werkplaats. Alle bestaande groepen en hun gegevens verdwijnen — ' +
-    'kinderen, planning, doelen en observaties.'));
+    'kinderen, planning, doelen en observaties, ook op de server en bij je collega\'s.'));
   var rij = el('div', 'knoprij-onder');
   rij.appendChild(knop('Zes lege groepen', 'gevaar', function () {
     vraagBevestiging('Alles vervangen door zes lege groepen?',
       'Elke bestaande groep verdwijnt, met kinderen, planning en observaties. Dit kan niet terug.',
-      'Vervangen', function () { maakSchoolgroepen(false); teken(); meld('Zes lege groepen klaargezet'); });
+      'Vervangen', function () {
+        maakSchoolgroepen(false).then(function () {
+          huidig = 'groepen'; tekenMenu(); teken(); meld('Zes lege groepen klaargezet');
+        }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+      });
   }));
   rij.appendChild(knop('Zes groepen, 1A met testkinderen', 'gevaar', function () {
     vraagBevestiging('Alles vervangen?',
-      'Zes groepen, waarbij 1A ' + TESTKINDEREN.length + ' verzonnen kinderen krijgt om mee te proeven. ' +
-      'Alle bestaande groepen verdwijnen.',
-      'Vervangen', function () { maakSchoolgroepen(true); teken(); meld('Zes groepen klaargezet, 1A gevuld'); });
+      'Zes groepen, waarbij 1A ' + TESTKINDEREN.length + ' verzonnen kinderen krijgt om mee te ' +
+      'proeven. Alle bestaande groepen verdwijnen.',
+      'Vervangen', function () {
+        maakSchoolgroepen(true).then(function () {
+          huidig = 'groepen'; tekenMenu(); teken(); meld('Zes groepen klaargezet, 1A gevuld');
+        }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+      });
   }));
   opnieuw.appendChild(rij);
   v.appendChild(opnieuw);
-
-  var uitleg = el('div', 'paneel');
-  uitleg.appendChild(el('div', 'paneelkop', 'Hoe dit werkt'));
-  uitleg.appendChild(el('p', 'hint',
-    'Wie waar bij mag regel je met "Leerkrachten" op een groepskaart. Een leerkracht ziet ' +
-    'alleen de groepen die aan haar zijn toegewezen en kan niet per ongeluk in een andere ' +
-    'groep terechtkomen. Een groep mag meer dan één leerkracht hebben, en een leerkracht ' +
-    'meer dan één groep — handig bij een duobaan of een invaller.'));
-  uitleg.appendChild(el('p', 'hint',
-    'Jij als schoolbeheerder mag overal bij: met "Beheer openen" en "Bord openen" ga je naar ' +
-    'elke groep, ook de groepen die niet van jou zijn.'));
-  uitleg.appendChild(el('p', 'hint',
-    '"Dit apparaat hierop zetten" is voor het digibord in een lokaal: dat onthoudt welke groep ' +
-    'het bij het opstarten laat zien, zodat er \u2019s ochtends niemand hoeft te kiezen. ' +
-    'Deze pagina is voor jou als beheerder — die hoef je niet met iedereen te delen.'));
-  v.appendChild(uitleg);
 }
 
 function groepKaart(k, beheerd){
@@ -534,12 +732,12 @@ function toonUitnodigen(concept){
 
 
 KB.laad();
-KB.doelenLaad();
-(window.KBV ? KBV.zodraKlaar() : Promise.resolve({ lokaal:true }))
+KB.doelenZorg()
+  .then(function () { return window.KBV ? KBV.zodraKlaar() : Promise.resolve({ lokaal:true }); })
   .then(haalMensen)
   .then(function () { return KB.fkLees(); })
   .then(function (m) { if (m) KB.fkPasToe(m); })
   .catch(function () {})
-  .then(teken);
+  .then(function () { tekenMenu(); teken(); });
 
 })();

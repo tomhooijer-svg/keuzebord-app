@@ -12,41 +12,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=optional">
 <link rel="stylesheet" href="src/kb-stijl.css">
 <style>
-.app{ display: flex; min-height: 100vh; }
 
-/* ── zijbalk ──────────────────────────────────────────── */
-.zijbalk{
-  width: 248px; flex: none; background: var(--vlak);
-  border-right: 1px solid var(--lijn);
-  padding: 26px 16px 20px; display: flex; flex-direction: column; gap: 26px;
-  position: sticky; top: 0; height: 100vh;
-}
-.zij-kop{ padding: 0 10px; }
-.zij-kop .n{ font-size: 1.08rem; font-weight: 600; letter-spacing: -.02em; }
-.zij-kop .s{ font-size: .8rem; color: var(--inkt-4); margin-top: 1px; }
-.zij-menu{ display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
-.zij-knop{
-  display: flex; align-items: center; gap: 12px; padding: 8px 12px;
-  border-radius: 9px; font-size: .895rem; font-weight: 450;
-  color: var(--inkt-2); text-align: left; width: 100%;
-  transition: background .14s ease, color .14s ease;
-}
-.zij-knop:hover{ background: var(--vlak-2); color: var(--inkt); }
-.zij-knop.aan{ background: var(--accent); color: #fff; font-weight: 550; }
-.zij-knop.aan svg{ opacity: .95; }
-.zij-knop svg{ opacity: .72; }
-.zij-knop svg{ flex: none; }
-.zij-onder{ margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
-.zij-link{
-  display: flex; align-items: center; gap: 10px; padding: 10px;
-  border-radius: var(--rond-s); background: var(--vlak-2);
-  font-size: .85rem; font-weight: 600; color: var(--inkt-2); text-decoration: none;
-}
-
-/* ── inhoud ───────────────────────────────────────────── */
-.inhoud{ flex-grow: 1; padding: 34px 38px 72px; min-width: 0; max-width: 1180px; }
-.titel{ font-size: 1.62rem; font-weight: 600; letter-spacing: -.028em; }
-.ondertitel{ font-size: .92rem; color: var(--inkt-3); margin-top: 4px; }
 
 .paneel{ background: var(--vlak); border-radius: 18px;
           box-shadow: 0 0 0 1px rgba(20,28,44,.045), 0 1px 2px rgba(20,28,44,.04);
@@ -105,15 +71,6 @@
 .hint{ font-size: .86rem; color: var(--inkt-3); line-height: 1.55; }
 .uploadvak{ display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 
-@media (max-width: 820px){
-  .app{ flex-direction: column; }
-  .zijbalk{ width: 100%; height: auto; position: static; flex-direction: row; overflow-x: auto;
-            border-right: none; border-bottom: 1px solid var(--lijn); gap: 12px; align-items: center; }
-  .zij-kop, .zij-onder{ display: none; }
-  .zij-menu{ flex-direction: row; }
-  .zij-knop{ white-space: nowrap; }
-  .inhoud{ padding: 20px 16px 50px; }
-}
 
 /* ── nieuwe onderdelen ───────────────────────────────────── */
 .zij-scheiding{ height:1px; background:var(--lijn); margin:8px 10px; }
@@ -171,6 +128,39 @@
 .doelvink{ width:22px; height:22px; border-radius:7px; border:2px solid var(--lijn); flex:none;
            display:flex; align-items:center; justify-content:center; color:transparent; margin-top:1px; }
 .doelkaart.aan .doelvink{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* ── doelen kiezen: zoeken, suggesties, en bladeren ── */
+.doelbalk{ margin-bottom:10px; }
+.doelbalk .invoer{ font-size:.95rem; padding:10px 13px; }
+.doelbladeraar{ margin-top:14px; }
+.leerlijnen{ margin-top:10px; }
+.leerlijnkop{ display:flex; align-items:center; justify-content:space-between; gap:12px;
+              width:100%; text-align:left; padding:11px 14px; border-radius:11px;
+              background:var(--vlak-2); margin-bottom:6px; transition:background .14s ease; }
+.leerlijnkop:hover{ background:rgba(20,28,44,.09); }
+.leerlijnkop.uitgeklapt{ background:var(--accent-zacht); }
+.leerlijnnaam{ font-size:.94rem; font-weight:600; color:var(--inkt); }
+.leerlijntel{ font-size:.78rem; color:var(--inkt-3); font-variant-numeric:tabular-nums; }
+.leerlijninhoud{ padding:2px 0 12px 8px; border-left:2px solid var(--vlak-2); margin:0 0 10px 8px; }
+.aspectkop{ font-size:.72rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+            color:var(--inkt-4); margin:12px 0 6px 8px; }
+.doelkaart.suggestie{ border-color:var(--goed); background:var(--goed-zacht); }
+.doelkaart.suggestie .doelvink{ border-color:var(--goed); color:var(--goed);
+                                font-size:1rem; font-weight:700; }
+
+/* de suggesties in het taakformulier zelf */
+.tipkop{ font-size:.72rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+         color:var(--inkt-3); margin:14px 0 7px; }
+.doeltip{ display:flex; align-items:flex-start; gap:10px; width:100%; text-align:left;
+          padding:9px 12px; border-radius:11px; background:var(--goed-zacht);
+          margin-bottom:6px; transition:background .14s ease; }
+.doeltip:hover{ background:#dcf0e7; }
+.doeltip-plus{ width:20px; height:20px; border-radius:50%; flex:none; margin-top:1px;
+               background:var(--goed); color:#fff; font-weight:700; font-size:.85rem;
+               display:flex; align-items:center; justify-content:center; }
+.doeltip-tekst{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.doeltip-boven{ font-size:.72rem; color:var(--goed); font-weight:600; }
+.doeltip-zin{ font-size:.88rem; color:var(--inkt); line-height:1.4; }
 .doelvink svg{ width:13px; height:13px; }
 .doelinhoud{ display:flex; flex-direction:column; gap:2px; min-width:0; }
 .doelaspect{ font-size:.7rem; font-weight:700; letter-spacing:.05em; color:var(--inkt-3); }
@@ -291,9 +281,10 @@
 <script src="src/kb-media.js"></script>
 <script src="src/kb-sync.js"></script>
 <script src="src/kb-verbinding.js"></script>
+<script src="src/kb-doelzoeker.js"></script>
 <script src="src/kb-docx.js"></script>
 <script src="src/kb-beheer.js"></script>
 <script src="src/kb-plan.js"></script>
-<script>KB.laad(); KB.doelenLaad(); BH.start();</script>
+<script>KB.laad(); KB.doelenZorg().then(BH.start);</script>
 </body>
 </html>

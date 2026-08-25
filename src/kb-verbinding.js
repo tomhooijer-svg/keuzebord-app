@@ -184,6 +184,19 @@ function volgIntervallen(){
   });
 }
 
+/* Opnieuw beginnen: alles bij de server ophalen alsof we net binnenkomen.
+   Het schoolbeheer gebruikt dit nadat het daar groepen heeft aangemaakt. */
+function herstart(){
+  return SB.wieBenIk().then(function (uit) {
+    ik = uit;
+    zorgVoorGroepen();
+    klasId = kiesGroep();
+    groepId = klasId ? KBSYNC.opServer(klasId) : null;
+    if (klasId) { KB.G.activeKlasId = klasId; KB.bewaar(); }
+    return ik;
+  });
+}
+
 /* Van groep wisselen (het schoolbeheer doet dat). */
 function naarGroep(nieuwKlasId){
   var nieuwGroepId = KBSYNC.opServer(nieuwKlasId);
@@ -341,6 +354,7 @@ global.KBV = {
   stuurNu: stuurNu,
   haalOp: haalOp,
   naarGroep: naarGroep,
+  herstart: herstart,
   afmelden: afmelden,
   maakAccountknop: maakAccountknop,
   collegas: collegas, ledenPerGroep: ledenPerGroep,
