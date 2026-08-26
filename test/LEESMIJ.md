@@ -294,6 +294,11 @@ sh test/opzetten.sh && sh test/proefschool.sh
 node test/knoppen.test.js
 ```
 
+Een hele ronde is **709 knoppen over zeventien schermen** en duurt zo'n
+twintig minuten -- de vensterknoppen kosten elk een eigen heropening. Hij
+staat in `test/alles.sh`, maar dat is meteen de reden dat die ronde
+tegenwoordig ruim een half uur loopt.
+
 ## Het verslag voor het oudergesprek
 
 `test/verslag.test.js` gaat na of er uit de observaties een blaadje komt

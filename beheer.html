@@ -11,7 +11,7 @@
      krijgen strakkere letters. display=optional voorkomt dat de bladzijde
      verspringt als het lettertype later binnenkomt. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=optional">
-<link rel="stylesheet" href="src/kb-stijl.css">
+<link rel="stylesheet" href="src/kb-stijl.css?v=26augustus2026">
 <style>
 
 
@@ -286,6 +286,9 @@
               background:var(--vlak-2); margin-bottom:6px; transition:background .14s ease; }
 .leerlijnkop:hover{ background:rgba(20,28,44,.09); }
 .leerlijnkop.uitgeklapt{ background:var(--accent-zacht); }
+/* De enige leerlijn van een domein staat altijd open: geen knop, een kop. */
+.leerlijnkop.vast{ cursor:default; }
+.leerlijnkop.vast:hover{ background:var(--accent-zacht); }
 .leerlijnnaam{ font-size:.94rem; font-weight:600; color:var(--inkt); }
 .leerlijntel{ font-size:.78rem; color:var(--inkt-3); font-variant-numeric:tabular-nums; }
 .leerlijninhoud{ padding:2px 0 12px 8px; border-left:2px solid var(--vlak-2); margin:0 0 10px 8px; }
@@ -435,18 +438,18 @@
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
-<script src="src/kb-data.js"></script>
-<script src="src/kb-supabase.js"></script>
-<script src="src/kb-media.js"></script>
-<script src="src/kb-sync.js"></script>
-<script src="src/kb-verbinding.js"></script>
-<script src="src/kb-statistiek.js"></script>
-<script src="src/kb-doelzoeker.js"></script>
-<script src="src/kb-verslag.js"></script>
-<script src="src/kb-docx.js"></script>
-<script src="src/kb-beheer.js"></script>
-<script src="src/kb-plan.js"></script>
-<script src="src/kb-thema.js"></script>
+<script src="src/kb-data.js?v=26augustus2026"></script>
+<script src="src/kb-supabase.js?v=26augustus2026"></script>
+<script src="src/kb-media.js?v=26augustus2026"></script>
+<script src="src/kb-sync.js?v=26augustus2026"></script>
+<script src="src/kb-verbinding.js?v=26augustus2026"></script>
+<script src="src/kb-statistiek.js?v=26augustus2026"></script>
+<script src="src/kb-doelzoeker.js?v=26augustus2026"></script>
+<script src="src/kb-verslag.js?v=26augustus2026"></script>
+<script src="src/kb-docx.js?v=26augustus2026"></script>
+<script src="src/kb-beheer.js?v=26augustus2026"></script>
+<script src="src/kb-plan.js?v=26augustus2026"></script>
+<script src="src/kb-thema.js?v=26augustus2026"></script>
 <script>KB.laad(); KB.doelenZorg().then(BH.start);</script>
 </body>
 </html>

@@ -156,6 +156,7 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
         vensterWaarden: blad ? [...blad.querySelectorAll('input,select,textarea')]
                                  .map(x => x.value).join('|') : '',
         melding: melding ? melding.classList.contains('zichtbaar') : false,
+        meldingTekst: melding ? __code(melding.textContent || '') : 0,
         adres: location.hash,
         gegevens: __code(JSON.stringify(KB.G)),
         uiterlijk: (document.documentElement.getAttribute('style') || '') +
@@ -213,6 +214,12 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
         while (laag && laag.classList.contains('open') && rondjes++ < 30) BH.sluitBlad();
       }
       if (laag) laag.classList.remove('open');
+      /* Een melding blijft ruim twee seconden staan, langer dan één klik
+         duurt. Bleef die van de vorige knop hangen, dan zag de proef geen
+         verschil bij een knop die alleen een melding geeft. Dus schoon
+         beginnen. */
+      var m = document.getElementById('melding');
+      if (m) m.classList.remove('zichtbaar');
     };
     window.__herteken = function (){
       if (window.BH && BH.teken) { BH.teken(); return; }

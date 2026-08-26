@@ -27,6 +27,22 @@ rm -f "$UIT/oud.html"
 rm -rf "$UIT/docs"
 cp "$R/docs/PUBLIEK-LEESMIJ.md" "$UIT/README.md" 2>/dev/null || true
 
+# ── de versie in de adressen van de code stampen ──────────────────────
+# GitHub Pages leest _headers niet -- dat is een bestand van Cloudflare.
+# Daar wordt de code dus wél uit de cache van de browser geserveerd, en
+# dan zie je het nieuwe scherm met de oude code erachter. Door de versie
+# in het adres te zetten is elk nieuw uitgave-adres een ander adres, en
+# kan er niets ouds meer blijven hangen. Het bronbestand blijft schoon;
+# alleen de kopie die publiek gaat krijgt de stempel.
+V=$(sed -n "s/^var VERSIE = '\(.*\)';.*/\1/p" "$R/src/kb-data.js" | tr -d ' ' | tr -cd 'A-Za-z0-9')
+if [ -n "$V" ]; then
+  for f in "$UIT"/*.html; do
+    [ -e "$f" ] || continue
+    sed -i "s|\(src=\"src/[a-z-]*\.js\)\"|\1?v=$V\"|g; s|\(href=\"src/[a-z-]*\.css\)\"|\1?v=$V\"|g" "$f"
+  done
+  echo "versie in de adressen gestempeld: $V"
+fi
+
 echo "── klaar in $UIT ──"
 echo
 echo "controle: staat er nog iets persoonlijks in?"

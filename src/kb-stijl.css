@@ -86,6 +86,10 @@ input, select, textarea{ font: inherit; color: inherit; }
   transition: transform .18s var(--veer), background .18s ease, opacity .18s ease;
 }
 .knop:active{ transform: scale(.96); }
+/* Een knop die op dit moment niets meer kan doen. Niet weg, wel duidelijk:
+   zo zie je dat je er al bent in plaats van te blijven drukken. */
+.knop:disabled{ opacity: .38; cursor: default; }
+.knop:disabled:active{ transform: none; }
 .knop-primair{ background: var(--accent); color: #fff; }
 .knop-stil   { background: rgba(20,28,44,.06); color: var(--inkt-2); }
 .knop-gevaar { background: var(--stop-zacht); color: var(--stop); }
