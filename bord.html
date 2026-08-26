@@ -35,7 +35,9 @@ body.bord{
    de klok gebruikt cijfers van gelijke breedte, zodat er nooit iets
    verschuift als de tijd verspringt of een groepsnaam langer is. */
 .balk{
-  flex: none; height: 64px;
+  /* Boven het pauzevlak, anders kun je het bord wel uitzetten maar niet
+     meer aan: het vlak lag over de knop heen. */
+  flex: none; height: 64px; position: relative; z-index: 400;
   margin: 16px 22px 2px;
   padding: 0 12px 0 24px;
   display: flex; align-items: center; justify-content: space-between; gap: 20px;
@@ -87,7 +89,8 @@ body.bord{
 .scherm.gepauzeerd .rooster,
 .scherm.gepauzeerd .strook{ opacity: .4; pointer-events: none; filter: saturate(.55); }
 .pauzevlak{
-  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 300;
+  /* Begint onder de balk, zodat de knoppen daar bereikbaar blijven. */
+  position: fixed; top: 90px; right: 0; bottom: 0; left: 0; z-index: 300;
   display: none; align-items: center; justify-content: center;
   background: rgba(251,248,244,.35);
 }

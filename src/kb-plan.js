@@ -599,39 +599,21 @@ BH.panelen.week = function (v){
   if (!wSleutel) wSleutel = KB.weekSleutel();
   var w = KB.week(wSleutel, k);
   var vandaag = KB.weekSleutel();
+  var isNu = wSleutel === vandaag;
 
-  var nav = el('div', 'knoprij');
-  nav.appendChild(knop('◀', 'stil', function () { wSleutel = KB.weekVerschoven(wSleutel, -1); teken(); }));
-  if (wSleutel !== vandaag) nav.appendChild(knop('Deze week', 'stil', function () { wSleutel = vandaag; teken(); }));
-  nav.appendChild(knop('▶', 'stil', function () { wSleutel = KB.weekVerschoven(wSleutel, 1); teken(); }));
-  nav.appendChild(knop('Taak inplannen', 'primair', kiesTaakVoorWeek));
+  v.appendChild(BH.kopregel('Weekplan', 'Wat er deze week te doen is',
+    knop('Taak inplannen', 'primair', kiesTaakVoorWeek)));
 
-  v.appendChild(BH.kopregel('Weekplan',
-    KB.weekLabel(wSleutel) + (wSleutel === vandaag ? ' · deze week' : ''), nav));
+  /* ── welke week kijk je naar ──
+     Dat moet je in één blik zien, zonder te rekenen. Dus: het weeknummer
+     groot, de datums eronder, en de dagen van de week ernaast met vandaag
+     eruit gelicht. */
+  v.appendChild(weekKop(w, k, vandaag, isNu));
 
-  /* doelen die deze week centraal staan */
-  var centraal = paneel('Deze week staan centraal',
-    knop('Doelen kiezen', 'stil', function () {
-      kiesDoelen(w.centraleDoelIds || [], function (nieuwe) {
-        w.centraleDoelIds = nieuwe; bewaar(); teken();
-      });
-    }));
-  var doelen = (w.centraleDoelIds || []).map(doelVan).filter(Boolean);
-  if (!doelen.length) {
-    centraal.appendChild(el('p', 'hint',
-      'Nog geen doelen gekozen voor deze week. Deze doelen zijn leidend: ze bepalen ' +
-      'welke taken je inplant en waarop je beoordeelt.'));
-  } else {
-    var vak = el('div', 'gekozendoelen');
-    doelen.forEach(function (d) {
-      var chip = el('div', 'doelchip');
-      chip.appendChild(el('span', 'doelchip-niveau', d.niveau));
-      chip.appendChild(el('span', null, doelTekst(d)));
-      vak.appendChild(chip);
-    });
-    centraal.appendChild(vak);
-  }
-  v.appendChild(centraal);
+  /* ── waar draait deze week om ──
+     Boven aan het scherm, want dit is waar je op stuurt: het thema, de
+     doelen, en de taken die eronder hangen. */
+  v.appendChild(waaromPaneel(w, k));
 
   if (!w.taken.length) {
     var leegP = paneel();
@@ -647,6 +629,194 @@ BH.panelen.week = function (v){
     v.appendChild(tekenWeekTaak(wt, k));
   });
 };
+
+/* De week zelf, groot in beeld. */
+function weekKop(w, k, vandaag, isNu){
+  var p = paneel();
+  p.className = 'paneel weekkop';
+
+  var boven = el('div', 'weekkop-boven');
+
+  var links = el('div', 'weekkop-week');
+  links.appendChild(el('div', 'weekkop-nr', 'week ' + KB.weekNummer(wSleutel)));
+  links.appendChild(el('div', 'weekkop-datums', KB.weekLabel(wSleutel)));
+  if (!isNu) {
+    var hoever = Math.round((new Date(wSleutel + 'T12:00:00') -
+                             new Date(vandaag + 'T12:00:00')) / 6048e5);
+    links.appendChild(el('div', 'weekkop-verte',
+      hoever === 1 ? 'volgende week' : hoever === -1 ? 'vorige week' :
+      hoever > 0 ? 'over ' + hoever + ' weken' : Math.abs(hoever) + ' weken geleden'));
+  } else {
+    links.appendChild(el('div', 'weekkop-verte nu', 'dit is deze week'));
+  }
+  boven.appendChild(links);
+
+  var nav = el('div', 'knoprij');
+  nav.style.marginTop = '0';
+  nav.appendChild(knop('\u25c0 Vorige', 'stil', function () {
+    wSleutel = KB.weekVerschoven(wSleutel, -1); teken();
+  }));
+  if (!isNu) nav.appendChild(knop('Naar deze week', 'stil', function () {
+    wSleutel = vandaag; teken();
+  }));
+  nav.appendChild(knop('Volgende \u25b6', 'stil', function () {
+    wSleutel = KB.weekVerschoven(wSleutel, 1); teken();
+  }));
+  boven.appendChild(nav);
+  p.appendChild(boven);
+
+  /* de vijf dagen, met hoeveel kinderen er staan */
+  var nuDag = KB.dagVanVandaag();
+  var strook = el('div', 'weekstrook');
+  KB.weekDatums(wSleutel).forEach(function (d) {
+    var n = 0;
+    (w.taken || []).forEach(function (wt) { n += ((wt.verdeling || {})[d.dag] || []).length; });
+    var vak = el('div', 'weekdagvak' + (isNu && d.dag === nuDag ? ' vandaag' : ''));
+    vak.appendChild(el('div', 'weekdagvak-naam', KB.DAGEN_LANG[d.dag].slice(0, 2)));
+    vak.appendChild(el('div', 'weekdagvak-datum', String(d.dagNummer)));
+    vak.appendChild(el('div', 'weekdagvak-aantal', n ? n + ' kinderen' : '\u2014'));
+    strook.appendChild(vak);
+  });
+  p.appendChild(strook);
+  return p;
+}
+
+/* Het thema, de doelen en de taken van deze week: waar het om draait. */
+function waaromPaneel(w, k){
+  var p = paneel('Waar deze week om draait');
+  var thema = KB.themaVanWeek(wSleutel, k);
+
+  /* thema */
+  var themaRij = el('div', 'rij');
+  var themaTekst = el('div');
+  themaTekst.style.flexGrow = '1';
+  if (thema) {
+    var stip = el('span', 'stip');
+    stip.style.background = thema.kleur || 'var(--accent)';
+    themaRij.appendChild(stip);
+    themaTekst.appendChild(el('div', 'rij-naam', thema.naam));
+    themaTekst.appendChild(el('div', 'rij-sub',
+      thema.vraag || 'geen onderzoeksvraag opgeschreven'));
+  } else {
+    themaTekst.appendChild(el('div', 'rij-naam', 'Geen thema deze week'));
+    themaTekst.appendChild(el('div', 'rij-sub',
+      'Hang er een thema aan, dan weet je waar je taken en doelen bij horen.'));
+  }
+  themaRij.appendChild(themaTekst);
+  var themaActies = el('div', 'rij-acties');
+  themaActies.appendChild(knop(thema ? 'Wisselen' : 'Thema kiezen', 'stil', function () {
+    kiesThemaVoorWeek(w, k);
+  }));
+  themaRij.appendChild(themaActies);
+  p.appendChild(themaRij);
+
+  /* doelen */
+  var doelen = (w.centraleDoelIds || []).map(doelVan).filter(Boolean);
+  var doelRij = el('div', 'rij');
+  var doelTekstVak = el('div');
+  doelTekstVak.style.flexGrow = '1';
+  doelTekstVak.appendChild(el('div', 'rij-naam',
+    doelen.length ? 'Doelen waar we aan werken (' + doelen.length + ')' : 'Nog geen doelen'));
+  if (!doelen.length) {
+    doelTekstVak.appendChild(el('div', 'rij-sub',
+      thema && (thema.doelIds || []).length
+        ? 'Het thema heeft er ' + thema.doelIds.length + '. Neem ze over of kies zelf.'
+        : 'Deze doelen sturen welke taken je inplant en waarop je let.'));
+  } else {
+    var mc = el('div', 'minichips');
+    doelen.forEach(function (d) {
+      mc.appendChild(el('span', 'minichip', doelTekst(d)));
+    });
+    doelTekstVak.appendChild(mc);
+  }
+  doelRij.appendChild(doelTekstVak);
+  var doelActies = el('div', 'rij-acties');
+  if (!doelen.length && thema && (thema.doelIds || []).length) {
+    doelActies.appendChild(knop('Uit thema', 'stil', function () {
+      w.centraleDoelIds = thema.doelIds.slice();
+      bewaar(); teken(); meld('Doelen van ' + thema.naam + ' overgenomen');
+    }));
+  }
+  doelActies.appendChild(knop('Kiezen', 'stil', function () {
+    kiesDoelen(w.centraleDoelIds || [], function (nieuwe) {
+      w.centraleDoelIds = nieuwe; bewaar(); teken();
+    }, thema ? thema.naam + ' ' + thema.vraag : '');
+  }));
+  doelRij.appendChild(doelActies);
+  p.appendChild(doelRij);
+
+  /* taken */
+  var taakRij = el('div', 'rij');
+  var taakTekst = el('div');
+  taakTekst.style.flexGrow = '1';
+  taakTekst.appendChild(el('div', 'rij-naam',
+    w.taken.length ? 'Taken deze week (' + w.taken.length + ')' : 'Nog geen taken'));
+  if (!w.taken.length) {
+    taakTekst.appendChild(el('div', 'rij-sub',
+      'Werk waar elk kind een keer aan toekomt, in de werkplaats.'));
+  } else {
+    var tc = el('div', 'minichips');
+    w.taken.forEach(function (wt) {
+      var t = KB.taakVan(wt.taakId, k);
+      if (!t) return;
+      var chip = el('span', 'minichip', t.naam);
+      if (t.kleur) {
+        chip.style.background = t.kleur + '22';
+        chip.style.color = t.kleur;
+      }
+      tc.appendChild(chip);
+    });
+    taakTekst.appendChild(tc);
+  }
+  taakRij.appendChild(taakTekst);
+  var taakActies = el('div', 'rij-acties');
+  taakActies.appendChild(knop('Inplannen', 'stil', kiesTaakVoorWeek));
+  taakRij.appendChild(taakActies);
+  p.appendChild(taakRij);
+
+  return p;
+}
+
+function kiesThemaVoorWeek(w, k){
+  var alle = KB.themas(k).filter(function (t) { return !t.archief; });
+  BH.toonBlad(function (blad) {
+    blad.appendChild(BH.bladTitel('Welk thema loopt deze week?',
+      KB.weekLabel(wSleutel)));
+    if (!alle.length) {
+      blad.appendChild(el('p', 'hint',
+        'Er zijn nog geen thema\u2019s. Maak er een bij Thema\u2019s; dan kun je hem hier ' +
+        'aan een week hangen.'));
+      var r0 = el('div', 'knoprij');
+      r0.appendChild(knop("Naar Thema's", 'primair', function () { BH.sluitBlad(); BH.ga('themas'); }));
+      r0.appendChild(knop('Sluiten', 'stil', BH.sluitBlad));
+      blad.appendChild(r0);
+      return;
+    }
+    var lijst = el('div');
+    alle.forEach(function (t) {
+      var rij = el('button', 'themarij' + (w.themaId === t.id ? ' aan' : ''));
+      var stip = el('span', 'stip');
+      stip.style.background = t.kleur || 'var(--accent)';
+      rij.appendChild(stip);
+      var tekst = el('div', 'themarij-tekst');
+      tekst.appendChild(el('div', 'rij-naam', t.naam));
+      tekst.appendChild(el('div', 'rij-sub', t.vraag || 'geen onderzoeksvraag'));
+      rij.appendChild(tekst);
+      rij.addEventListener('click', function () {
+        w.themaId = t.id; bewaar(); BH.sluitBlad(); teken();
+        meld(t.naam + ' loopt deze week');
+      });
+      lijst.appendChild(rij);
+    });
+    blad.appendChild(lijst);
+    var r = el('div', 'knoprij');
+    if (w.themaId) r.appendChild(knop('Geen thema deze week', 'stil', function () {
+      w.themaId = null; bewaar(); BH.sluitBlad(); teken();
+    }));
+    r.appendChild(knop('Sluiten', 'stil', BH.sluitBlad));
+    blad.appendChild(r);
+  });
+}
 
 function kiesTaakVoorWeek(){
   var k = KB.klas(), lijst = KB.taken(k);
@@ -923,43 +1093,61 @@ BH.panelen.observaties = function (v){
   }
 };
 
-/* Eén raster: per kind een kaartje dat je aantikt om van "nog niet" naar
-   "bezig" naar "behaald" te gaan. */
+/* Eén raster: per kind een kaartje dat je aantikt om van "is aan het
+   ontdekken" naar "kan het met hulp" naar "kan het zelfstandig" te gaan.
+   Een kind dat je nog niet hebt bekeken staat op de eerste trede, maar
+   met een streepje: dat is iets anders dan gezien hebben dat het aan het
+   ontdekken is. */
+function samenvatting(kinderen, onderwerpId, k){
+  var t = { nog:0, bezig:0, behaald:0, ongezien:0 };
+  kinderen.forEach(function (l) {
+    t[KB.standVan(l.id, onderwerpId, k)]++;
+    if (!KB.isBeoordeeld(l.id, onderwerpId, k)) t.ongezien++;
+  });
+  return t.behaald + '\u00d7 zelfstandig, ' + t.bezig + '\u00d7 met hulp, ' +
+         t.nog + '\u00d7 aan het ontdekken' +
+         (t.ongezien ? ' (' + t.ongezien + ' nog niet bekeken)' : '');
+}
+
 function beoordeelPaneel(onderwerp, kinderen, ingedeeld, taak, k){
   var p = paneel();
   var kop = el('div');
   kop.style.marginBottom = '12px';
   kop.appendChild(el('div', 'rij-naam', onderwerp.kop));
-  var tellingen = { nog:0, bezig:0, behaald:0 };
-  kinderen.forEach(function (l) { tellingen[KB.standVan(l.id, onderwerp.id, k)]++; });
-  kop.appendChild(el('div', 'rij-sub', onderwerp.sub + ' \u2014 ' +
-    tellingen.behaald + ' behaald, ' + tellingen.bezig + ' bezig, ' + tellingen.nog + ' nog niet'));
+  kop.appendChild(el('div', 'rij-sub',
+    onderwerp.sub + ' \u2014 ' + samenvatting(kinderen, onderwerp.id, k)));
   p.appendChild(kop);
 
-  var namen = { nog:'nog niet', bezig:'bezig', behaald:'behaald' };
   var rooster = el('div', 'observatierooster');
   kinderen.forEach(function (l) {
-    var stand = KB.standVan(l.id, onderwerp.id, k);
-    var kaart = el('button', 'observatiekaart stand-' + stand);
-    if (ingedeeld.length && ingedeeld.indexOf(l.id) < 0) kaart.classList.add('nietingedeeld');
-    kaart.appendChild(BH.pictoBol(l, 34));
+    var kaart = el('button', 'observatiekaart');
     var tekst = el('div', 'observatietekst');
+    var standRegel = el('div', 'observatiestand');
+    function toon(){
+      var stand = KB.standVan(l.id, onderwerp.id, k);
+      kaart.className = 'observatiekaart stand-' + stand +
+        (KB.isBeoordeeld(l.id, onderwerp.id, k) ? '' : ' ongezien') +
+        (ingedeeld.length && ingedeeld.indexOf(l.id) < 0 ? ' nietingedeeld' : '');
+      standRegel.textContent = KB.standNaam(stand);
+      kaart.title = l.naam + ' \u2014 ' + KB.standNaam(stand) +
+        (KB.isBeoordeeld(l.id, onderwerp.id, k) ? '' : ' (nog niet bekeken)');
+    }
+    kaart.appendChild(BH.pictoBol(l, 34));
     tekst.appendChild(el('div', 'observatienaam', l.naam));
-    var standRegel = el('div', 'observatiestand', namen[stand]);
     tekst.appendChild(standRegel);
     kaart.appendChild(tekst);
+    toon();
     kaart.addEventListener('click', function () {
-      var nieuw = KB.volgendeStand(KB.standVan(l.id, onderwerp.id, k));
+      /* Nog niet bekeken? Dan legt de eerste tik vast wat je nu al ziet:
+         dit kind is aan het ontdekken. Pas daarna loop je de trap op. */
+      var nieuw = KB.isBeoordeeld(l.id, onderwerp.id, k)
+        ? KB.volgendeStand(KB.standVan(l.id, onderwerp.id, k))
+        : 'nog';
       KB.zetStand(l.id, onderwerp.id, nieuw, taak.id, k);
       bewaar();
-      kaart.className = 'observatiekaart stand-' + nieuw +
-        (ingedeeld.length && ingedeeld.indexOf(l.id) < 0 ? ' nietingedeeld' : '');
-      standRegel.textContent = namen[nieuw];
-      // de telling in de kop meelopen
-      var t = { nog:0, bezig:0, behaald:0 };
-      kinderen.forEach(function (x) { t[KB.standVan(x.id, onderwerp.id, k)]++; });
-      kop.lastChild.textContent = onderwerp.sub + ' \u2014 ' +
-        t.behaald + ' behaald, ' + t.bezig + ' bezig, ' + t.nog + ' nog niet';
+      toon();
+      kop.lastChild.textContent =
+        onderwerp.sub + ' \u2014 ' + samenvatting(kinderen, onderwerp.id, k);
     });
     rooster.appendChild(kaart);
   });
@@ -975,23 +1163,24 @@ function beoordeelPaneel(onderwerp, kinderen, ingedeeld, taak, k){
    Geen oordeel -- tellingen. De juf weet wat ze betekenen.
    ══════════════════════════════════════════════════════════ */
 
+/* De periode waar je naar kijkt: hoe lang, en tot wanneer. Dat tweede
+   is het punt -- voor een oudergesprek in januari wil je de weken vóór
+   de kerstvakantie zien, niet de weken erna. */
 var statPeriode = 21;      // over hoeveel dagen we kijken
+var statEind = null;       // tot welke dag; leeg is vandaag
 var statKind = null;       // welk kind is uitgeklapt
 
 BH.panelen.statistiek = function (v){
   var k = KB.klas();
-  var opties = { dagen: statPeriode };
+  var opties = { dagen: statPeriode, eind: statEind };
+  var p = KBSTAT.periode(opties);
 
-  var keuze = el('div', 'chips');
-  [[7,'Deze week'],[21,'Drie weken'],[90,'Dit kwartaal'],[0,'Alles']].forEach(function (paar) {
-    var c = el('button', 'chip' + (statPeriode === paar[0] ? ' aan' : ''), paar[1]);
-    c.addEventListener('click', function () { statPeriode = paar[0]; teken(); });
-    keuze.appendChild(c);
-  });
   v.appendChild(BH.kopregel('Statistieken',
-    'Uit wat er op het bord gebeurde', keuze));
+    'Uit wat er op het bord gebeurde \u2014 ' + KBSTAT.periodeZin(opties),
+    knop('Periode kiezen', 'stil', function () { periodeBlad(); })));
+  v.appendChild(periodeBalk());
 
-  var bezoeken = KBSTAT.bezoekjes(k, statPeriode ? Date.now() - statPeriode * 864e5 : null);
+  var bezoeken = KBSTAT.bezoekjes(k, p.van, p.tot);
   if (!bezoeken.length) {
     var leegP = paneel();
     leegP.appendChild(BH.leegBericht(
@@ -1111,6 +1300,82 @@ BH.panelen.statistiek = function (v){
   v.appendChild(p3);
 };
 
+/* De snelle keuzes, altijd in beeld. */
+function periodeBalk(){
+  var vak = paneel();
+  var keuze = el('div', 'chips');
+  [[7,'Een week'],[21,'Drie weken'],[42,'Zes weken'],[90,'Een kwartaal'],[0,'Alles']]
+    .forEach(function (paar) {
+      var c = el('button', 'chip' + (statPeriode === paar[0] ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () { statPeriode = paar[0]; teken(); });
+      keuze.appendChild(c);
+    });
+  vak.appendChild(keuze);
+
+  if (statEind) {
+    var rij = el('div', 'knoprij');
+    rij.appendChild(el('span', 'minichip', 'tot ' + statEind));
+    rij.appendChild(knop('Terug naar vandaag', 'stil', function () { statEind = null; teken(); }));
+    vak.appendChild(rij);
+  }
+  return vak;
+}
+
+/* En het venster waarin je hem helemaal zelf zet. */
+function periodeBlad(){
+  var lengte = statPeriode, eind = statEind;
+  BH.toonBlad(function (blad) {
+    blad.appendChild(BH.bladTitel('Over welke periode',
+      'Kies hoe lang de periode is en tot wanneer hij loopt.'));
+
+    var v1 = el('div', 'veld');
+    v1.appendChild(el('label', null, 'Hoe lang'));
+    var chips = el('div', 'chips');
+    [[7,'1 week'],[14,'2 weken'],[21,'3 weken'],[42,'6 weken'],
+     [90,'Een kwartaal'],[180,'Een half jaar'],[0,'Alles']].forEach(function (paar) {
+      var c = el('button', 'chip' + (lengte === paar[0] ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () {
+        lengte = paar[0];
+        Array.prototype.forEach.call(chips.children, function (x) { x.classList.remove('aan'); });
+        c.classList.add('aan');
+        toonZin();
+      });
+      chips.appendChild(c);
+    });
+    v1.appendChild(chips);
+    blad.appendChild(v1);
+
+    var v2 = el('div', 'veld');
+    v2.appendChild(el('label', null, 'Tot welke dag'));
+    var datum = el('input');
+    datum.type = 'date';
+    datum.value = eind || '';
+    datum.max = KB.datumSleutel(new Date());
+    datum.addEventListener('change', function () { eind = datum.value || null; toonZin(); });
+    v2.appendChild(datum);
+    v2.appendChild(el('p', 'hint',
+      'Laat leeg voor vandaag. Vul je hier bijvoorbeeld de laatste schooldag voor de ' +
+      'kerstvakantie in, dan kijk je naar de weken daarv\u00f3\u00f3r.'));
+    blad.appendChild(v2);
+
+    var zin = el('p', 'hint');
+    zin.style.cssText = 'margin:16px 0 4px;font-size:.95rem;color:var(--inkt)';
+    blad.appendChild(zin);
+    function toonZin(){
+      zin.textContent = 'Je kijkt naar: ' + KBSTAT.periodeZin({ dagen:lengte, eind:eind }) + '.';
+    }
+    toonZin();
+
+    var rij = el('div', 'knoprij');
+    rij.appendChild(knop('Deze periode gebruiken', 'primair', function () {
+      statPeriode = lengte; statEind = eind;
+      BH.sluitBlad(); teken();
+    }));
+    rij.appendChild(knop('Annuleren', 'stil', BH.sluitBlad));
+    blad.appendChild(rij);
+  });
+}
+
 function merkTeken(soort){
   if (soort === 'vast')        return '↺';
   if (soort === 'stil')        return '!';
@@ -1175,6 +1440,7 @@ function kindDetail(l, k, opties){
    ══════════════════════════════════════════════════════════ */
 var vKeuze = null;          // welke kinderen aangevinkt staan
 var vPeriode = 90;
+var vEind = null;
 var vExtra = { nogNiet:false, spel:true, opval:true, ruimte:true, fotos:true };
 
 function verslagBlad(startKind){
@@ -1247,6 +1513,19 @@ function bouwVerslagBlad(blad, k, kinderen){
   });
   blad.appendChild(per);
 
+  var totVak = el('div', 'veld');
+  totVak.style.marginBottom = '18px';
+  totVak.appendChild(el('label', null, 'Tot welke dag (leeg is vandaag)'));
+  var totInv = el('input');
+  totInv.type = 'date'; totInv.value = vEind || '';
+  totInv.max = KB.datumSleutel(new Date());
+  totInv.addEventListener('change', function () { vEind = totInv.value || null; opnieuw(); });
+  totVak.appendChild(totInv);
+  totVak.appendChild(el('p', 'hint',
+    'Voor een gesprek na de vakantie zet je hier de laatste schooldag ervoor; dan gaat ' +
+    'het verslag over de weken daarv\u00f3\u00f3r.'));
+  blad.appendChild(totVak);
+
   /* ── wat komt erin ── */
   blad.appendChild(el('div', 'paneelkop', 'Wat komt erin'));
   [['spel',    'Hoeken en speelmaatjes',
@@ -1290,12 +1569,20 @@ function bouwVerslagBlad(blad, k, kinderen){
   knoppen.appendChild(knop('Afdrukken of als PDF bewaren', 'primair', function () {
     var wie = gekozen();
     if (!wie.length) { meld('Kies eerst voor wie'); return; }
-    var opties = { dagen: vPeriode, nogNiet: vExtra.nogNiet, spel: vExtra.spel,
+    var opties = { dagen: vPeriode, eind: vEind, nogNiet: vExtra.nogNiet, spel: vExtra.spel,
                    opval: vExtra.opval, ruimte: vExtra.ruimte, fotos: vExtra.fotos };
     KBVERSLAG.druk(wie, k, opties);
     meld(wie.length === 1 ? 'Het verslag staat klaar' : wie.length + ' verslagen staan klaar');
   }));
   blad.appendChild(knoppen);
 }
+
+
+/* Naar buiten, zodat het thema-scherm dezelfde doelenkiezer gebruikt als
+   het taakformulier en het weekplan. Eén kiezer, overal hetzelfde. */
+BH.kiesDoelen = function (opties){
+  opties = opties || {};
+  kiesDoelen(opties.gekozen || [], opties.klaar || function (){}, opties.tekst || '');
+};
 
 })();

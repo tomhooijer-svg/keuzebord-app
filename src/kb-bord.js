@@ -899,7 +899,12 @@ function toonAanUit(){
    dus we kijken eerst of ze er zijn. */
 (function () {
   var aanuit = $('knop-aanuit');
-  if (aanuit) aanuit.addEventListener('click', function () { zetBordAan(!bordStaatAan()); });
+  /* De code zit er ook op: het bord aan- of uitzetten is iets van de juf,
+     niet van een kind dat langs de knop loopt. Staat de code uit, dan
+     vraagt vraagPin niets en gaat het meteen door. */
+  if (aanuit) aanuit.addEventListener('click', function () {
+    vraagPin(function () { zetBordAan(!bordStaatAan()); });
+  });
   var menu = $('knop-menu');
   if (menu) menu.addEventListener('click', function () { vraagPin(toonMenu); });
 })();

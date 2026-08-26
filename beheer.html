@@ -53,6 +53,7 @@
 }
 .teller{ display: flex; align-items: center; gap: 12px; }
 .teller button{ width: 34px; height: 34px; border-radius: 50%; background: var(--vlak-2); font-size: 1.1rem; font-weight: 600; }
+.teller button:disabled{ opacity:.28; cursor:default; }
 .teller .w{ min-width: 42px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 
@@ -129,6 +130,86 @@
 .doelvink{ width:22px; height:22px; border-radius:7px; border:2px solid var(--lijn); flex:none;
            display:flex; align-items:center; justify-content:center; color:transparent; margin-top:1px; }
 .doelkaart.aan .doelvink{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* ── de kop van het weekplan ── */
+.weekkop{ background:linear-gradient(180deg, var(--accent-zacht), var(--vlak) 62%); }
+.weekkop-boven{ display:flex; align-items:flex-start; justify-content:space-between;
+                gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+.weekkop-nr{ font-size:1.7rem; font-weight:650; letter-spacing:-.03em; line-height:1.05; }
+.weekkop-datums{ font-size:.95rem; color:var(--inkt-2); margin-top:2px; }
+.weekkop-verte{ font-size:.76rem; color:var(--inkt-3); margin-top:5px;
+                text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+.weekkop-verte.nu{ color:var(--accent); }
+.weekstrook{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+.weekdagvak{ background:var(--vlak); border:1.5px solid var(--lijn); border-radius:12px;
+             padding:10px 6px; text-align:center; }
+.weekdagvak.vandaag{ border-color:var(--accent); background:var(--accent-zacht); }
+.weekdagvak-naam{ font-size:.7rem; font-weight:700; letter-spacing:.08em;
+                  text-transform:uppercase; color:var(--inkt-3); }
+.weekdagvak-datum{ font-size:1.35rem; font-weight:600; font-variant-numeric:tabular-nums;
+                   line-height:1.15; }
+.weekdagvak.vandaag .weekdagvak-datum{ color:var(--accent); }
+.weekdagvak-aantal{ font-size:.72rem; color:var(--inkt-3); margin-top:1px; }
+
+/* ── thema's ── */
+.themarij{ display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left;
+           padding:12px 10px; border-radius:12px; border-bottom:1px solid var(--vlak-2);
+           transition:background .15s ease; }
+.themarij:hover{ background:var(--vlak-2); }
+.themarij:last-child{ border-bottom:none; }
+.themarij.aan{ background:var(--accent-zacht); }
+.themarij .stip{ margin-top:5px; flex:none; }
+.themarij-tekst{ min-width:0; flex-grow:1; }
+
+/* de vier bewegingen van een thema */
+.stappen{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.stap{ display:flex; align-items:center; gap:9px; padding:9px 14px 9px 9px;
+       border-radius:var(--rond-vol); border:1.5px solid var(--lijn);
+       background:var(--vlak); transition:border-color .15s ease, background .15s ease; }
+.stap:hover{ background:var(--vlak-2); }
+.stap.aan{ border-color:var(--accent); background:var(--accent-zacht); }
+.stap-nr{ width:22px; height:22px; border-radius:50%; flex:none; font-size:.72rem;
+          font-weight:700; display:flex; align-items:center; justify-content:center;
+          background:var(--vlak-2); color:var(--inkt-3); }
+.stap.aan .stap-nr{ background:var(--accent); color:#fff; }
+.stap-naam{ font-size:.88rem; font-weight:600; }
+.stap.aan .stap-naam{ color:var(--accent); }
+
+/* de vragenmuur */
+.vraagrij{ display:flex; align-items:flex-start; gap:10px; padding:8px 0;
+           border-bottom:1px solid var(--vlak-2); }
+.vraagrij:last-child{ border-bottom:none; }
+.vraagrij.af .vraagtekst{ color:var(--inkt-3); text-decoration:line-through; }
+.vraagvink{ width:24px; height:24px; border-radius:7px; flex:none; margin-top:3px;
+            border:2px solid var(--lijn); color:transparent; font-size:.8rem; font-weight:700;
+            display:flex; align-items:center; justify-content:center; }
+.vraagvink.aan{ background:var(--goed); border-color:var(--goed); color:#fff; }
+.vraagtekst{ flex-grow:1; border:none; background:transparent; resize:none; padding:4px 0;
+             font-size:.95rem; line-height:1.5; min-width:0; overflow:hidden; }
+.vraagtekst:focus{ outline:none; }
+.vraagwie{ flex:none; font-size:.7rem; font-weight:600; color:var(--inkt-3);
+           background:var(--vlak-2); padding:3px 9px; border-radius:var(--rond-vol);
+           margin-top:4px; }
+.vraagweg{ flex:none; width:26px; height:26px; border-radius:50%; color:var(--inkt-4);
+           font-size:1.1rem; line-height:1; margin-top:2px; }
+.vraagweg:hover{ background:var(--gevaar-zacht); color:var(--gevaar); }
+
+/* activiteiten */
+.activiteit{ padding:10px 0; border-bottom:1px solid var(--vlak-2); }
+.activiteit:last-child{ border-bottom:none; }
+.activiteit.af .activiteit-naam{ color:var(--inkt-3); text-decoration:line-through; }
+.activiteit-boven{ display:flex; align-items:center; gap:10px; }
+.activiteit-naam{ flex-grow:1; border:none; background:transparent; font-size:.95rem;
+                  font-weight:600; padding:4px 0; min-width:0; }
+.activiteit-naam:focus{ outline:none; }
+.activiteit-soort{ flex:none; font-size:.78rem; border:1.5px solid var(--lijn);
+                   border-radius:var(--rond-s); padding:5px 8px; background:var(--vlak); }
+.activiteit-uitleg{ width:100%; border:none; background:transparent; resize:none;
+                    font-size:.86rem; color:var(--inkt-3); line-height:1.5;
+                    padding:2px 0 0 34px; overflow:hidden; }
+.activiteit-uitleg:focus{ outline:none; }
+
+.datumrij{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
 
 /* ── het Vandaag-overzicht ── */
 .checkrij{ display:flex; align-items:flex-start; gap:12px; padding:11px 0;
@@ -236,6 +317,10 @@
 .minichips{ display:flex; gap:5px; flex-wrap:wrap; margin-top:5px; }
 .minichip{ font-size:.7rem; font-weight:600; color:var(--inkt-3); background:var(--vlak-2);
            padding:2px 8px; border-radius:var(--rond-vol); }
+/* Een leerlijn waar geen enkele hoek iets mee doet: zichtbaar, maar niet
+   alarmerend -- niet alles hoort in een hoek. */
+.minichip.ongevuld{ background:transparent; border:1px dashed var(--lijn); color:var(--inkt-4); }
+.domeingroep + .domeingroep{ margin-top:2px; }
 .gekozendoelen{ display:flex; flex-direction:column; gap:7px; margin-bottom:10px; }
 .doelchip{ display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:10px;
            background:var(--accent-zacht); font-size:.85rem; line-height:1.4; }
@@ -277,13 +362,21 @@
                   border:1.5px solid var(--lijn); background:var(--vlak); text-align:left;
                   transition:border-color .15s ease, background .15s ease; }
 .observatiekaart.nietingedeeld{ opacity:.55; }
+/* Drie tredes: aan het ontdekken, met hulp, zelfstandig. Een kaartje dat
+   nog niet is bekeken staat op de eerste trede maar blijft grijs -- dat
+   is iets anders dan gezien hebben dat een kind aan het ontdekken is. */
+.observatiekaart.stand-nog{ border-color:var(--accent); background:var(--accent-zacht); }
 .observatiekaart.stand-bezig{ border-color:var(--let-op); background:var(--let-op-zacht); }
 .observatiekaart.stand-behaald{ border-color:var(--goed); background:var(--goed-zacht); }
+.observatiekaart.ongezien{ border-color:var(--lijn); background:var(--vlak);
+                           border-style:dashed; }
 .observatietekst{ min-width:0; }
 .observatienaam{ font-size:.88rem; font-weight:600; }
 .observatiestand{ font-size:.74rem; color:var(--inkt-3); }
+.observatiekaart.stand-nog .observatiestand{ color:var(--accent); font-weight:600; }
 .observatiekaart.stand-bezig .observatiestand{ color:var(--let-op); font-weight:600; }
 .observatiekaart.stand-behaald .observatiestand{ color:var(--goed); font-weight:600; }
+.observatiekaart.ongezien .observatiestand{ color:var(--inkt-3); font-weight:400; font-style:italic; }
 
 @media (max-width: 900px){
   .tweeluik{ grid-template-columns:minmax(0,1fr); }
@@ -353,6 +446,7 @@
 <script src="src/kb-docx.js"></script>
 <script src="src/kb-beheer.js"></script>
 <script src="src/kb-plan.js"></script>
+<script src="src/kb-thema.js"></script>
 <script>KB.laad(); KB.doelenZorg().then(BH.start);</script>
 </body>
 </html>

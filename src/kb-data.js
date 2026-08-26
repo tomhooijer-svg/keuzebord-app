@@ -125,20 +125,102 @@ function laad(){
 var naBewaren = null;
 function opBewaard(fn){ naBewaren = fn; }
 
+/* Opslaan, en niet omvallen als het niet past.
+
+   localStorage is een kopie, geen archief: alles wat erin staat, staat
+   ook op de server, en de foto's staan bovendien in de fotokluis. De
+   grens ligt rond de vijf megabyte, en een school met zes volle groepen
+   komt daar tegenaan. Vroeger gaf bewaar() dan gewoon `false` terug en
+   was het werk van dat moment weg.
+
+   Dus pellen we af, in de volgorde van wat we het makkelijkst missen:
+
+     1. de foto's die al in de kluis liggen
+     2. het logboek van groepen waar je nu niet in werkt, voor zover het
+        al naar de server is
+     3. het oudere logboek van de groep waar je wél in werkt, idem
+     4. de hele inhoud van groepen waar je nu niet in werkt -- naam en
+        koppeling blijven staan, de rest halen we zo weer op
+
+   Wat nog niet op de server staat raken we niet aan. Liever een volle
+   opslag dan werk dat verdwijnt. */
+var laatsteAfpelling = 0;
+
+function grensVanLog(klasId){
+  // hoever is het logboek van deze groep al naar de server?
+  try { return JSON.parse(localStorage.getItem('kb_loggrens') || '{}')[klasId] || 0; }
+  catch (e) { return 0; }
+}
+
 function bewaar(){
-  try {
-    var kopie = JSON.parse(JSON.stringify(G));
-    // Foto's uit de fotokluis horen daar, niet in de klasgegevens.
-    kopie.klassen.forEach(function (k) {
-      k.leerlingen.forEach(function (l) { if (l._c) l.image = null; });
-      (k.fotoLib || []).forEach(function (f) { if (f._c) f.data = null; });
-    });
-    localStorage.setItem(SLEUTEL, JSON.stringify(kopie));
-    if (naBewaren) { try { naBewaren(); } catch (e) {} }
-    return true;
-  } catch (e) {
-    return false;   // vol: de aanroeper mag beslissen wat te melden
+  var trappen = 0;
+  while (trappen <= 4) {
+    try {
+      localStorage.setItem(SLEUTEL, JSON.stringify(uitgedund(trappen)));
+      if (trappen > 0) laatsteAfpelling = Date.now();
+      if (naBewaren) { try { naBewaren(); } catch (e) {} }
+      return true;
+    } catch (e) {
+      trappen++;
+    }
   }
+  /* Ook uitgekleed past het niet. Dat kan maar één ding betekenen: er
+     staat hier veel dat nog nergens anders staat -- meestal foto's die
+     nog niet zijn geüpload. Zodra ze op de server staan mogen ze hier
+     weg, dus we vragen om een ronde versturen en melden dat het krap is.
+     De aanroeper krijgt `false` en mag het zeggen. */
+  laatsteAfpelling = Date.now();
+  if (naBewaren) { try { naBewaren(); } catch (e) {} }
+  return false;
+}
+
+/* De kopie die de deur uit gaat, zo mager als deze trap vraagt. */
+function uitgedund(trap){
+  var kopie = JSON.parse(JSON.stringify(G));
+  var actief = G.activeKlasId;
+
+  kopie.klassen.forEach(function (k) {
+    // 0: foto's die al in de kluis liggen horen daar, niet hier
+    k.leerlingen.forEach(function (l) { if (l._c) l.image = null; });
+    (k.fotoLib || []).forEach(function (f) { if (f._c) f.data = null; });
+    if (trap === 0) return;
+
+    var veilig = grensVanLog(k.id);
+    var bewaarLog = function (hoeveel) {
+      var log = k.gebeurtenissen || [];
+      // alleen wat al op de server staat mag weg
+      var weg = log.filter(function (g) { return g.tijd <= veilig; });
+      var blijft = log.filter(function (g) { return g.tijd > veilig; });
+      k.gebeurtenissen = weg.slice(-hoeveel).concat(blijft)
+        .sort(function (a, b) { return a.tijd - b.tijd; });
+    };
+
+    if (trap >= 1 && k.id !== actief) bewaarLog(0);
+    if (trap >= 2) bewaarLog(k.id === actief ? 400 : 0);
+    if (trap >= 3 && k.id !== actief) {
+      // 3: de hele inhoud van een groep waar je nu niet in werkt. Naam en
+      //    id blijven, zodat de koppeling met de server heel blijft; de
+      //    rest komt terug zodra je die groep opent.
+      k.leerlingen = []; k.hoekLib = []; k.fotoLib = []; k.taken = [];
+      k.themas = []; k.weken = {}; k.beoordelingen = {}; k.gebeurtenissen = [];
+      k.pictos = []; k.wachtrij = [];
+      (k.borden || []).forEach(function (b) { b.plaatsingen = {}; });
+      k.magOpnieuwOphalen = true;
+    }
+    if (trap >= 4 && k.id === actief) {
+      // 4: het laatste redmiddel -- ook hier het logboek helemaal weg,
+      //    op wat nog niet verstuurd is na.
+      bewaarLog(0);
+      k.pictos = [];
+    }
+  });
+  return kopie;
+}
+
+/* Is er onlangs afgepeld? Dan is dit apparaat krap, en mag een scherm dat
+   melden in plaats van te doen alsof er niets aan de hand is. */
+function opslagKrap(){
+  return laatsteAfpelling > 0 && (Date.now() - laatsteAfpelling) < 36e5;
 }
 
 /* Welke groep dit apparaat beheert. Een leerkracht ziet alleen die groep;
@@ -523,6 +605,26 @@ function weekLabel(sleutel){
            'september','oktober','november','december'];
   return d.getDate() + ' ' + m[d.getMonth()] + ' t/m ' + eind.getDate() + ' ' + m[eind.getMonth()];
 }
+/* Het weeknummer zoals de school het gebruikt (ISO): week 1 is de week
+   waar 4 januari in valt. Handig om te noemen -- "week 38" zegt een juf
+   meer dan "15 september". */
+function weekNummer(sleutel){
+  var d = new Date(sleutel + 'T12:00:00');
+  var don = new Date(d);
+  don.setDate(don.getDate() + 3 - ((d.getDay() + 6) % 7));   // de donderdag van deze week
+  var eerste = new Date(don.getFullYear(), 0, 4);
+  var dagen = Math.round((don - eerste) / 864e5);
+  return 1 + Math.floor((dagen + ((eerste.getDay() + 6) % 7)) / 7);
+}
+/* De vijf schooldagen van deze week als datums. */
+function weekDatums(sleutel){
+  var d = new Date(sleutel + 'T12:00:00');
+  return DAGEN_KORT.map(function (dag, i) {
+    var x = new Date(d); x.setDate(x.getDate() + i);
+    return { dag:dag, dagNummer:x.getDate(), maand:x.getMonth(),
+             sleutel:datumSleutel(x) };
+  });
+}
 function dagVanVandaag(){
   var i = (new Date().getDay() + 6) % 7;
   return i < 5 ? DAGEN_KORT[i] : 'ma';
@@ -721,8 +823,23 @@ function heeftBeurtVandaag(leerlingId, k){
   return geplandVandaag(null, null, k).some(function (x) { return x.leerlingId === leerlingId; });
 }
 
-/* ── beoordelen ──────────────────────────────────────────── */
+/* ── beoordelen ────────────────────────────────────────────
+   Drie gradaties, in de woorden waarin je het over een kleuter
+   hebt. Een kind dat iets nog niet kan is niet "niets" -- het is
+   aan het ontdekken, en dat is de eerste trede.
+
+   De sleutels eronder ('nog', 'bezig', 'behaald') blijven staan.
+   Ze zitten in de database, in de synchronisatie en in ieders
+   bestaande observaties; alleen de woorden erboven veranderen. */
 var STANDEN = ['nog', 'bezig', 'behaald'];
+var STAND_NAAM = {
+  nog:     'is aan het ontdekken',
+  bezig:   'kan het met hulp',
+  behaald: 'kan het zelfstandig'
+};
+var STAND_KORT = { nog:'ontdekken', bezig:'met hulp', behaald:'zelfstandig' };
+function standNaam(stand){ return STAND_NAAM[stand] || STAND_NAAM.nog; }
+function standKort(stand){ return STAND_KORT[stand] || STAND_KORT.nog; }
 
 function beoordelingen(k){ k = k || klas(); if (!k.beoordelingen) k.beoordelingen = {}; return k.beoordelingen; }
 function beoordelingSleutel(leerlingId, doelId){ return leerlingId + '|' + doelId; }
@@ -730,15 +847,241 @@ function standVan(leerlingId, doelId, k){
   var b = beoordelingen(k)[beoordelingSleutel(leerlingId, doelId)];
   return b ? b.stand : 'nog';
 }
+/* Is hier ooit naar gekeken? Dat is iets anders dan de eerste trede:
+   "nog niet bekeken" en "is aan het ontdekken" zien er op het scherm
+   hetzelfde uit, maar in een verslag wil je ze uit elkaar houden. */
+function isBeoordeeld(leerlingId, doelId, k){
+  return !!beoordelingen(k)[beoordelingSleutel(leerlingId, doelId)];
+}
 function zetStand(leerlingId, doelId, stand, taakId, k){
   k = k || klas();
   var sleutel = beoordelingSleutel(leerlingId, doelId);
-  if (stand === 'nog') delete beoordelingen(k)[sleutel];
-  else beoordelingen(k)[sleutel] = { stand: stand, taakId: taakId || null, datum: Date.now() };
+  if (STANDEN.indexOf(stand) < 0) { delete beoordelingen(k)[sleutel]; return; }
+  beoordelingen(k)[sleutel] = { stand: stand, taakId: taakId || null, datum: Date.now() };
+}
+function wisStand(leerlingId, doelId, k){
+  delete beoordelingen(k || klas())[beoordelingSleutel(leerlingId, doelId)];
 }
 function volgendeStand(huidig){
   var i = STANDEN.indexOf(huidig);
   return STANDEN[(i + 1) % STANDEN.length];
+}
+
+/* ── thema's ───────────────────────────────────────────────
+   Thematisch onderzoekend leren, zoals Tessel van der Linde het voor
+   kleuters beschrijft, loopt langs vier bewegingen. Wij houden die
+   volgorde aan, want het is precies de volgorde waarin een juf een thema
+   voorbereidt:
+
+     1. Verwonderen   iets wat de kinderen raakt: een startactiviteit,
+                      een voorwerp, een verhaal. Wat weten we al?
+     2. Vragen        wat willen we weten? De vragen komen van de
+                      kinderen; jij vangt ze op en hangt ze op.
+     3. Onderzoeken   spelen en uitzoeken: de hoeken die je erop
+                      inricht, de activiteiten die je doet, de taken in
+                      de werkplaats, en de doelen waar je aan werkt.
+     4. Betekenis     wat hebben we ontdekt, en aan wie laten we het
+                      zien. De afsluiting.
+
+   Een thema is iets wat je vooruit uitwerkt en later inplant. Daarom
+   staat hier geen datum verplicht: je maakt hem klaar, en pas als je
+   hem in een week hangt gaat hij lopen. */
+
+var ACTIVITEITSOORTEN = [
+  { id:'kring',   naam:'In de kring' },
+  { id:'klein',   naam:'Klein groepje' },
+  { id:'hoek',    naam:'In een hoek' },
+  { id:'buiten',  naam:'Buiten' },
+  { id:'uitstap', naam:'Uitstapje of bezoek' }
+];
+
+function themas(k){ k = k || klas(); if (!k.themas) k.themas = []; return k.themas; }
+function themaVan(id, k){
+  if (!id) return null;
+  return themas(k).filter(function (t) { return t.id === id; })[0] || null;
+}
+function nieuwThema(gegevens, k){
+  k = k || klas();
+  gegevens = gegevens || {};
+  var t = {
+    id: 'th' + uid(),
+    naam: gegevens.naam || 'Nieuw thema',
+    vraag: gegevens.vraag || '',
+    start: gegevens.start || '',
+    afsluiting: gegevens.afsluiting || '',
+    van: gegevens.van || null,
+    tot: gegevens.tot || null,
+    vragen: [],
+    activiteiten: [],
+    doelIds: [],
+    hoekIds: [],
+    kleur: gegevens.kleur || HOEKKLEUREN[themas(k).length % HOEKKLEUREN.length],
+    archief: false,
+    gemaakt: Date.now()
+  };
+  themas(k).push(t);
+  return t;
+}
+function haalThemaWeg(id, k){
+  k = k || klas();
+  k.themas = themas(k).filter(function (t) { return t.id !== id; });
+  // wat eraan hing blijft bestaan, maar hangt er niet meer aan
+  taken(k).forEach(function (x) { if (x.themaId === id) x.themaId = null; });
+  Object.keys(k.weken || {}).forEach(function (w) {
+    if (k.weken[w].themaId === id) k.weken[w].themaId = null;
+  });
+}
+
+/* De taken die bij een thema horen. Eén kant vastleggen is genoeg: de
+   taak weet bij welk thema hij hoort, de rest leiden we af. */
+function takenVanThema(themaId, k){
+  return taken(k).filter(function (t) { return t.themaId === themaId; });
+}
+function hoekenVanThema(thema, k){
+  k = k || klas();
+  return ((thema && thema.hoekIds) || [])
+    .map(function (id) { return hoekVan(id, k); })
+    .filter(Boolean);
+}
+
+/* Het thema van een week. Staat er niets, dan kijken we of er een thema
+   is dat deze week omvat -- je hebt hem dan wel uitgewerkt met een
+   periode erbij, maar nog niet aan de week gehangen. */
+function themaVanWeek(sleutel, k){
+  k = k || klas();
+  var w = week(sleutel, k);
+  if (w.themaId) {
+    var gekozen = themaVan(w.themaId, k);
+    if (gekozen) return gekozen;
+  }
+  return themas(k).filter(function (t) {
+    return !t.archief && t.van && t.tot && sleutel >= t.van && sleutel <= t.tot;
+  })[0] || null;
+}
+
+/* Hoeveel staat er al? Genoeg om in één oogopslag te zien of een thema
+   klaar is om te draaien. */
+function themaStand(t, k){
+  k = k || klas();
+  var vragen = (t.vragen || []).length;
+  return {
+    vragen: vragen,
+    beantwoord: (t.vragen || []).filter(function (v) { return v.beantwoord; }).length,
+    doelen: (t.doelIds || []).length,
+    activiteiten: (t.activiteiten || []).length,
+    gedaan: (t.activiteiten || []).filter(function (a) { return a.gedaan; }).length,
+    taken: takenVanThema(t.id, k).length,
+    hoeken: (t.hoekIds || []).length,
+    heeftStart: !!(t.start || '').trim(),
+    heeftAfsluiting: !!(t.afsluiting || '').trim()
+  };
+}
+
+/* ── waar een hoek voor is ─────────────────────────────────
+   Een bouwhoek is niet zomaar een hoek: daar zit grove motoriek in, en
+   meetkunde. Een kralenplank is fijne motoriek. Als je dat vastlegt kun
+   je zien of je aanbod nog in balans is -- of dat er vier hoeken staan
+   die allemaal hetzelfde vragen.
+
+   De indeling is niet verzonnen: het zijn precies de domeinen en
+   leerlijnen van de doelenlijst waar je ook je doelen uit kiest. Zo
+   praten hoeken en doelen dezelfde taal. */
+
+var LEERLIJNEN = [
+  { domein:'Spel',               leerlijn:'Spel' },
+  { domein:'Taal',               leerlijn:'Geletterdheid' },
+  { domein:'Taal',               leerlijn:'Mondelinge taal' },
+  { domein:'Taal',               leerlijn:'Spelling/schrijven' },
+  { domein:'Rekenen',            leerlijn:'Tellen en getalbegrip' },
+  { domein:'Rekenen',            leerlijn:'Meten' },
+  { domein:'Rekenen',            leerlijn:'Meetkunde' },
+  { domein:'Motoriek',           leerlijn:'Grove motoriek' },
+  { domein:'Motoriek',           leerlijn:'Fijne motoriek' },
+  { domein:'Sociaal-emotioneel', leerlijn:'Welbevinden' },
+  { domein:'Sociaal-emotioneel', leerlijn:'Besef van zichzelf' },
+  { domein:'Sociaal-emotioneel', leerlijn:'Omgaan met zichzelf' },
+  { domein:'Sociaal-emotioneel', leerlijn:'Besef van de ander' },
+  { domein:'Sociaal-emotioneel', leerlijn:'Omgaan met de ander' },
+  { domein:'Sociaal-emotioneel', leerlijn:'Keuzes maken' }
+];
+var DOMEINEN = ['Spel','Taal','Rekenen','Motoriek','Sociaal-emotioneel'];
+
+/* De leerlijn is de sleutel; de naam is uniek over alle domeinen heen. */
+function domeinVanLeerlijn(leerlijn){
+  var r = LEERLIJNEN.filter(function (x) { return x.leerlijn === leerlijn; })[0];
+  return r ? r.domein : null;
+}
+function leerlijnenPerDomein(){
+  var uit = {};
+  DOMEINEN.forEach(function (d) { uit[d] = []; });
+  LEERLIJNEN.forEach(function (x) { uit[x.domein].push(x.leerlijn); });
+  return uit;
+}
+
+function hoekLeerlijnen(h){
+  return (h && Array.isArray(h.leerlijnen)) ? h.leerlijnen.filter(domeinVanLeerlijn) : [];
+}
+function hoekDomeinen(h){
+  var uit = [];
+  hoekLeerlijnen(h).forEach(function (l) {
+    var d = domeinVanLeerlijn(l);
+    if (d && uit.indexOf(d) < 0) uit.push(d);
+  });
+  return uit.sort(function (a, b) { return DOMEINEN.indexOf(a) - DOMEINEN.indexOf(b); });
+}
+
+/* Een hoek die "bouwhoek" heet vraagt bijna zeker om grove motoriek en
+   meetkunde. Dat hoeft niemand vijftien keer in te tikken, dus doen we
+   een voorstel op de naam. Het blijft een voorstel: je kunt alles
+   aanvinken en uitvinken. */
+var HOEKWOORDEN = [
+  [/bouw|blok|duplo|lego|kapla/,            ['Grove motoriek','Meetkunde','Spel']],
+  [/huis|pop|keuken|winkel|restaurant|kapper|dokter|ziekenhuis|rollen/,
+                                            ['Spel','Mondelinge taal','Omgaan met de ander']],
+  [/lees|boek|verhaal|luister/,             ['Geletterdheid','Mondelinge taal']],
+  [/schrijf|letter|stempel/,                ['Spelling/schrijven','Geletterdheid','Fijne motoriek']],
+  [/kraal|kralenplank|rijg|prik|knip|vouw|weef|borduur|mozaiek|mozaïek/,
+                                            ['Fijne motoriek','Meetkunde']],
+  [/puzzel/,                                ['Meetkunde','Fijne motoriek']],
+  [/reken|getal|tel|cijfer/,                ['Tellen en getalbegrip']],
+  [/meet|weeg|weeg|balans|liniaal/,         ['Meten']],
+  [/zand|water|modder/,                     ['Meten','Spel','Grove motoriek']],
+  [/verf|teken|kleur|schilder|klei|knutsel|creatief|atelier/,
+                                            ['Fijne motoriek','Spel']],
+  [/timmer|zaag|hamer|techniek/,            ['Grove motoriek','Fijne motoriek','Meten']],
+  [/ontdek|onderzoek|natuur|proef/,         ['Meten','Mondelinge taal','Besef van zichzelf']],
+  [/muziek|dans|zing|ritme/,                ['Grove motoriek','Welbevinden']],
+  [/buiten|gym|klim|fiets|bewegen|speelplaats/,
+                                            ['Grove motoriek','Welbevinden','Omgaan met de ander']],
+  [/computer|tablet|ipad|digi/,             ['Fijne motoriek','Geletterdheid']],
+  [/thema/,                                 ['Spel','Mondelinge taal']],
+  [/werkplaats|werk|taak/,                  ['Fijne motoriek','Keuzes maken']],
+  [/stil|rust|alleen/,                      ['Welbevinden','Omgaan met zichzelf']]
+];
+
+function stelLeerlijnenVoor(naam){
+  var n = String(naam || '').toLowerCase();
+  var uit = [];
+  HOEKWOORDEN.forEach(function (paar) {
+    if (!paar[0].test(n)) return;
+    paar[1].forEach(function (l) { if (uit.indexOf(l) < 0) uit.push(l); });
+  });
+  return uit;
+}
+
+/* Waar zit een gat? Welke leerlijnen komen in geen enkele hoek op het
+   bord terug. Dat is geen fout -- niet alles hoort in een hoek -- maar
+   het is wel iets om even naar te kijken. */
+function dekkingVanHoeken(k, b){
+  k = k || klas();
+  var hoeken = b ? bordHoeken(b, k) : (k.hoekLib || []);
+  var geteld = {};
+  hoeken.filter(Boolean).forEach(function (h) {
+    hoekLeerlijnen(h).forEach(function (l) { geteld[l] = (geteld[l] || 0) + 1; });
+  });
+  return LEERLIJNEN.map(function (x) {
+    return { domein:x.domein, leerlijn:x.leerlijn, hoeken: geteld[x.leerlijn] || 0 };
+  });
 }
 
 /* ── picto-bibliotheek per groep ─────────────────────────── */
@@ -1108,7 +1451,7 @@ global.KB = {
   NIVEAUS_PER_GROEP: NIVEAUS_PER_GROEP,
   uid: uid,
   get G(){ return G; },
-  laad: laad, bewaar: bewaar, opBewaard: opBewaard, leegKlas: leegKlas, standaardInstellingen: standaardInstellingen,
+  laad: laad, bewaar: bewaar, opBewaard: opBewaard, opslagKrap: opslagKrap, leegKlas: leegKlas, standaardInstellingen: standaardInstellingen,
   klas: klas, bord: bord, bordHoeken: bordHoeken, foto: foto, leerling: leerling,
   hoekVan: hoekVan, instelling: instelling,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,
@@ -1137,6 +1480,7 @@ global.KB = {
   STANDEN: STANDEN,
   weekSleutel: weekSleutel, weekVerschoven: weekVerschoven, weekLabel: weekLabel,
   dagVanVandaag: dagVanVandaag, week: week,
+  weekNummer: weekNummer, weekDatums: weekDatums,
   taken: taken, taakVan: taakVan, nieuweTaak: nieuweTaak,
   werkplaatsHoek: werkplaatsHoek, zorgVoorWerkplaats: zorgVoorWerkplaats,
   weekTaak: weekTaak, weekTaakAls: weekTaakAls, haalWeekTaakWeg: haalWeekTaakWeg,
@@ -1147,8 +1491,18 @@ global.KB = {
   toegewezen: toegewezen, dagVanKind: dagVanKind, zetKindOpDag: zetKindOpDag,
   beurtenTot: beurtenTot, verdeelAutomatisch: verdeelAutomatisch,
   geplandVandaag: geplandVandaag, heeftBeurtVandaag: heeftBeurtVandaag,
-  standVan: standVan, zetStand: zetStand, volgendeStand: volgendeStand,
+  standVan: standVan, zetStand: zetStand, wisStand: wisStand,
+  volgendeStand: volgendeStand, isBeoordeeld: isBeoordeeld,
+  STANDEN: STANDEN, standNaam: standNaam, standKort: standKort,
   beoordelingen: beoordelingen,
+  ACTIVITEITSOORTEN: ACTIVITEITSOORTEN,
+  themas: themas, themaVan: themaVan, nieuwThema: nieuwThema, haalThemaWeg: haalThemaWeg,
+  takenVanThema: takenVanThema, hoekenVanThema: hoekenVanThema,
+  themaVanWeek: themaVanWeek, themaStand: themaStand,
+  LEERLIJNEN: LEERLIJNEN, DOMEINEN: DOMEINEN,
+  domeinVanLeerlijn: domeinVanLeerlijn, leerlijnenPerDomein: leerlijnenPerDomein,
+  hoekLeerlijnen: hoekLeerlijnen, hoekDomeinen: hoekDomeinen,
+  stelLeerlijnenVoor: stelLeerlijnenVoor, dekkingVanHoeken: dekkingVanHoeken,
   pictos: pictos, voegPictoToe: voegPictoToe, pictoVan: pictoVan, koppelPicto: koppelPicto
 };
 

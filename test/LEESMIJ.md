@@ -119,6 +119,87 @@ hoe vaak een kind koos en welke hoek zijn favoriet is, welk tweetal het
 meest samen zat, wie niemand tegenkwam, wie helemaal niets koos, en of dat
 alles ook op het scherm terechtkomt.
 
+## Thema's
+
+`test/themas.test.js` loopt een heel thema door zoals je het bij
+thematisch onderzoekend leren uitwerkt: verwonderen, vragen, onderzoeken,
+betekenis geven. Vierentwintig dingen. Een thema maken, de startactiviteit
+opschrijven, vragen op de muur hangen en er een afvinken, hoeken eraan
+koppelen, een activiteit met zijn soort, een taak die eraan hangt, doelen
+kiezen, en het overzicht dat laat zien waar het thema staat. Daarna de
+hele reis naar de server en terug -- inclusief de vragenmuur en de
+activiteiten, die als jsonb meegaan -- en tot slot afsluiten en
+terugvinden onder "Geweest".
+
+## Het bord aan- en uitzetten
+
+`test/aanuit.test.js` gaat over de knop rechtsboven op het bord.
+Uitzetten lukte wel, aanzetten niet: het pauzevlak lag over de knop heen.
+De proef klikt daarom niet via JavaScript maar kijkt met
+`elementFromPoint` wat er werkelijk bovenop ligt -- anders zou hij deze
+fout niet vangen.
+
+Vijftien dingen: aan, uit, het pauzevlak dat komt en gaat, de knop die
+bereikbaar blijft terwijl het bord uit staat, de viercijferige code die
+er in beide richtingen op zit (met een verkeerde code die niets doet),
+hetzelfde via het bordmenu, en tot slot dat een uitgezet bord na een
+herlaadbeurt nog steeds uit staat -- die stand reisde niet mee naar de
+server, dus een bord dat je 's middags uitzette stond de volgende
+ochtend weer aan.
+
+## De zware proef
+
+`test/zwaar.test.js` is geen functietest maar een belastingtest. Zes
+groepen tegelijk, elk met vijftien hoeken met een foto erin,
+vijfentwintig kinderen, per hoek en per bord een andere timer, functies
+die per bord anders aanstaan, twee thema's met vragen en activiteiten,
+zes taken en vier weken vooruit gepland, plus vijftien dagen aan
+gebeurtenissen en observaties.
+
+Dan gaan alle zes de groepen naar de server, worden zes borden tegelijk
+geopend, kiezen er op elk bord kinderen een hoek, wordt er met de muis
+gesleept, en sturen alle zes de borden tegelijk op. Tot slot haalt een
+vers apparaat alles op en gaan de zware schermen open.
+
+Er wordt op drie dingen gelet: gaat er iets stuk (fouten op de pagina en
+in de console worden allemaal opgevangen), wordt het traag (elke stap
+wordt geklokt), en klopt het nog na het ophalen (geen dubbele rijen, alles
+compleet). Draaien:
+
+```sh
+sh test/opzetten.sh && sh test/proefschool.sh
+node test/zwaar.test.js
+```
+
+Groter maken kan met omgevingsvariabelen: `GROEPEN=6 HOEKEN=20
+KINDEREN=30 WEKEN=8 BORDEN=6 node test/zwaar.test.js`.
+
+## Tot het breekt
+
+`test/uiterste.test.js` gaat niet na of het werkt maar wáár de grens
+ligt, en wat er gebeurt als je eroverheen gaat. Er wordt net zo lang een
+hoek met foto, drie kinderen en veertig logregels bij gestapeld tot de
+browseropslag het opgeeft.
+
+Wat daaruit kwam:
+
+- Eén groep houdt **54 hoeken met foto en 161 kinderen** vast voordat de
+  vijf megabyte van localStorage vol is -- en dat is dan nog zonder ook
+  maar één keer te synchroniseren. Een kleutergroep heeft er vijftien.
+- Zodra de foto's in de fotokluis staan, slinkt localStorage van 5116 KB
+  naar 293 KB. Dat is de reden dat `bewaarInKluis` de foto's daarna als
+  "ligt in de kluis" merkt: dan mogen ze uit localStorage weg, en zet
+  `fkPasToe` ze bij het opstarten weer terug.
+- Zit het toch vol, dan valt er niets om. `bewaar()` pelt af in de
+  volgorde van wat het makkelijkst te missen is -- eerst foto's die al in
+  de kluis liggen, dan het logboek van groepen waar je niet in werkt, dan
+  hun hele inhoud -- en raakt nooit iets aan wat nog niet op de server
+  staat. Lukt het dan nog niet, dan zegt de app dat en vraagt een ronde
+  versturen aan.
+- Een groep die zo is uitgekleed wordt **nooit** opgestuurd. Zou dat wel
+  gebeuren, dan las het verschil "alles is weg" en veegde het de hele
+  groep van de server. Hij wordt eerst opnieuw opgehaald.
+
 ## Alles één keer langs
 
 `test/doorloop.test.js` opent elk scherm en elk paneel één keer, en let
@@ -126,10 +207,64 @@ onderweg op alles wat omvalt: fouten op de pagina, fouten in de console,
 en panelen die leeg blijven. Niet op zoek naar één ding, maar naar wat er
 kapot is zonder dat iemand het weet.
 
-Drieëntwintig punten: de drie onderdelen van het schoolbeheer, alle elf
-panelen van het groepsbeheer, het bord met een kind dat een hoek kiest, het
-bordmenu, het testbord, en tot slot dezelfde ronde als leerkracht om te
-zien dat zij alleen haar eigen groep krijgt en meteen op het bord uitkomt.
+Vijfentwintig punten: de drie onderdelen van het schoolbeheer, alle
+dertien panelen van het groepsbeheer, het bord met een kind dat een hoek
+kiest, het bordmenu, het testbord, en tot slot dezelfde ronde als
+leerkracht om te zien dat zij alleen haar eigen groep krijgt en meteen op
+het bord uitkomt.
+
+## Elke knop apart
+
+`test/doorloop.test.js` kijkt of elk scherm heel opengaat.
+`test/knoppen.test.js` gaat een stap verder: die drukt in elk paneel
+alles in wat een mens kan indrukken, en kijkt of er daarna iets ánders
+is -- een venster dat opengaat, een melding, een scherm dat verandert,
+gegevens die veranderen. Gebeurt er niets, dan staat die knop met naam en
+al in de uitslag.
+
+Tussen elke klik gaan de gegevens terug zoals ze waren. Daardoor mag
+alles ingedrukt worden, ook "Verwijderen": het kind is een tel later weer
+terug en de volgende knop treft hetzelfde scherm aan als de vorige.
+
+Wat een knop is, is met opzet ruim genomen: een echte `<button>`, een
+link, een schakelaar, en alles waar de muisaanwijzer een handje van
+maakt. Vakjes die alleen iets laten zien -- de dagen in het weekplan --
+horen er niet bij.
+
+De knoppen in de vensters worden apart nagelopen. Merkt de proef dat een
+knop een venster opent, dan komt hij daar een voor een op terug: venster
+openen, één knop erin indrukken, meten, opnieuw. Zonder dat rondje bleef
+alles wat achter "Nieuwe taak" of "Bewerken" zit ongemoeid -- en daar
+zitten juist Opslaan, Annuleren en Verwijderen.
+
+Drie dingen tellen niet mee als "doet niets", en dat is geen coulance
+maar een eerlijke grens:
+
+- **Wat geen klik vangt.** Een gesloten venster staat nog in de pagina,
+  doorzichtig en met `pointer-events: none`. Een mens kan er niet op
+  klikken; de proef kon dat wel, en meldde de knoppen erin als dood.
+- **Wat al aanstaat.** Het menu-item waar je staat, de stap die open is,
+  de kleur die al gekozen is. Daar hoort niets van te gebeuren.
+- **Wat een venster van het apparaat opent.** Een bestandskiezer of het
+  kleurenpalet van het besturingssysteem valt buiten de pagina. Dat de
+  knop het opent, is wél te merken, en dat wordt geteld.
+
+Bij het bouwen van deze proef zaten de fouten eerst in de proef zelf. De
+vingerafdruk keek naar de *lengte* van de gegevens, en `warm` -> `koel`
+is even lang, net als `#3b6ff0` -> `#ff8a3d`: alle kleurknoppen leken
+niets te doen. En er werd geteld hoevéél er aanstond, niet wát: gaat er
+in een rij kleuren één uit en één aan, dan blijft dat aantal gelijk.
+
+Eén echte vondst: de teller bij "aantal plekken" en "werkmomenten" liet
+je op de − blijven drukken als hij al op zijn laagste stand stond. Die
+knop wordt nu grijs.
+
+Draaien:
+
+```sh
+sh test/opzetten.sh && sh test/proefschool.sh
+node test/knoppen.test.js
+```
 
 ## Het verslag voor het oudergesprek
 

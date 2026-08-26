@@ -63,6 +63,13 @@ function zorgVoorGroepen(){
     var bestaat = lokaal && (KB.G.klassen || []).some(function (k) { return k.id === lokaal; });
     if (bestaat) return;
     var k = KB.leegKlas(g.naam);
+    /* Dit is een plaatshouder, geen groep. De inhoud staat op de server
+       en komt pas hierheen als je hem opent. Tot die tijd mag hij nooit
+       de kant van de server op: het verschil zou "deze groep is leeg"
+       lezen en de instellingen van je collega overschrijven met de
+       standaardwaarden -- of erger. Dit vlaggetje houdt hem tegen; het
+       gaat er vanzelf af zodra hij echt is opgehaald. */
+    k.magOpnieuwOphalen = true;
     KB.G.klassen.push(k);
     KBSYNC.koppel(k.id, g.id);
     gemaakt = true;
@@ -117,11 +124,23 @@ function kiesGroep(){
 
 /* ── heen en weer ────────────────────────────────────────────────────── */
 
+/* Er mag er maar één tegelijk heen en weer. Vroeger stond dat in een
+   simpel ja/nee-vlaggetje, en wie te vroeg kwam kreeg meteen "klaar"
+   terug zonder dat er iets gebeurd was. Voor versturen kon dat nog net --
+   dan wacht je op de volgende ronde -- maar voor ophalen niet: van groep
+   wisselen terwijl er nog iets liep sloeg het ophalen stilletjes over, en
+   je keek naar een lege groep met de standaardinstellingen erin.
+
+   Dus houden we niet bij *of* er iets loopt maar *wat* er loopt, zodat
+   wie later komt gewoon kan aansluiten. */
+var lopend = Promise.resolve();
+
 function stuurNu(){
-  if (bezig || !klasId || !groepId) return Promise.resolve();
+  if (!klasId || !groepId) return Promise.resolve();
+  if (bezig) return lopend.catch(function () {});
   bezig = true;
   meldStand('bezig');
-  return KBSYNC.stuurOp(klasId, groepId, ik.profiel.school_id).then(function (uit) {
+  lopend = KBSYNC.stuurOp(klasId, groepId, ik.profiel.school_id).then(function (uit) {
     bezig = false;
     meldStand(uit.gelukt ? 'klaar' : 'wacht');
     return uit;
@@ -130,6 +149,7 @@ function stuurNu(){
     meldStand('mis', { fout: e });
     throw e;
   });
+  return lopend;
 }
 
 /* Zodra er iets is opgeslagen staat er iets klaar om te versturen. Dat
@@ -144,12 +164,15 @@ function planOpsturen(){
 }
 
 function haalOp(){
-  if (bezig || !klasId || !groepId) return Promise.resolve();
+  if (!klasId || !groepId) return Promise.resolve();
   // Eerst wat hier klaarstaat wegbrengen; anders overschrijft de server
   // het. Dat geldt ook voor een wijziging die nog op zijn beurt wacht,
   // dus zetten we een eventuele wachttijd meteen stop.
   clearTimeout(timer);
-  var eerst = KBSYNC.wachtErIetsOp(klasId) ? stuurNu().catch(function () {}) : Promise.resolve();
+  // Loopt er nog iets? Dan wachten we dat af in plaats van te vertrekken.
+  var eerst = lopend.catch(function () {}).then(function () {
+    return KBSYNC.wachtErIetsOp(klasId) ? stuurNu().catch(function () {}) : null;
+  });
   return eerst.then(function () {
     return KBSYNC.haalBinnen(klasId, groepId).then(function () {
       meldStand('klaar');
@@ -243,8 +266,25 @@ function herstart(){
   });
 }
 
-/* Van groep wisselen (het schoolbeheer doet dat). */
+/* Van groep wisselen (het schoolbeheer doet dat).
+
+   Let op de eerste stap. De koppeling tussen een groep hier en dezelfde
+   groep op de server wordt bij het inloggen gelegd. Klik je sneller dan
+   dat klaar is -- en dat is zo -- dan kende deze functie de groep nog
+   niet en riep ze meteen dat hij niet op de server staat. Dat is de
+   melding waar in de klas over geklaagd werd, en meestal was hij niet
+   waar: de groep stond er wel, we waren alleen te vroeg.
+
+   Dus: eerst even wachten tot de verbinding klaar is, en pas dan
+   oordelen. Staat hij er daarna nog steeds niet, dan klopt de melding. */
 function naarGroep(nieuwKlasId){
+  var klaar = KBSYNC.opServer(nieuwKlasId)
+    ? Promise.resolve()
+    : zodraKlaar().catch(function () {});
+  return klaar.then(function () { return naarGroepNu(nieuwKlasId); });
+}
+
+function naarGroepNu(nieuwKlasId){
   var nieuwGroepId = KBSYNC.opServer(nieuwKlasId);
   if (!nieuwGroepId) return Promise.reject(new Error('Die groep staat niet op de server.'));
   return stuurNu().catch(function () {}).then(function () {

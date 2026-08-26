@@ -47,6 +47,7 @@ const APP = process.env.APP || 'http://localhost:8899';
     KB.zetStand('l0', tel.id,  'bezig',   null, k);
     KB.zetStand('l0', 'taak:t2', 'behaald', 't2', k);
     KB.zetStand('l1', knip.id, 'bezig', 't1', k);
+    KB.zetStand('l0', derde.id, 'nog', 't1', k);      // gezien: is aan het ontdekken
 
     const uur = 3600000, nu = Date.now(), log = [];
     const zit = (kind, hoek, u, m) => { const v = nu - u*uur;
@@ -69,6 +70,7 @@ const APP = process.env.APP || 'http://localhost:8899';
              behaald: d.doelen.behaald.map(x=>x.tekst),
              bezig: d.doelen.bezig.map(x=>x.tekst),
              nog: d.doelen.nog.length,
+             ontdekt: d.doelen.ontdekt.map(x=>x.tekst),
              viaTaak: (d.doelen.behaald.filter(x=>/knip/i.test(x.tekst))[0]||{}).viaTaak,
              taakregel: (d.doelen.behaald.filter(x=>/Losse taak/.test(x.tekst))[0]||{}).waar,
              hoeken: d.hoeken.lijst.map(x=>x.naam+':'+x.keer),
@@ -87,8 +89,10 @@ const APP = process.env.APP || 'http://localhost:8899';
       g.viaTaak === 'Knipwerk', g.viaTaak);
   zeg('en bij een taak zonder doel staat dat er zo bij',
       g.taakregel === 'Taak zonder doel', g.taakregel);
-  zeg('"waar we nog aan werken" pakt alleen wat nog open staat',
-      g.nog === 1, g.nog + ' van de 3 aangezette doelen');
+  zeg('een doel waarvan je zag dat het kind aan het ontdekken is staat apart',
+      g.ontdekt.length === 1 && g.ontdekt[0].indexOf(opzet.derde) >= 0, g.ontdekt.join(' | '));
+  zeg('"waar we nog aan werken" houdt alleen over wat je nog niet bekeken hebt',
+      g.nog === 0, g.nog + ' van de 3 aangezette doelen');
   zeg('de hoeken staan op volgorde van hoe vaak',
       g.hoeken[0] === 'Huishoek:6' && g.hoeken[1] === 'Bouwhoek:5', g.hoeken.join(', '));
   zeg('het maatje staat erbij met de minuten samen',
@@ -107,9 +111,9 @@ const APP = process.env.APP || 'http://localhost:8899';
     } catch (e) { return { fout: e.message }; }
   });
   zeg('de beoordelingen gaan zonder klagen naar de server',
-      !heenEnTerug.fout && heenEnTerug.totaal === 4, heenEnTerug.fout || JSON.stringify(heenEnTerug));
+      !heenEnTerug.fout && heenEnTerug.totaal === 5, heenEnTerug.fout || JSON.stringify(heenEnTerug));
   zeg('de taak zonder doel staat er als observatie zonder doel_id',
-      heenEnTerug.zonderDoel === 1 && heenEnTerug.metDoel === 3, JSON.stringify(heenEnTerug));
+      heenEnTerug.zonderDoel === 1 && heenEnTerug.metDoel === 4, JSON.stringify(heenEnTerug));
 
   await p.reload(); await p.waitForTimeout(2600);
   const naHerladen = await p.evaluate(() => {
@@ -118,7 +122,7 @@ const APP = process.env.APP || 'http://localhost:8899';
              taakstand: (b['l0|taak:t2'] || {}).stand };
   });
   zeg('en komt na het herladen terug als beoordeling van die taak',
-      naHerladen.taakstand === 'behaald' && naHerladen.sleutels.length === 3,
+      naHerladen.taakstand === 'behaald' && naHerladen.sleutels.length === 4,
       naHerladen.sleutels.join(', '));
 
   // ── het blad ──
@@ -135,13 +139,15 @@ const APP = process.env.APP || 'http://localhost:8899';
              zonderTitels: (zonder.match(/<h2>[^<]*<\/h2>/g)||[]).map(x=>x.replace(/<\/?h2>/g,'')),
              zonderFoto: zonder.indexOf('<img') < 0,
              ontsnapt: raar.indexOf('Julia&lt;&amp;&gt;') >= 0 && raar.indexOf('Julia<&>') < 0,
-             leegKind: /nog geen keuze op het bord/.test(raar) };
+             leegKind: /nog geen keuze op het bord/.test(raar),
+             zonderNogNiet: (zonder.match(/Waar we nog aan gaan werken/g)||[]).length };
   });
   zeg('twee kinderen geven twee bladen', blad.bladen === 2, blad.bladen + ' bladen');
   zeg('de groepsnaam en de periode staan boven aan het blad',
       /Groep 1A/.test(blad.kop) && /kwartaal|90 dagen|maanden/.test(blad.kop), blad.kop);
   zeg('de vaste kopjes staan er allemaal',
-      ['Dit gaat al goed','Hier zijn we mee bezig','Waar we nog aan gaan werken','Aantekeningen']
+      ['Dit kan Sem zelfstandig','Dit lukt met een beetje hulp',
+       'Hier is Sem aan het ontdekken','Aantekeningen']
         .every(t => blad.titels.indexOf(t) >= 0), blad.titels.slice(0,6).join(' / '));
   zeg('hoeken en maatjes hebben een eigen kopje met de naam erin',
       blad.titels.some(t=>/Waar Sem graag speelt/.test(t)) &&
@@ -150,6 +156,9 @@ const APP = process.env.APP || 'http://localhost:8899';
   zeg('die stukken gaan er ook echt uit als je ze uitzet',
       !blad.zonderTitels.some(t=>/graag speelt|Met wie|Aantekeningen/.test(t)),
       blad.zonderTitels.join(' / '));
+  zeg('de derde gradatie krijgt een eigen kopje',
+      blad.titels.indexOf('Hier is Sem aan het ontdekken') >= 0,
+      blad.titels.filter(t=>/ontdekken/.test(t)).join(' / ') || 'geen');
   zeg('zonder foto staat er geen enkele afbeelding in', blad.zonderFoto);
   zeg('een naam met tekens erin komt er veilig doorheen', blad.ontsnapt);
   zeg('een kind dat niets koos krijgt een nette zin', blad.leegKind);

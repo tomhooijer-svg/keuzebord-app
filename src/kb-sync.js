@@ -67,7 +67,8 @@ function zetAfdruk(klasId, plaat){
 
 function naarRijen(k){
   var uit = {
-    leerlingen:[], hoeken:[], borden:[], bord_hoeken:[], plaatsingen:[],
+    leerlingen:[], hoeken:[], themas:[], thema_doelen:[], thema_hoeken:[],
+    borden:[], bord_hoeken:[], plaatsingen:[],
     wachtrij:[], taken:[], taak_doelen:[], groep_doelen:[],
     weekplannen:[], week_doelen:[], weekplan_taken:[], taak_toewijzing:[],
     observaties:[]
@@ -88,7 +89,8 @@ function naarRijen(k){
                       kleur:h.kleur || null, icoon:h.icoon || null,
                       foto_pad:pad(h.fotoId),
                       timer_minuten:h.timerMinuten || null,
-                      werkplaats:!!h.werkplaats, volgorde:i });
+                      werkplaats:!!h.werkplaats, volgorde:i,
+                      leerlijnen:KB.hoekLeerlijnen(h) });
   });
 
   (k.borden || []).forEach(function (b, i) {
@@ -100,7 +102,11 @@ function naarRijen(k){
                               // Ging dit niet mee, dan dacht elk apparaat dat het
                               // nog moest gebeuren en veegde het bord bij het
                               // openen leeg -- ook wat de kinderen net kozen.
-                              laatstGeleegd: b.laatstGeleegd || 0 } });
+                              laatstGeleegd: b.laatstGeleegd || 0,
+                              // of het bord aan staat. Ging dit niet mee, dan
+                              // stond een bord dat je aan het eind van de dag
+                              // uitzette de volgende ochtend weer aan.
+                              aan: b.aan !== false } });
     (b.hoekLibIds || []).forEach(function (hid, j) {
       uit.bord_hoeken.push({ _id:b.id + '~' + hid, _bord:b.id, _hoek:hid, volgorde:j });
     });
@@ -120,9 +126,25 @@ function naarRijen(k){
                         _leerling:w.leerlingId, volgorde:w.volgorde == null ? i : w.volgorde });
   });
 
+  (k.themas || []).forEach(function (t, i) {
+    uit.themas.push({ _id:t.id, naam:t.naam, omschrijving:'',
+                      vraag:t.vraag || '', start_tekst:t.start || '',
+                      afsluiting:t.afsluiting || '',
+                      van:t.van || null, tot:t.tot || null,
+                      kleur:t.kleur || null, archief:!!t.archief, volgorde:i,
+                      vragen:t.vragen || [], activiteiten:t.activiteiten || [] });
+    (t.doelIds || []).forEach(function (d) {
+      uit.thema_doelen.push({ _id:t.id + '~' + d, _thema:t.id, _doel:d });
+    });
+    (t.hoekIds || []).forEach(function (h, j) {
+      uit.thema_hoeken.push({ _id:t.id + '~h~' + h, _thema:t.id, _hoek:h, volgorde:j });
+    });
+  });
+
   (k.taken || []).forEach(function (t) {
     uit.taken.push({ _id:t.id, naam:t.naam, omschrijving:t.omschrijving || '',
-                     plekken:t.plekken || 6, kleur:t.kleur || null, actief:true });
+                     plekken:t.plekken || 6, kleur:t.kleur || null, actief:true,
+                     _thema:t.themaId || null });
     (t.doelIds || []).forEach(function (d) {
       uit.taak_doelen.push({ _id:t.id + '~' + d, _taak:t.id, _doel:d });
     });
@@ -134,7 +156,8 @@ function naarRijen(k){
 
   Object.keys(k.weken || {}).forEach(function (sleutel) {
     var w = k.weken[sleutel];
-    uit.weekplannen.push({ _id:'wp~' + sleutel, maandag:sleutel, notitie:w.notitie || '' });
+    uit.weekplannen.push({ _id:'wp~' + sleutel, maandag:sleutel, notitie:w.notitie || '',
+                           _thema:w.themaId || null });
     (w.centraleDoelIds || []).forEach(function (d) {
       uit.week_doelen.push({ _id:'wd~' + sleutel + '~' + d, _weekplan:'wp~' + sleutel, _doel:d });
     });
@@ -204,8 +227,30 @@ function naarKlas(rijen, bestaande){
     var oud = (bestaande && bestaande.hoekLib || []).filter(function (x) { return x.id === lok(r.id); })[0];
     return { id:lok(r.id), naam:r.naam, maxKinderen:r.max_kinderen, kleur:r.kleur,
              icoon:r.icoon, timerMinuten:r.timer_minuten, werkplaats:r.werkplaats,
+             leerlijnen:r.leerlijnen || [],
              fotoId:oud ? oud.fotoId : null };
   });
+
+  k.themas = (rijen.themas || [])
+    .slice().sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); })
+    .map(function (r) {
+      var id = lok(r.id);
+      return { id:id, naam:r.naam, vraag:r.vraag || '', start:r.start_tekst || '',
+               afsluiting:r.afsluiting || '',
+               // een date komt als tijdstempel terug; wij rekenen met weeksleutels
+               van:r.van ? String(r.van).slice(0, 10) : null,
+               tot:r.tot ? String(r.tot).slice(0, 10) : null,
+               kleur:r.kleur || null, archief:!!r.archief,
+               vragen:r.vragen || [], activiteiten:r.activiteiten || [],
+               doelIds:(rijen.thema_doelen || [])
+                 .filter(function (x) { return x.thema_id === r.id; })
+                 .map(function (x) { return lok(x.doel_id); }),
+               hoekIds:(rijen.thema_hoeken || [])
+                 .filter(function (x) { return x.thema_id === r.id; })
+                 .sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); })
+                 .map(function (x) { return lok(x.hoek_id); }),
+               gemaakt:new Date(r.aangemaakt || Date.now()).getTime() };
+    });
 
   k.borden = (rijen.borden || []).map(function (r) {
     var stand = r.stand || {};
@@ -224,7 +269,8 @@ function naarKlas(rijen, bestaande){
     return { id:bordId, naam:r.naam, hoekLibIds:hoekIds, plaatsingen:plaatsingen,
              dagOpen:!!stand.dagOpen, dagGesloten:!!stand.dagGesloten,
              dagStart:stand.dagStart || null, thema:stand.thema || 'geen',
-             laatstGeleegd: stand.laatstGeleegd || 0 };
+             laatstGeleegd: stand.laatstGeleegd || 0,
+             aan: stand.aan !== false };
   });
   // Een groep die op de server is aangemaakt heeft nog geen bord. De app
   // gaat er wel altijd van uit dat er eentje is, dus die maken we hier --
@@ -246,6 +292,7 @@ function naarKlas(rijen, bestaande){
              plekken:r.plekken, kleur:r.kleur,
              doelIds:(rijen.taak_doelen || []).filter(function (x) { return x.taak_id === r.id; })
                        .map(function (x) { return lok(x.doel_id); }),
+             themaId:r.thema_id ? lok(r.thema_id) : null,
              gemaakt:new Date(r.aangemaakt).getTime() };
   });
 
@@ -272,6 +319,7 @@ function naarKlas(rijen, bestaande){
       });
     k.weken[sleutel] = {
       notitie: r.notitie,
+      themaId: r.thema_id ? lok(r.thema_id) : null,
       centraleDoelIds: (rijen.week_doelen || []).filter(function (x) { return x.weekplan_id === r.id; })
                          .map(function (x) { return lok(x.doel_id); }),
       taken: taken
@@ -324,6 +372,7 @@ function naarKlas(rijen, bestaande){
 var TABELLEN = [
   { naam:'leerlingen',      hangtAan:'groep' },
   { naam:'hoeken',          hangtAan:'groep', ook:['school'] },
+  { naam:'themas',          hangtAan:'groep', ook:['school'] },
   { naam:'taken',           hangtAan:'groep' },
   { naam:'borden',          hangtAan:'groep' },
   { naam:'weekplannen',     hangtAan:'groep' },
@@ -335,12 +384,14 @@ var TABELLEN = [
   { naam:'plaatsingen' },
   { naam:'wachtrij' },
   { naam:'taak_toewijzing' },
-  { naam:'observaties',     hangtAan:'groep' }
+  { naam:'observaties',     hangtAan:'groep' },
+  { naam:'thema_doelen',    samengesteld:['thema_id','doel_id'] },
+  { naam:'thema_hoeken',    samengesteld:['thema_id','hoek_id'] }
 ];
 
 var VERWIJST = { _bord:'bord_id', _hoek:'hoek_id', _leerling:'leerling_id',
                  _taak:'taak_id', _doel:'doel_id', _weekplan:'weekplan_id',
-                 _weekplantaak:'weekplan_taak_id' };
+                 _weekplantaak:'weekplan_taak_id', _thema:'thema_id' };
 
 /* ── verschillen zoeken ──────────────────────────────────────────────── */
 
@@ -476,9 +527,42 @@ function serverRij(rij, tabel, groepId, schoolId){
   return uit;
 }
 
+/* Eén groep tegelijk. Twee keer tegelijk versturen klinkt onwaarschijnlijk
+   -- de app plant het versturen netjes achter elkaar -- maar het kan: een
+   scherm dat "nu versturen" vraagt terwijl de wachttijd na het opslaan net
+   afloopt. Beide rondes kijken dan naar dezelfde vorige afdruk, zien
+   allebei "dit is allemaal nieuw", en zetten alles twee keer op de server.
+   Bij een grote groep zijn dat honderden dubbele rijen.
+
+   Dus houden we per groep bij of er al een ronde loopt, en sluit de tweede
+   daarbij aan in plaats van ernaast te gaan lopen. */
+var lopendeDuw = {};
+
 function duw(klasId, groepId, schoolId){
+  if (lopendeDuw[klasId]) return lopendeDuw[klasId];
+  var beurt = duwNu(klasId, groepId, schoolId);
+  lopendeDuw[klasId] = beurt;
+  var klaar = function () { delete lopendeDuw[klasId]; };
+  beurt.then(klaar, klaar);
+  return beurt;
+}
+
+function duwNu(klasId, groepId, schoolId){
   var k = (KB.G.klassen || []).filter(function (x) { return x.id === klasId; })[0];
   if (!k) return Promise.reject(new Error('Die groep ken ik niet.'));
+
+  /* Twee gevallen waarin deze groep hier leeg is terwijl hij op de server
+     compleet staat: hij is nooit opgehaald (bij het inloggen krijgt elke
+     groep een lege plaatshouder), of de opslag was vol en zijn inhoud is
+     eruit gehaald om ruimte te maken.
+
+     In allebei de gevallen mag hij niet de kant van de server op. Het
+     verschil zou "deze groep is leeg" lezen en de instellingen -- of de
+     hele groep -- van je collega overschrijven. Eerst ophalen. */
+  if (k.magOpnieuwOphalen) {
+    // Geen fout, gewoon niets te doen: hier staat nog geen inhoud.
+    return Promise.resolve({ overgeslagen: 'deze groep is hier nog niet opgehaald' });
+  }
 
   var vooraf = zorgVoorDoelen(schoolId);
   // eerst de foto's, want de rijen van kinderen en hoeken wijzen ernaar
@@ -570,7 +654,8 @@ function haal(groepId){
   return SB.lees('groepen', { kies:'*', waar:{ id:'eq.' + groepId } }).then(function (g) {
     if (!g || !g.length) throw new Error('Die groep staat niet op de server.');
     var rijen = { groep:g[0] };
-    var perGroep = ['leerlingen','hoeken','taken','borden','weekplannen','groep_doelen','observaties'];
+    var perGroep = ['leerlingen','hoeken','themas','taken','borden','weekplannen',
+                    'groep_doelen','observaties'];
     return Promise.all(perGroep.map(function (t) {
       return SB.lees(t, { kies:'*', waar:{ groep_id:'eq.' + groepId } })
                .then(function (r) { rijen[t] = r || []; });
@@ -579,6 +664,7 @@ function haal(groepId){
       var borden  = rijen.borden.map(function (b) { return b.id; });
       var taken   = rijen.taken.map(function (t) { return t.id; });
       var weken   = rijen.weekplannen.map(function (w) { return w.id; });
+      var themas  = rijen.themas.map(function (t) { return t.id; });
       var lijstje = function (ids) { return '(' + ids.join(',') + ')'; };
       var werk = [];
       var haalVoor = function (tabel, kolom, ids) {
@@ -594,6 +680,8 @@ function haal(groepId){
       haalVoor('plaatsingen',    'bord_id',     borden);
       haalVoor('wachtrij',       'bord_id',     borden);
       haalVoor('taak_doelen',    'taak_id',     taken);
+      haalVoor('thema_doelen',   'thema_id',    themas);
+      haalVoor('thema_hoeken',   'thema_id',    themas);
       haalVoor('week_doelen',    'weekplan_id', weken);
       haalVoor('weekplan_taken', 'weekplan_id', weken);
       return Promise.all(werk).then(function () {
@@ -614,6 +702,8 @@ function haalBinnen(klasId, groepId){
     var bestaande = (KB.G.klassen || []).filter(function (x) { return x.id === klasId; })[0];
     if (!bestaande) { bestaande = { id:klasId }; KB.G.klassen.push(bestaande); }
     naarKlas(rijen, bestaande);
+    // hij is er weer helemaal; het slot van hierboven mag eraf
+    delete bestaande.magOpnieuwOphalen;
     koppel(klasId, groepId);
     // de foto's erbij, en dan de kinderen en hoeken er weer aan hangen
     var foto = global.KBMEDIA

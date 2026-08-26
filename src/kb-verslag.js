@@ -34,14 +34,14 @@ function doelenVanKind(leerlingId, k, opties){
   k = k || KB.klas();
   opties = opties || {};
   var alle = KB.beoordelingen(k);
-  var behaald = [], bezig = [], gezien = {};
+  var behaald = [], bezig = [], ontdekt = [], gezien = {};
 
   Object.keys(alle).forEach(function (sleutel) {
     var stuk = sleutel.split('|');
     if (stuk[0] !== leerlingId) return;
     var doelId = stuk.slice(1).join('|');
     var b = alle[sleutel];
-    if (!b || (b.stand !== 'behaald' && b.stand !== 'bezig')) return;
+    if (!b || KB.STANDEN.indexOf(b.stand) < 0) return;
 
     var taak = losseTaak(doelId, k);
     var d = taak ? null : doelVan(doelId);
@@ -58,11 +58,11 @@ function doelenVanKind(leerlingId, k, opties){
       // bij een taak staat die naam al bovenaan de regel
       viaTaak: taak ? '' : via
     };
-    (b.stand === 'behaald' ? behaald : bezig).push(regel);
+    (b.stand === 'behaald' ? behaald : b.stand === 'bezig' ? bezig : ontdekt).push(regel);
   });
 
   var sorteer = function (a, b) { return (b.datum || 0) - (a.datum || 0); };
-  behaald.sort(sorteer); bezig.sort(sorteer);
+  behaald.sort(sorteer); bezig.sort(sorteer); ontdekt.sort(sorteer);
 
   /* Waar we nog aan gaan werken: de doelen die de groep heeft aangezet
      en waar dit kind nog niets op staat. Alleen als erom gevraagd wordt --
@@ -77,7 +77,7 @@ function doelenVanKind(leerlingId, k, opties){
     });
     nog.sort(function (a, b) { return a.tekst.localeCompare(b.tekst); });
   }
-  return { behaald: behaald, bezig: bezig, nog: nog };
+  return { behaald: behaald, bezig: bezig, ontdekt: ontdekt, nog: nog };
 }
 
 function hoekenVanKind(leerlingId, k, opties){
@@ -106,7 +106,7 @@ function gegevens(leerlingId, k, opties){
   opties = opties || {};
   var l = KB.leerling(leerlingId, k);
   if (!l) return null;
-  var stat = { dagen: opties.dagen || 0 };
+  var stat = { dagen: opties.dagen || 0, eind: opties.eind || null };
   return {
     naam: l.naam,
     beeld: opties.fotos === false ? null : (l.image || null),
@@ -168,13 +168,18 @@ function bladHtml(g, kop, opties){
       '<p class="onder">' + veilig(kop) + '</p></div>' +
     '</header>');
 
-  stukken.push('<section><h2>Dit gaat al goed</h2>' +
+  stukken.push('<section><h2>Dit kan ' + veilig(g.naam) + ' zelfstandig</h2>' +
     doelLijstHtml(g.doelen.behaald,
-      'Er staat nog niets als behaald genoteerd.') + '</section>');
+      'Hier staat nog niets genoteerd.') + '</section>');
 
-  stukken.push('<section><h2>Hier zijn we mee bezig</h2>' +
+  stukken.push('<section><h2>Dit lukt met een beetje hulp</h2>' +
     doelLijstHtml(g.doelen.bezig,
-      'Er staat op dit moment niets als "bezig" genoteerd.') + '</section>');
+      'Hier staat op dit moment niets genoteerd.') + '</section>');
+
+  if (g.doelen.ontdekt.length) {
+    stukken.push('<section><h2>Hier is ' + veilig(g.naam) + ' aan het ontdekken</h2>' +
+      doelLijstHtml(g.doelen.ontdekt, '') + '</section>');
+  }
 
   if (opties.nogNiet && g.doelen.nog.length) {
     stukken.push('<section><h2>Waar we nog aan gaan werken</h2>' +
@@ -268,7 +273,9 @@ var STIJL =
 function document_(kinderen, k, opties){
   k = k || KB.klas();
   opties = opties || {};
-  var kop = [k.naam || 'Onze groep', periodeTekst(opties.dagen || 0),
+  var kop = [k.naam || 'Onze groep',
+             global.KBSTAT ? KBSTAT.periodeZin({ dagen:opties.dagen || 0, eind:opties.eind || null })
+                           : periodeTekst(opties.dagen || 0),
              'opgemaakt ' + datumKort(Date.now())].join(' \u00b7 ');
   var bladen = kinderen.map(function (id) {
     var g = gegevens(id, k, opties);

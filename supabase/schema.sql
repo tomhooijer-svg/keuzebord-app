@@ -114,8 +114,16 @@ create table if not exists public.hoeken (
   aangemaakt    timestamptz not null default now()
 );
 
--- Een draaiboek: een setje hoeken dat bij een thema hoort, bijvoorbeeld
--- de inpakhoek in de sinterklaastijd.
+-- Een thema, zoals je dat bij thematisch onderzoekend leren uitwerkt:
+-- iets wat de kinderen verwondert, de vragen die daaruit komen, de doelen
+-- waar je aan werkt, de activiteiten en taken die je doet, en de hoeken
+-- die je erop inricht. Je werkt het vooruit uit en plant het later in.
+--
+-- vragen en activiteiten staan als jsonb bij het thema zelf. Het zijn
+-- korte lijstjes die alleen als geheel veranderen en waar niets anders
+-- naar verwijst -- net als de instellingen van een groep en de stand van
+-- een bord. Doelen en hoeken zijn wél echte rijen, dus die krijgen een
+-- eigen koppeltabel.
 create table if not exists public.themas (
   id          uuid primary key default gen_random_uuid(),
   school_id   uuid not null references public.scholen(id) on delete cascade,
@@ -299,6 +307,33 @@ alter table public.taken  add column if not exists kleur   text;
 alter table public.borden add column if not exists volgorde int not null default 0;
 alter table public.borden add column if not exists stand   jsonb not null default '{}'::jsonb;
 alter table public.taak_toewijzing add column if not exists geweest date;
+-- Waar een hoek voor is: de leerlijnen uit de doelenlijst. Zo praten
+-- hoeken en doelen dezelfde taal en zie je of je aanbod in balans is.
+alter table public.hoeken add column if not exists leerlijnen text[] not null default '{}';
+
+-- ── thema's, zoals je ze bij thematisch onderzoekend leren uitwerkt ────
+alter table public.themas add column if not exists vraag        text not null default '';
+alter table public.themas add column if not exists start_tekst  text not null default '';
+alter table public.themas add column if not exists afsluiting   text not null default '';
+alter table public.themas add column if not exists van          date;
+alter table public.themas add column if not exists tot          date;
+alter table public.themas add column if not exists kleur        text;
+alter table public.themas add column if not exists archief      boolean not null default false;
+alter table public.themas add column if not exists volgorde     int not null default 0;
+-- de vragenmuur en de activiteiten: korte lijstjes, als geheel bewaard
+alter table public.themas add column if not exists vragen       jsonb not null default '[]'::jsonb;
+alter table public.themas add column if not exists activiteiten jsonb not null default '[]'::jsonb;
+
+-- Aan welke doelen werk je in dit thema.
+create table if not exists public.thema_doelen (
+  thema_id  uuid not null references public.themas(id) on delete cascade,
+  doel_id   uuid not null references public.doelen(id) on delete cascade,
+  primary key (thema_id, doel_id)
+);
+
+-- Een taak hoort bij hooguit één thema; een week draait om hooguit één thema.
+alter table public.taken       add column if not exists thema_id uuid references public.themas(id) on delete set null;
+alter table public.weekplannen add column if not exists thema_id uuid references public.themas(id) on delete set null;
 
 do $$
 begin
@@ -381,7 +416,7 @@ declare t text;
 begin
   foreach t in array array[
     'scholen','profielen','uitnodigingen','groepen','groep_leden','leerlingen',
-    'media','hoeken','themas','thema_hoeken','borden','bord_hoeken','groep_doelen',
+    'media','hoeken','themas','thema_hoeken','thema_doelen','borden','bord_hoeken','groep_doelen',
     'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
     'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen']
   loop
@@ -502,6 +537,7 @@ declare
     ['plaatsingen',     'exists (select 1 from public.borden b where b.id = bord_id and public.mag_bij_groep(b.groep_id))'],
     ['wachtrij',        'exists (select 1 from public.borden b where b.id = bord_id and public.mag_bij_groep(b.groep_id))'],
     ['thema_hoeken',    'exists (select 1 from public.themas t where t.id = thema_id and (t.groep_id is null and t.school_id = public.mijn_school() or public.mag_bij_groep(t.groep_id)))'],
+    ['thema_doelen',    'exists (select 1 from public.themas t where t.id = thema_id and (t.groep_id is null and t.school_id = public.mijn_school() or public.mag_bij_groep(t.groep_id)))'],
     ['taak_doelen',     'exists (select 1 from public.taken t where t.id = taak_id and public.mag_bij_groep(t.groep_id))'],
     ['week_doelen',     'exists (select 1 from public.weekplannen w where w.id = weekplan_id and public.mag_bij_groep(w.groep_id))'],
     ['weekplan_taken',  'exists (select 1 from public.weekplannen w where w.id = weekplan_id and public.mag_bij_groep(w.groep_id))'],

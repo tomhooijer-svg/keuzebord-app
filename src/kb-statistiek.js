@@ -19,10 +19,10 @@ var DAG = 24 * 60 * 60 * 1000;
    Het logboek zegt "Sem koos de bouwhoek" en later "Sem ging weg". Daar
    maken we blokjes tijd van. Wie nog zit, telt tot nu. */
 
-function bezoekjes(k, vanaf){
+function bezoekjes(k, vanaf, tot){
   k = k || KB.klas();
   var log = (k.gebeurtenissen || []).filter(function (g) {
-    return !vanaf || g.tijd >= vanaf;
+    return (!vanaf || g.tijd >= vanaf) && (!tot || g.tijd <= tot);
   });
   var open = {};      // leerlingId -> begonnen bezoek
   var uit = [];
@@ -45,11 +45,50 @@ function bezoekjes(k, vanaf){
       sluit(g.leerlingId, g.tijd);
     }
   });
-  // wie nu nog zit
-  var nu = Date.now();
-  Object.keys(open).forEach(function (id) { sluit(id, nu); });
+  // wie aan het eind van de periode nog zat
+  var eind = Math.min(tot || Date.now(), Date.now());
+  Object.keys(open).forEach(function (id) { sluit(id, eind); });
 
   return uit.sort(function (a, b) { return a.van - b.van; });
+}
+
+/* ── de periode ───────────────────────────────────────────────────────
+   Vroeger kon je alleen "de laatste zoveel dagen" kiezen. Dat is precies
+   de verkeerde vorm als je terugkijkt: voor een oudergesprek wil je "de
+   acht weken vóór de kerstvakantie", niet "de laatste acht weken".
+
+   Dus: een einddatum en een lengte. Laat je het einde leeg, dan is dat
+   vandaag -- en dan doet het zich precies zo voor als eerst. */
+
+function periode(opties){
+  opties = opties || {};
+  if (opties.van || opties.tot) {
+    return { van: opties.van || null,
+             tot: opties.tot || Date.now(),
+             dagen: opties.van ? Math.round((( opties.tot || Date.now()) - opties.van) / DAG) : 0 };
+  }
+  var tot = opties.eind ? eindVanDag(opties.eind) : Date.now();
+  var dagen = opties.dagen || 0;
+  return { van: dagen ? tot - dagen * DAG : null, tot: tot, dagen: dagen };
+}
+function eindVanDag(d){
+  var x = (d instanceof Date) ? new Date(d) : new Date(String(d) + 'T23:59:59');
+  return isNaN(x.getTime()) ? Date.now() : x.getTime();
+}
+/* Voor op het scherm: "de laatste drie weken", of "8 weken tot 20 december". */
+function periodeZin(opties){
+  var p = periode(opties);
+  var lengte = !p.dagen ? 'alles'
+    : p.dagen % 7 === 0 ? (p.dagen / 7) + (p.dagen === 7 ? ' week' : ' weken')
+    : p.dagen + ' dagen';
+  var vandaag = Math.abs(p.tot - Date.now()) < DAG;
+  if (!p.dagen) return vandaag ? 'sinds het begin' : 'alles tot ' + korteDatum(p.tot);
+  return vandaag ? 'de laatste ' + lengte : lengte + ' tot ' + korteDatum(p.tot);
+}
+function korteDatum(ms){
+  var d = new Date(ms);
+  return d.getDate() + ' ' + ['jan','feb','mrt','apr','mei','jun','jul','aug',
+    'sep','okt','nov','dec'][d.getMonth()];
 }
 
 /* ── per kind ─────────────────────────────────────────────────────────
@@ -58,8 +97,8 @@ function bezoekjes(k, vanaf){
 function perKind(k, opties){
   k = k || KB.klas();
   opties = opties || {};
-  var vanaf = opties.dagen ? Date.now() - opties.dagen * DAG : null;
-  var lijst = bezoekjes(k, vanaf);
+  var p = periode(opties);
+  var lijst = bezoekjes(k, p.van, p.tot);
 
   var uit = {};
   (k.leerlingen || []).forEach(function (l) {
@@ -91,8 +130,8 @@ function perKind(k, opties){
 function perHoek(k, opties){
   k = k || KB.klas();
   opties = opties || {};
-  var vanaf = opties.dagen ? Date.now() - opties.dagen * DAG : null;
-  var lijst = bezoekjes(k, vanaf);
+  var p = periode(opties);
+  var lijst = bezoekjes(k, p.van, p.tot);
 
   var uit = {};
   (k.hoekLib || []).forEach(function (h) {
@@ -119,8 +158,8 @@ function perHoek(k, opties){
 function paren(k, opties){
   k = k || KB.klas();
   opties = opties || {};
-  var vanaf = opties.dagen ? Date.now() - opties.dagen * DAG : null;
-  var lijst = bezoekjes(k, vanaf);
+  var p = periode(opties);
+  var lijst = bezoekjes(k, p.van, p.tot);
 
   // per hoek de bezoekjes bij elkaar, dan paarsgewijs kijken of ze
   // elkaar in de tijd overlappen
@@ -262,6 +301,7 @@ function opvallend(k, opties){
 }
 
 global.KBSTAT = {
+  periode: periode, periodeZin: periodeZin,
   bezoekjes: bezoekjes,
   perKind: perKind, perHoek: perHoek,
   paren: paren, nooitSamen: nooitSamen, maatjesVan: maatjesVan,

@@ -94,7 +94,14 @@ function stuurOp(k, groepId, schoolId){
         return n + 1;
       });
     });
-  }, Promise.resolve(0));
+  }, Promise.resolve(0)).then(function (n) {
+    /* Nu ze op de server staan mogen ze uit de browseropslag weg. Dat
+       gebeurde eerst alleen na het ophálen, dus een apparaat dat zelf
+       alle foto's had gemaakt hield ze allemaal in localStorage -- en
+       liep bij zes volle groepen tegen de grens aan. */
+    if (!n) return n;
+    return bewaarInKluis(k).then(function () { return n; }, function () { return n; });
+  });
 }
 
 /* ── ophalen ─────────────────────────────────────────────────────────── */
@@ -172,6 +179,18 @@ function bewaarInKluis(k){
   if (!Object.keys(kluis).length) return Promise.resolve();
   return KB.fkLees().then(function (oud) {
     return KB.fkBewaar(Object.assign(oud || {}, kluis));
+  }).then(function () {
+    /* Nu de foto's veilig in de kluis liggen, hoeven ze niet ook nog in
+       localStorage te staan. Dat deden ze wel, en dat is bij zes groepen
+       met vijftien hoeken bijna vier megabyte -- tegen een grens van vijf.
+       Het vinkje hieronder zorgt dat bewaar() ze eruit laat; bij het
+       opstarten zet fkPasToe ze weer terug uit de kluis.
+
+       Pas hierna, en niet eerder: zou de kluis niet lukken, dan is de
+       foto in localStorage het enige wat we nog hebben. */
+    (k.leerlingen || []).forEach(function (l) { if (l.image) l._c = true; });
+    (k.fotoLib || []).forEach(function (f) { if (f.data) f._c = true; });
+    KB.bewaar();
   }).catch(function () {});
 }
 

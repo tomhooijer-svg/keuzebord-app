@@ -89,6 +89,32 @@ async function magBijPad(uid, pad){
   return r.rows[0].s === school;
 }
 
+/* Wat voor soort kolom is dit? PostgREST weet dat en gedraagt zich ernaar:
+   een JavaScript-lijst wordt bij een text[] een echte Postgres-array en bij
+   een jsonb gewoon json. Wij moeten dat hier nadoen, anders slikt Postgres
+   `["a","b"]` als tekst en klaagt hij over "malformed array literal". */
+const kolomsoorten = new Map();
+async function soortVan(tabel, kolom){
+  if (!kolomsoorten.has(tabel)) {
+    const r = await alsBeheer(c => c.query(
+      `select column_name, data_type from information_schema.columns
+        where table_schema='public' and table_name=$1`, [tabel]));
+    const m = {};
+    r.rows.forEach(x => { m[x.column_name] = x.data_type; });
+    kolomsoorten.set(tabel, m);
+  }
+  return (kolomsoorten.get(tabel) || {})[kolom] || '';
+}
+/* Geeft de waarde terug zoals pg hem moet krijgen. Een array blijft een
+   array (node-postgres maakt er zelf een Postgres-array van), json gaat
+   als tekst mee, en de rest verandert niet. */
+async function klaarVoorPg(tabel, kolom, waarde){
+  if (waarde === null || typeof waarde !== 'object') return waarde;
+  const soort = await soortVan(tabel, kolom);
+  if (soort === 'ARRAY') return Array.isArray(waarde) ? waarde : [waarde];
+  return JSON.stringify(waarde);
+}
+
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   const pad = u.pathname;
@@ -187,8 +213,12 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'POST') {
         const rijen = [].concat(lijf);
         const kols = Object.keys(rijen[0]);
-        const w = []; const stukken = rijen.map(rij =>
-          '(' + kols.map(k => { w.push(rij[k] === null || typeof rij[k] !== 'object' ? rij[k] : JSON.stringify(rij[k])); return '$' + w.length; }).join(',') + ')');
+        const w = []; const stukken = [];
+        for (const rij of rijen) {
+          const stuk = [];
+          for (const k of kols) { w.push(await klaarVoorPg(tabel, k, rij[k])); stuk.push('$' + w.length); }
+          stukken.push('(' + stuk.join(',') + ')');
+        }
         const bots = u.searchParams.get('on_conflict');
         // Zijn alle kolommen onderdeel van de sleutel, dan valt er niets bij te
         // werken en moet het 'do nothing' zijn -- 'do update set' zonder
@@ -206,8 +236,9 @@ const server = http.createServer(async (req, res) => {
         return stuur(201, r.rows);
       }
       if (req.method === 'PATCH') {
-        const kols = Object.keys(lijf); const w = [];
-        const zet = kols.map(k => { w.push(lijf[k] === null || typeof lijf[k] !== 'object' ? lijf[k] : JSON.stringify(lijf[k])); return `"${k}"=$${w.length}`; }).join(',');
+        const kols = Object.keys(lijf); const w = []; const delen = [];
+        for (const k of kols) { w.push(await klaarVoorPg(tabel, k, lijf[k])); delen.push(`"${k}"=$${w.length}`); }
+        const zet = delen.join(',');
         const waar2 = bouwWaar(u.searchParams, w);
         const r = await metRol(uid, c => c.query(`update public."${tabel}" set ${zet}${waar2} returning *`, w));
         return stuur(200, r.rows);

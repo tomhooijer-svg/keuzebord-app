@@ -18,7 +18,14 @@
     "test:doorloop": "node test/doorloop.test.js",
     "test:werkmomenten": "node test/werkmomenten.test.js",
     "test:statistiek": "node test/statistiek.test.js",
-    "test:verslag": "node test/verslag.test.js"
+    "test:verslag": "node test/verslag.test.js",
+    "test:themas": "node test/themas.test.js",
+    "test:zwaar": "node test/zwaar.test.js",
+    "test:knoppen": "node test/knoppen.test.js",
+    "test:aanuit": "node test/aanuit.test.js",
+    "test:uiterste": "node test/uiterste.test.js",
+    "test:dubbel": "node test/dubbel.test.js",
+    "test:plaatshouder": "node test/plaatshouder.test.js"
   },
   "devDependencies": {
     "pg": "^8.13.1",
