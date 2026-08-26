@@ -202,6 +202,16 @@ const NIET_KLIKKEN = /Uitloggen|Wisselen van account|Bord openen|Afmelden/i;
        drie pagina's heet dat anders, dus we pakken wat er is. */
     window.__sluitAlles = function (){
       var laag = document.getElementById('overlay');
+      /* Het groepsbeheer houdt een stapel vensters bij; een venster kan
+         boven op een ander staan. Alleen de klasse weghalen laat die
+         stapel staan, en dan popt de eerstvolgende "Annuleren" het
+         bovenste venster weg en komt het onderste tevoorschijn -- dat
+         las de proef als "die knop deed niets". Dus sluiten we ze zoals
+         het scherm zelf dat doet, tot de stapel leeg is. */
+      var rondjes = 0;
+      if (window.BH && BH.sluitBlad) {
+        while (laag && laag.classList.contains('open') && rondjes++ < 30) BH.sluitBlad();
+      }
       if (laag) laag.classList.remove('open');
     };
     window.__herteken = function (){

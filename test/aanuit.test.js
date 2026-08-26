@@ -124,15 +124,28 @@ const zeg = (n, ok, extra) => {
   }));
   zeg('de goede code zet het bord uit', naGoed.aan === false && !naGoed.open);
 
-  // en weer aan, ook met code
+  /* En weer aan, ook met code. Hier klikken we met de muis en niet met
+     javascript: een klik van de muis mist als er iets overheen ligt, en
+     dat is precies wat er misging -- het pauzevlak lag over de knop.
+     Een klik van javascript merkt dat niet en had het gemist. */
+  const raakAan = async (kies) => {
+    const doel = await p.$(kies);
+    if (!doel) return false;
+    const vak = await doel.boundingBox();
+    if (!vak) return false;
+    await p.mouse.click(vak.x + vak.width / 2, vak.y + vak.height / 2);
+    return true;
+  };
   await p.click('#knop-aanuit');
   await p.waitForTimeout(600);
-  await p.evaluate(() => {
-    '2468'.split('').forEach(c => {
-      [...document.querySelectorAll('#blad .pintoets')]
-        .filter(t => t.textContent === c)[0].click();
-    });
-  });
+  const toetsRaak = [];
+  for (const c of '2468'.split('')) {
+    const kies = '#blad .pintoets:text-is("' + c + '")';
+    toetsRaak.push(await raakAan(kies));
+    await p.waitForTimeout(120);
+  }
+  zeg('de cijfertoetsen zijn met de muis te raken als het bord uit staat',
+      toetsRaak.every(Boolean), toetsRaak.join(','));
   await p.waitForTimeout(900);
   const weerAan = await p.evaluate(() => (KB.bord().aan !== false));
   zeg('en met de code gaat hij ook weer aan', weerAan === true);

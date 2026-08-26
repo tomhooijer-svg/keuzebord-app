@@ -343,6 +343,30 @@ function hoekVan(id, k){
   return (k.hoekLib || []).filter(function (h) { return h.id === id; })[0] || null;
 }
 
+/* De juf haalt de wachttijd van dit kind weg. Soms moet een kind eruit
+   voordat het rondje vol is -- het gaat mis in de hoek, er moet iemand
+   naar de logopedist, of de kring begint. Dan hoort de timer niet in de
+   weg te staan.
+
+   We zetten zijn starttijd terug in plaats van er een uitzondering bij
+   te bewaren: dan is er maar één plek waar staat hoe lang iemand ergens
+   zit, en klopt het rondje op het bord er meteen mee. Alleen dit kind in
+   deze hoek verandert; de timer van de rest loopt gewoon door. */
+function geefVrij(leerlingId, hoekId, k){
+  k = k || klas();
+  var b = bord(k);
+  var p = (b.plaatsingen[hoekId] || []).filter(function (x) {
+    return x.leerlingId === leerlingId;
+  })[0];
+  if (!p) return false;
+  var hoek = hoekVan(hoekId, k);
+  var minuten = (hoek && hoek.timerMinuten) || instelling('timerMinuten', k);
+  p.startTijd = Date.now() - minuten * 60000 - 1000;
+  logGebeurtenis('vrijgegeven', { leerlingId: leerlingId, hoekId: hoekId }, k);
+  bewaar();
+  return true;
+}
+
 function haalWeg(leerlingId, hoekId){
   var k = klas(), b = bord(k);
   var stond = (b.plaatsingen[hoekId] || []).some(function (p) {
@@ -831,6 +855,11 @@ function heeftBeurtVandaag(leerlingId, k){
    De sleutels eronder ('nog', 'bezig', 'behaald') blijven staan.
    Ze zitten in de database, in de synchronisatie en in ieders
    bestaande observaties; alleen de woorden erboven veranderen. */
+/* Welke versie van de app draait hier. Staat onder in het bordmenu en
+   bij Groep, zodat je kunt zien of je de nieuwe versie al voor je hebt
+   of nog naar de oude uit de cache van je browser kijkt. */
+var VERSIE = '26 augustus 2026';
+
 var STANDEN = ['nog', 'bezig', 'behaald'];
 var STAND_NAAM = {
   nog:     'is aan het ontdekken',
@@ -1455,6 +1484,8 @@ global.KB = {
   klas: klas, bord: bord, bordHoeken: bordHoeken, foto: foto, leerling: leerling,
   hoekVan: hoekVan, instelling: instelling,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,
+  VERSIE: VERSIE,
+  geefVrij: geefVrij,
   vergrendeldTot: vergrendeldTot, timerDeel: timerDeel,
   plaats: plaats, haalWeg: haalWeg,
   wachtrijVoor: wachtrijVoor, inWachtrij: inWachtrij, uitWachtrij: uitWachtrij,

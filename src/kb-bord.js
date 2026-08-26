@@ -608,6 +608,54 @@ function minutenTekst(ms){
   var m = Math.ceil(ms / 60000);
   return m <= 1 ? 'nog even' : 'nog ' + m + ' minuten';
 }
+/* ── de juf mag de timer overrulen ────────────────────────
+   Een timer die niet te doorbreken is, is geen hulpmiddel maar een baas.
+   Er gaat iets mis in de bouwhoek, er moet iemand naar de logopedist, de
+   kring begint eerder: dan moet een kind eruit kunnen voordat het rondje
+   vol is.
+
+   Het zit achter dezelfde code als het menu, zodat een kleuter er niet
+   bij kan. Staat er geen code op, dan gaat het meteen door -- dat is de
+   keuze van de groep zelf. */
+function juffenIngreep(leerling, hoek, naAfloop){
+  vraagPin(function () {
+    toonBlad(function (blad) {
+      blad.appendChild(el('div', null, leerling.naam)).style.cssText =
+        'font-size:1.4rem;font-weight:600;letter-spacing:-.02em;margin-bottom:4px';
+      var waar = el('div', null, 'Speelt in de ' + hoek.naam.toLowerCase() + '.');
+      waar.style.cssText = 'font-size:1rem;color:var(--inkt-3);margin-bottom:22px';
+      blad.appendChild(waar);
+
+      var lijst = el('div');
+      lijst.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+
+      var wisselen = el('button', 'knop knop-primair', 'De timer is klaar voor ' + leerling.naam);
+      wisselen.addEventListener('click', function () {
+        KB.geefVrij(leerling.id, hoek.id);
+        sluitBlad(); tekenBord();
+        meld(leerling.naam + ' mag wisselen');
+        if (naAfloop) naAfloop();
+      });
+      lijst.appendChild(wisselen);
+
+      var eruit = el('button', 'knop knop-stil', 'Uit de hoek halen');
+      eruit.addEventListener('click', function () {
+        KB.haalWeg(leerling.id, hoek.id);
+        sluitBlad(); tekenBord();
+        meld(leerling.naam + ' is uit de ' + hoek.naam.toLowerCase() + ' gehaald');
+        if (naAfloop) naAfloop();
+      });
+      lijst.appendChild(eruit);
+
+      var terug = el('button', 'knop knop-stil', 'Laat maar');
+      terug.addEventListener('click', sluitBlad);
+      lijst.appendChild(terug);
+
+      blad.appendChild(lijst);
+    });
+  });
+}
+
 function toonNogEven(leerling, hoek, restMs){
   toonBlad(function (blad) {
     var kop = el('div', 'detail-kop');
@@ -633,9 +681,22 @@ function toonNogEven(leerling, hoek, restMs){
                          minutenTekst(restMs) + '.';
     blad.appendChild(uitleg);
 
-    var knop = el('button', 'knop knop-primair knop-groot', 'Oké');
+    var knop = el('button', 'knop knop-primair knop-groot', 'Ok\u00e9');
     knop.addEventListener('click', sluitBlad);
     blad.appendChild(knop);
+
+    /* Klein en onderaan: dit is niet voor het kind dat net te horen
+       kreeg dat het nog even moet wachten, maar voor de juf die ernaast
+       staat. Er zit een code op. */
+    var juf = el('button', null, 'Juf: toch eruit halen');
+    juf.style.cssText = 'display:block;margin:16px auto 0;background:none;border:0;' +
+                        'font-size:.9rem;color:var(--inkt-4);text-decoration:underline;' +
+                        'cursor:pointer';
+    juf.addEventListener('click', function () {
+      sluitBlad();
+      juffenIngreep(leerling, hoek);
+    });
+    blad.appendChild(juf);
   });
 }
 
@@ -775,6 +836,17 @@ function toonHoekDetail(hoek, index){
       else if (rest === 0)             stand.textContent = 'Mag wisselen';
       else                             stand.textContent = minutenTekst(rest);
       vak.appendChild(stand);
+      /* Op een kind tikken opent wat de juf ermee kan: de timer voor hem
+         afronden, of hem uit de hoek halen. Achter de code, dus een
+         kleuter die op zijn eigen plaatje tikt komt er niet in. */
+      vak.style.cursor = 'pointer';
+      vak.title = 'Wat de juf met ' + l.naam + ' kan doen';
+      (function (kind) {
+        vak.addEventListener('click', function () {
+          sluitBlad();
+          juffenIngreep(kind, hoek);
+        });
+      })(l);
       plekken.appendChild(vak);
     });
     for (var i = kinderen.length; i < hoek.maxKinderen; i++) {
@@ -955,6 +1027,12 @@ function toonMenu(){
       voet.appendChild(uit);
       blad.appendChild(voet);
     }
+
+    /* Welke versie staat hier. Zonder dit merk kun je niet zien of je de
+       nieuwe app voor je hebt of de oude uit de cache van je browser. */
+    var merk = el('div', null, 'Versie ' + KB.VERSIE);
+    merk.style.cssText = 'margin-top:18px;text-align:center;font-size:.8rem;color:var(--inkt-4)';
+    blad.appendChild(merk);
   });
 }
 

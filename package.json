@@ -23,6 +23,7 @@
     "test:zwaar": "node test/zwaar.test.js",
     "test:knoppen": "node test/knoppen.test.js",
     "test:aanuit": "node test/aanuit.test.js",
+    "test:juf": "node test/juf.test.js",
     "test:uiterste": "node test/uiterste.test.js",
     "test:dubbel": "node test/dubbel.test.js",
     "test:plaatshouder": "node test/plaatshouder.test.js"

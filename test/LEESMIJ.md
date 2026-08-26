@@ -213,6 +213,34 @@ kiest, het bordmenu, het testbord, en tot slot dezelfde ronde als
 leerkracht om te zien dat zij alleen haar eigen groep krijgt en meteen op
 het bord uitkomt.
 
+## De juf mag de timer overrulen
+
+Staat de timer aan, dan zit een kind vast tot het rondje vol is. Dat is
+de bedoeling -- daar is de timer voor. Maar niet als het misgaat in de
+bouwhoek, als er iemand naar de logopedist moet, of als de kring eerder
+begint. Een timer die niet te doorbreken is, is geen hulpmiddel maar een
+baas.
+
+Er zijn twee wegen naar dezelfde keuze, en allebei zitten ze achter de
+code van het bord:
+
+- Probeer je een vastzittend kind te verslepen, dan zegt het bord "nog
+  even". Onder die uitleg staat klein en grijs "Juf: toch eruit halen".
+- Tik je in het hoekvenster op een kind, dan kom je op dezelfde plek uit.
+
+Daar kies je "De timer is klaar voor ‹naam›" of "Uit de hoek halen".
+
+Het afronden gebeurt door de starttijd van dat kind terug te zetten, niet
+door er een uitzondering naast te bewaren. Zo staat er maar op één plek
+hoe lang iemand ergens zit, en klopt het rondje op het bord er meteen
+mee. Alleen dat ene kind in die ene hoek verandert; de timer van de rest
+loopt door. Dat laatste wordt in `test/juf.test.js` apart nagegaan.
+
+Vierentwintig punten, waaronder: een verkeerde code laat de timer staan
+en laat de keuze niet zien, na het afronden verhuist het kind ook echt,
+uit de hoek halen zet hem terug in de strook, en zonder timer werkt het
+gewoon ook.
+
 ## Elke knop apart
 
 `test/doorloop.test.js` kijkt of elk scherm heel opengaat.
