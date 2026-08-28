@@ -1,5 +1,19 @@
 # Keuzebord
 
+Het digibord in de kleutergroep: kinderen kiezen een hoek, jij ziet wie
+waar zit. Hier beheer je de kinderen, de klassen, de picto's, de hoeken
+met hun foto's en wat het bord kan -- en je ziet de statistieken over wat
+er in de hoeken gebeurde.
+
+Het planwerk -- weekplan, thema's, taken, doelen en observaties -- zit in
+**[Planbord](https://tomhooijer-svg.github.io/planbord/)**. De twee delen
+dezelfde gegevens en hetzelfde inloggen; een knop onderin het menu brengt
+je van de een naar de ander, met de groep mee.
+
+---
+
+# Keuzebord
+
 Een digitaal keuzebord voor kleutergroepen. Kinderen kiezen zelf een hoek
 op het digibord; de leerkracht plant er haar week omheen.
 

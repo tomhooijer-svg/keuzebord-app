@@ -197,9 +197,27 @@ var ONDERDELEN = [
 var panelen = {};
 var huidig = 'vandaag';
 
+/* Welke onderdelen deze uitgave heeft. Keuzebord toont het bord en
+   alles eromheen, Planbord het planwerk; de werkplaats toont alles.
+   Een scheiding waar aan beide kanten niets meer overblijft laten we
+   weg, anders staan er streepjes zonder iets ertussen. */
+function mijnOnderdelen(){
+  var mag = window.KB_APP && KB_APP.panelen;
+  if (!mag) return ONDERDELEN;
+  var uit = ONDERDELEN.filter(function (o) {
+    return o.scheiding || mag.indexOf(o.id) >= 0;
+  });
+  return uit.filter(function (o, i) {
+    if (!o.scheiding) return true;
+    var ervoor = uit.slice(0, i).some(function (x) { return !x.scheiding; });
+    var erna   = uit.slice(i + 1).some(function (x) { return !x.scheiding; });
+    return ervoor && erna;
+  });
+}
+
 function tekenMenu(){
   var menu = leeg($('zij-menu'));
-  ONDERDELEN.forEach(function (o) {
+  mijnOnderdelen().forEach(function (o) {
     if (o.scheiding) { menu.appendChild(el('div', 'zij-scheiding')); return; }
     var k = el('button', 'zij-knop' + (o.id === huidig ? ' aan' : ''));
     k.innerHTML = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
@@ -208,7 +226,30 @@ function tekenMenu(){
     k.addEventListener('click', function () { ga(o.id); });
     menu.appendChild(k);
   });
+  /* De weg naar de andere app. De groep gaat mee, zodat je daar niet
+     opnieuw hoeft te zoeken waar je was. Allebei de apps staan onder
+     hetzelfde adres, dus je blijft ingelogd. */
+  var ander = window.KB_APP && KB_APP.ander;
+  if (ander) {
+    menu.appendChild(el('div', 'zij-scheiding'));
+    var over = el('a', 'zij-knop zij-over');
+    over.href = ander.adres + 'beheer.html' + oversteekVraag();
+    over.innerHTML = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
+      'aria-hidden="true"><path d="M4 12 h14"></path><path d="M13 7 l5 5 -5 5"></path></svg>';
+    over.appendChild(el('span', null, 'Naar ' + ander.naam));
+    menu.appendChild(over);
+  }
   $('zij-groep').textContent = KB.klas().naam;
+}
+
+/* Wat er in het adres mee moet naar de andere app: welke groep. De
+   andere app staat op dezelfde herkomst en deelt dus de opslag, maar
+   dat geldt niet als je hem op een eigen domeinnaam zet -- en dan is
+   dit het enige wat de oversteek nog draagt. */
+function oversteekVraag(){
+  var g = KBSYNC && KBSYNC.opServer ? KBSYNC.opServer(KB.G.activeKlasId) : null;
+  return g ? '?groep=' + encodeURIComponent(g) : '';
 }
 /* Een paneel mag willen weten dat je het opnieuw binnenkomt. Het
    thema-scherm gebruikt dat om terug te vallen op de lijst: op "Thema's"
@@ -224,9 +265,19 @@ function ga(id){
   tekenMenu(); teken();
   var inhoud = $('inhoud'); if (inhoud) inhoud.scrollTop = 0;
 }
+/* Waar deze uitgave op uitkomt als er niets gekozen is. In de
+   werkplaats en in Planbord is dat Vandaag; heeft een uitgave dat
+   scherm niet, dan het eerste dat ze wél heeft. */
+function eersteOnderdeel(){
+  var lijst = mijnOnderdelen().filter(function (o) { return !o.scheiding; });
+  return lijst.length ? lijst[0].id : 'vandaag';
+}
+
 function teken(){
   var v = leeg($('inhoud'));
-  (panelen[huidig] || panelen.vandaag)(v);
+  var doen = panelen[huidig];
+  if (!doen) { huidig = eersteOnderdeel(); doen = panelen[huidig]; }
+  if (doen) doen(v);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1845,8 +1896,16 @@ global.BH = {
   panelen:panelen, ga:ga, teken:teken, tekenMenu:tekenMenu,
   alsJeBinnenkomt: alsJeBinnenkomt,
   start: function () {
+    if (!mijnOnderdelen().some(function (o) { return o.id === huidig; })) huidig = eersteOnderdeel();
     var start = (location.hash || '').replace('#', '');
-    if (ONDERDELEN.some(function (o) { return o.id === start; })) huidig = start;
+    if (mijnOnderdelen().some(function (o) { return o.id === start; })) huidig = start;
+    /* Kwam je uit de andere app, dan staat de groep in het adres. Die
+       zetten we hier klaar voordat er iets getekend wordt. */
+    var vraag = new URLSearchParams(location.search).get('groep');
+    if (vraag && KBSYNC && KBSYNC.opLokaal) {
+      var lok = KBSYNC.opLokaal(vraag);
+      if (lok) { KB.zetBeheerKlas(lok); KB.G.activeKlasId = lok; }
+    }
     $('overlay').addEventListener('click', function (e) { if (e.target.id === 'overlay') sluitBlad(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') sluitBlad(); });
       // Deze omgeving hoort bij \u00e9\u00e9n groep: die van dit apparaat.
