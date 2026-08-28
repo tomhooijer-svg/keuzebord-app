@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wat zie ik hier</title>
+<style>
+  body{ margin:0; padding:26px 22px 60px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+        background:#f7f6f4; color:#1a2233; line-height:1.55; }
+  .vel{ max-width:760px; margin:0 auto; }
+  h1{ font-size:1.5rem; letter-spacing:-.02em; margin:0 0 4px; }
+  p.uitleg{ color:#5a6478; margin:0 0 24px; }
+  .rij{ display:flex; gap:12px; padding:11px 0; border-bottom:1px solid #e6e3de; align-items:baseline; }
+  .rij b{ flex:none; width:190px; font-weight:600; font-size:.9rem; color:#39435a; }
+  .rij span{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86rem; word-break:break-all; }
+  .goed{ color:#2e7d54; } .mis{ color:#b4342a; font-weight:600; }
+  .kop{ margin:30px 0 6px; font-size:.74rem; font-weight:600; letter-spacing:.06em;
+        text-transform:uppercase; color:#8b93a5; }
+  button{ margin-top:26px; padding:12px 22px; border:0; border-radius:999px; background:#3b6ff0;
+          color:#fff; font-size:.95rem; font-weight:600; cursor:pointer; font-family:inherit; }
+  pre{ background:#fff; border:1px solid #e6e3de; border-radius:12px; padding:14px;
+       font-size:.8rem; overflow-x:auto; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div class="vel">
+  <h1>Wat zie ik hier</h1>
+  <p class="uitleg">Deze pagina hoeft niet in te loggen en laadt de app niet. Hij zegt alleen
+     wat er op dit apparaat staat. Klik onderaan op de knop en stuur de tekst door —
+     dan hoef je niets over te typen.</p>
+  <div id="uit"></div>
+  <div class="kop">Om door te sturen</div>
+  <pre id="plat">bezig…</pre>
+  <button id="kopieer">Kopieer deze tekst</button>
+</div>
+
+<script>
+/* Alles wat we willen weten, zonder de app te starten: draait de goede
+   versie hier, komt de code binnen, en wat staat er in de opslag. Als de
+   app zelf niet opstart is dit het enige wat nog iets kan zeggen. */
+(function () {
+  var uit = document.getElementById('uit');
+  var regels = [];
+
+  function rij(naam, waarde, oordeel){
+    regels.push([naam, waarde]);
+    var d = document.createElement('div'); d.className = 'rij';
+    var b = document.createElement('b'); b.textContent = naam;
+    var s = document.createElement('span');
+    s.textContent = waarde;
+    if (oordeel === true) s.className = 'goed';
+    if (oordeel === false) s.className = 'mis';
+    d.appendChild(b); d.appendChild(s); uit.appendChild(d);
+  }
+  function kop(t){
+    var d = document.createElement('div'); d.className = 'kop'; d.textContent = t; uit.appendChild(d);
+    regels.push(['── ' + t + ' ──', '']);
+  }
+
+  kop('waar je bent');
+  rij('adres', location.href);
+  rij('map', location.pathname.replace(/[^/]*$/, ''));
+
+  kop('de opslag van dit apparaat');
+  var sleutels = [];
+  try {
+    for (var i = 0; i < localStorage.length; i++) sleutels.push(localStorage.key(i));
+    rij('opslag leesbaar', 'ja', true);
+    rij('sleutels', sleutels.length ? sleutels.join(', ') : 'leeg');
+    var g = localStorage.getItem('kb_v5');
+    rij('gegevens', g ? Math.round(g.length / 1024) + ' KB' : 'niets bewaard');
+    rij('server ingesteld', localStorage.getItem('kb_server') || 'niet ingesteld');
+    var s = sleutels.filter(function (k) { return /supabase|sb-/.test(k); });
+    rij('ingelogd (sessie)', s.length ? 'ja, ' + s.length + ' sleutel(s)' : 'geen sessie gevonden',
+        s.length > 0);
+  } catch (e) {
+    rij('opslag leesbaar', 'NEE — ' + e.message, false);
+  }
+
+  kop('komt de code binnen');
+  var bestanden = ['src/kb-app.js', 'src/kb-data.js', 'src/kb-beheer.js', 'src/kb-stijl.css'];
+  var klaar = 0;
+  bestanden.forEach(function (naam) {
+    var t0 = Date.now();
+    fetch(naam, { cache: 'no-store' }).then(function (r) {
+      rij(naam, r.status + ' (' + (Date.now() - t0) + ' ms)', r.ok);
+      if (r.ok && naam === 'src/kb-app.js') {
+        return r.text().then(function (tekst) {
+          var m = tekst.match(/bouw:\s*'([^']*)'/);
+          var n = tekst.match(/naam:\s*'([^']*)'/);
+          rij('deze app heet', n ? n[1] : 'onbekend', !!n);
+          rij('versie van de code', m ? m[1] : 'geen stempel gevonden', !!m);
+        });
+      }
+    }).catch(function (e) {
+      rij(naam, 'KOMT NIET BINNEN — ' + e.message, false);
+    }).then(function () {
+      if (++klaar === bestanden.length) setTimeout(plat, 400);
+    });
+  });
+
+  function plat(){
+    document.getElementById('plat').textContent =
+      regels.map(function (r) { return r[1] ? r[0] + ': ' + r[1] : r[0]; }).join('\n');
+  }
+  setTimeout(plat, 3000);
+
+  document.getElementById('kopieer').addEventListener('click', function () {
+    var t = document.getElementById('plat').textContent;
+    if (navigator.clipboard) navigator.clipboard.writeText(t);
+    this.textContent = 'Gekopieerd';
+  });
+})();
+</script>
+</body>
+</html>
