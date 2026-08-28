@@ -858,7 +858,7 @@ function heeftBeurtVandaag(leerlingId, k){
 /* Welke versie van de app draait hier. Staat onder in het bordmenu en
    bij Groep, zodat je kunt zien of je de nieuwe versie al voor je hebt
    of nog naar de oude uit de cache van je browser kijkt. */
-var VERSIE = '26 augustus 2026';
+var VERSIE = '28 augustus 2026';
 
 var STANDEN = ['nog', 'bezig', 'behaald'];
 var STAND_NAAM = {
