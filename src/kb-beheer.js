@@ -631,7 +631,8 @@ panelen.groep = function (v){
   /* Welke versie draait hier. Zonder dit merk kun je niet zien of een
      wijziging al bij je is aangekomen of dat je browser nog de oude uit
      zijn cache haalt -- en dan zoek je een fout die al verholpen is. */
-  var merk = el('div', null, 'Versie ' + KB.VERSIE);
+  var bouw = (window.KB_APP && KB_APP.bouw) ? ' \u00b7 ' + KB_APP.bouw : '';
+  var merk = el('div', null, 'Versie ' + KB.VERSIE + bouw);
   merk.style.cssText = 'margin:22px 2px 0;font-size:.82rem;color:var(--inkt-4)';
   v.appendChild(merk);
 };

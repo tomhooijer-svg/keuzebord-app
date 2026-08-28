@@ -1030,7 +1030,8 @@ function toonMenu(){
 
     /* Welke versie staat hier. Zonder dit merk kun je niet zien of je de
        nieuwe app voor je hebt of de oude uit de cache van je browser. */
-    var merk = el('div', null, 'Versie ' + KB.VERSIE);
+    var bouw = (window.KB_APP && KB_APP.bouw) ? ' \u00b7 ' + KB_APP.bouw : '';
+  var merk = el('div', null, 'Versie ' + KB.VERSIE + bouw);
     merk.style.cssText = 'margin-top:18px;text-align:center;font-size:.8rem;color:var(--inkt-4)';
     blad.appendChild(merk);
   });
