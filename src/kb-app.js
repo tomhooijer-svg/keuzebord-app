@@ -12,7 +12,7 @@ window.KB_APP = {
      bordmenu en bij Groep, zodat je twee uitgaven van dezelfde dag uit
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
-  bouw: 'bcfee369',
+  bouw: 'd37c02db',
   panelen: ['statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'],
   ander: { id:'planbord', naam:'Planbord', adres:'../planbord/' }
 };

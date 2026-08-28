@@ -70,10 +70,23 @@
     rij('sleutels', sleutels.length ? sleutels.join(', ') : 'leeg');
     var g = localStorage.getItem('kb_v5');
     rij('gegevens', g ? Math.round(g.length / 1024) + ' KB' : 'niets bewaard');
-    rij('server ingesteld', localStorage.getItem('kb_server') || 'niet ingesteld');
-    var s = sleutels.filter(function (k) { return /supabase|sb-/.test(k); });
-    rij('ingelogd (sessie)', s.length ? 'ja, ' + s.length + ' sleutel(s)' : 'geen sessie gevonden',
-        s.length > 0);
+    /* Het adres van de database staat vast in de code. Deze sleutel is
+       alleen een omweg voor de proeven; leeg is dus gewoon goed. */
+    rij('omweg naar een testserver', localStorage.getItem('kb_server') || 'geen (zo hoort het)');
+    /* De app bewaart je sessie onder kb_sessie -- niet onder een sleutel
+       met "supabase" erin. Daar zocht deze pagina eerst naar, en dan lijkt
+       iemand uitgelogd terwijl hij dat niet is. */
+    var rauw = localStorage.getItem('kb_sessie');
+    if (!rauw) rij('ingelogd', 'nee, geen sessie bewaard', false);
+    else {
+      try {
+        var ses = JSON.parse(rauw);
+        var tot = ses.verloopt || ses.expires_at || ses.vervalt;
+        var nog = tot ? Math.round((tot * (String(tot).length > 11 ? 1 : 1000) - Date.now()) / 60000) : null;
+        rij('ingelogd', 'ja' + (ses.email ? ' als ' + ses.email : ''), true);
+        if (nog !== null) rij('sessie nog geldig', nog > 0 ? nog + ' minuten' : 'VERLOPEN', nog > 0);
+      } catch (e) { rij('ingelogd', 'sessie staat er maar is onleesbaar', false); }
+    }
   } catch (e) {
     rij('opslag leesbaar', 'NEE — ' + e.message, false);
   }
@@ -100,11 +113,58 @@
     });
   });
 
+  /* Tot hier weten we alleen dat de bestanden binnenkomen. Dat is niet
+     hetzelfde als: de app start. Dus starten we hem hier, in een lijstje
+     op deze pagina, en kijken wat eruit komt. Blijft hij wit, dan staat
+     de reden hieronder. */
+  kop('start de app het?');
+  var proefvak = document.createElement('iframe');
+  proefvak.style.cssText = 'width:0;height:0;border:0;position:absolute;left:-9999px';
+  var gemeld = false;
+  proefvak.addEventListener('load', function () {
+    setTimeout(function () {
+      if (gemeld) return; gemeld = true;
+      try {
+        var d = proefvak.contentDocument, w = proefvak.contentWindow;
+        var pad = w.location.pathname.replace(/.*\//, '');
+        var tekst = (d.body ? d.body.innerText : '').trim();
+        rij('waar de app uitkomt', pad || '(leeg)', !!pad);
+        rij('staat er iets op het scherm', tekst.length + ' tekens', tekst.length > 30);
+        if (tekst.length <= 30) rij('scherm blijft leeg', 'JA -- dit is het witte scherm', false);
+        rij('eerste woorden', tekst.slice(0, 70).replace(/\n/g, ' ') || '(niets)');
+        /* Op het inlogscherm hoort de app níet geladen te zijn -- dat is
+           een kale pagina. Alleen als hij ergens anders uitkomt zegt dit
+           iets. */
+        if (/inloggen/.test(pad)) {
+          rij('wat er gebeurde', 'doorgestuurd naar het inlogscherm — zo hoort het als je niet (meer) ingelogd bent', true);
+        } else {
+          rij('de app is geladen', (typeof w.KB !== 'undefined') ? 'ja' : 'NEE, de code draait niet',
+              typeof w.KB !== 'undefined');
+          var menu = d.querySelectorAll('.zij-knop');
+          rij('menu-items', menu.length ? menu.length + ': ' +
+              [].map.call(menu, function (x) { return x.textContent.trim(); }).join(', ') : 'geen menu',
+              menu.length > 0);
+        }
+      } catch (e) {
+        rij('kon niet kijken', e.message, false);
+      }
+      plat();
+    }, 6000);
+  });
+  proefvak.src = 'beheer.html';
+  document.body.appendChild(proefvak);
+  window.addEventListener('error', function (e) {
+    rij('fout tijdens starten', (e.message || '') + ' — ' + (e.filename || '').replace(/.*\//, ''), false);
+  }, true);
+  setTimeout(function () {
+    if (!gemeld) { gemeld = true; rij('de app start niet', 'na 12 seconden nog niets', false); plat(); }
+  }, 12000);
+
   function plat(){
     document.getElementById('plat').textContent =
       regels.map(function (r) { return r[1] ? r[0] + ': ' + r[1] : r[0]; }).join('\n');
   }
-  setTimeout(plat, 3000);
+  setTimeout(plat, 9000);
 
   document.getElementById('kopieer').addEventListener('click', function () {
     var t = document.getElementById('plat').textContent;
