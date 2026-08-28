@@ -11,8 +11,15 @@
    lijkt. Valt het internet weg, dan zakt hij terug op Segoe UI of wat er
    staat, en blijft alles leesbaar. */
 :root{
+  /* De letters van het apparaat zelf. Er stond ooit "Inter" van Google
+     bij, maar die stond op plek vijf en werd op een Mac of een Windows
+     dus nooit gebruikt -- terwijl het stijlbestand dat hem ophaalde het
+     tekenen van de pagina wél tegenhield tot Google antwoordde. Op een
+     schoolnetwerk dat traag is of Google filtert, keek je daardoor naar
+     een wit bord terwijl er niets mis was. Nu hangt er niets meer van
+     buiten af. */
   --letter: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-            "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui,
+            "Segoe UI Variable Text", "Segoe UI", system-ui,
             "Helvetica Neue", Arial, sans-serif;
 
   --inkt:      #1a2233;

@@ -9,10 +9,9 @@
   Cross-Origin-Opener-Policy: same-origin
   # Zoekmachines mogen deze app niet opnemen: er staan klaslijsten in.
   X-Robots-Tag: noindex, nofollow, noarchive
-  # De app mag alleen bij zichzelf en straks bij de eigen Supabase-database.
-  # fonts.googleapis.com staat er nog in zolang Inter extern geladen wordt;
-  # die twee regels vervallen zodra we op systeemletters overstappen.
-  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; base-uri 'self'; form-action 'none'; frame-ancestors 'self'
+  # De app mag alleen bij zichzelf en bij de eigen Supabase-database.
+  # Google staat er niet meer in: de letters komen van het apparaat zelf.
+  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; base-uri 'self'; form-action 'none'; frame-ancestors 'self'
 
 # De app zelf nooit uit de cache serveren, anders zien leerkrachten dagen
 # later pas een wijziging. Dat gold eerst alleen voor het beginscherm --
