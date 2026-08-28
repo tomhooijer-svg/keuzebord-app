@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord — beheer</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=28augustus2026-be1bb100">
+<link rel="stylesheet" href="src/kb-stijl.css?v=28augustus2026-8620c1ec">
 <style>
 
 
@@ -423,9 +423,12 @@
     </div>
     <div class="zij-menu" id="zij-menu"></div>
     <div class="zij-onder" id="zij-onder">
-      <a class="zij-link" href="bord.html">
+      <!-- Waar het bord staat verschilt per uitgave: in Keuzebord ligt het
+           hiernaast, in Planbord in de andere app. Het adres en de tekst
+           worden daarom bij het tekenen gezet, niet hier. -->
+      <a class="zij-link" id="zij-naar-bord" href="bord.html">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 l-7 7 7 7"></path></svg>
-        Terug naar het bord
+        <span id="zij-naar-bord-tekst">Terug naar het bord</span>
       </a>
     </div>
   </nav>
@@ -435,19 +438,19 @@
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
-<script src="src/kb-app.js?v=28augustus2026-be1bb100"></script>
-<script src="src/kb-data.js?v=28augustus2026-be1bb100"></script>
-<script src="src/kb-supabase.js?v=28augustus2026-be1bb100"></script>
-<script src="src/kb-media.js?v=28augustus2026-be1bb100"></script>
-<script src="src/kb-sync.js?v=28augustus2026-be1bb100"></script>
-<script src="src/kb-verbinding.js?v=28augustus2026-be1bb100"></script>
+<script src="src/kb-app.js?v=28augustus2026-8620c1ec"></script>
+<script src="src/kb-data.js?v=28augustus2026-8620c1ec"></script>
+<script src="src/kb-supabase.js?v=28augustus2026-8620c1ec"></script>
+<script src="src/kb-media.js?v=28augustus2026-8620c1ec"></script>
+<script src="src/kb-sync.js?v=28augustus2026-8620c1ec"></script>
+<script src="src/kb-verbinding.js?v=28augustus2026-8620c1ec"></script>
 <!-- het rekenwerk van de statistieken: Keuzebord toont het, Planbord
      gebruikt het voor het verslag -- allebei dus. -->
-<script src="src/kb-statistiek.js?v=28augustus2026-be1bb100"></script>
-<script src="src/kb-beheer.js?v=28augustus2026-be1bb100"></script>
+<script src="src/kb-statistiek.js?v=28augustus2026-8620c1ec"></script>
+<script src="src/kb-beheer.js?v=28augustus2026-8620c1ec"></script>
 <!-- schermen: het uitgeefscript laat hier per app staan wat erbij hoort -->
-<script src="src/kb-statistiekpaneel.js?v=28augustus2026-be1bb100"></script>
-<script src="src/kb-docx.js?v=28augustus2026-be1bb100"></script>
+<script src="src/kb-statistiekpaneel.js?v=28augustus2026-8620c1ec"></script>
+<script src="src/kb-docx.js?v=28augustus2026-8620c1ec"></script>
 <script>KB.laad(); KB.doelenZorg().then(BH.start);</script>
 </body>
 </html>

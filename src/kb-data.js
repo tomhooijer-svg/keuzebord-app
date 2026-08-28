@@ -860,6 +860,23 @@ function heeftBeurtVandaag(leerlingId, k){
    of nog naar de oude uit de cache van je browser kijkt. */
 var VERSIE = '28 augustus 2026';
 
+/* Waar het bord staat. In Keuzebord is dat gewoon bord.html hiernaast.
+   In Planbord ligt het bord in de andere app, en dan moet de groep mee
+   in het adres -- anders kom je daar op een andere groep uit dan waar je
+   net stond. Eén plek die dit weet, zodat elke knop naar het bord er
+   hetzelfde over denkt. */
+function bordAdres(klasId){
+  var app = window.KB_APP;
+  if (!app || app.heeftBord !== false) return 'bord.html';
+  var elders = app.ander ? app.ander.adres : '';
+  /* In het schoolbeheer klik je op het bord van een gróep waar je nog
+     niet in staat, dus die mag je meegeven. Laat je hem weg, dan is het
+     de groep waar je nu in werkt. */
+  var g = (window.KBSYNC && KBSYNC.opServer)
+    ? KBSYNC.opServer(klasId || G.activeKlasId) : null;
+  return elders + 'bord.html' + (g ? '?groep=' + encodeURIComponent(g) : '');
+}
+
 var STANDEN = ['nog', 'bezig', 'behaald'];
 var STAND_NAAM = {
   nog:     'is aan het ontdekken',
@@ -1484,7 +1501,7 @@ global.KB = {
   klas: klas, bord: bord, bordHoeken: bordHoeken, foto: foto, leerling: leerling,
   hoekVan: hoekVan, instelling: instelling,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,
-  VERSIE: VERSIE,
+  VERSIE: VERSIE, bordAdres: bordAdres,
   geefVrij: geefVrij,
   vergrendeldTot: vergrendeldTot, timerDeel: timerDeel,
   plaats: plaats, haalWeg: haalWeg,

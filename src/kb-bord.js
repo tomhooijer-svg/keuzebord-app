@@ -1100,6 +1100,17 @@ KB.doelenZorg()
   .then(function (kluis) { if (kluis) { KB.fkPasToe(kluis); } })
   .catch(function () { /* zonder foto's werkt het bord gewoon */ })
   .then(function () {
+    /* Kwam je hier vanuit Planbord, dan staat de groep in het adres. Die
+       zetten we klaar voordat er iets getekend wordt -- anders opent het
+       bord de groep waar dit apparaat toevallig op stond en niet die
+       waar je net in werkte. */
+    try {
+      var uitAdres = new URLSearchParams(location.search).get('groep');
+      if (uitAdres && window.KBSYNC && KBSYNC.opLokaal) {
+        var elders = KBSYNC.opLokaal(uitAdres);
+        if (elders) { KB.zetBeheerKlas(elders); KB.G.activeKlasId = elders; }
+      }
+    } catch (e) {}
     // Dit apparaat draait meestal altijd dezelfde groep. Is er ooit een
     // groep gekozen, dan gaan we daar direct heen — een digibord hoort na
     // een herstart gewoon weer het bord te tonen.

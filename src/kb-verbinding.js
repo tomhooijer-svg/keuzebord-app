@@ -192,14 +192,35 @@ function start(opties){
 
   if (!SB.ingelogd()) {
     if (opties.magZonderInlog) return Promise.resolve({ ingelogd:false });
+    /* Sta je al op het inlogscherm, dan is doorsturen een herlaadlus. */
+    if (location.pathname.indexOf('inloggen.html') >= 0) return Promise.resolve({ ingelogd:false });
     location.href = 'inloggen.html';
     return new Promise(function () {});   // we gaan toch weg
   }
 
   return SB.wieBenIk().then(function (uit) {
     ik = uit;
-    if (!ik.profiel) { location.href = 'inloggen.html'; return new Promise(function () {}); }
-    if (!ik.profiel.school_id) { location.href = 'school.html?nieuw=1'; return new Promise(function () {}); }
+    /* Doorsturen naar de pagina waar je al staat is geen doorsturen maar
+       een herlaadlus: de pagina begint opnieuw, komt tot dezelfde
+       conclusie, en stuurt zichzelf weer door -- tientallen keren per
+       seconde. Je ziet dan een leeg scherm waar je niets kunt aanklikken,
+       en niets wijst erop dat dít het is. Dus: alleen doorsturen als je
+       ergens anders naartoe gaat. */
+    var hier = function (pagina) { return location.pathname.indexOf(pagina) >= 0; };
+    if (!ik.profiel) {
+      if (hier('inloggen.html')) return { ingelogd:false };
+      location.href = 'inloggen.html';
+      return new Promise(function () {});
+    }
+    if (!ik.profiel.school_id) {
+      /* Op het schoolbeheer hoor je te zijn als je nog geen school hebt:
+         daar maak je hem aan. */
+      if (!hier('school.html')) {
+        location.href = 'school.html?nieuw=1';
+        return new Promise(function () {});
+      }
+      return { ingelogd:true, ik:ik, klasId:null, groepId:null, zonderSchool:true };
+    }
 
     zorgVoorGroepen();
     klasId = kiesGroep();

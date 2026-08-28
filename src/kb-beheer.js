@@ -240,6 +240,19 @@ function tekenMenu(){
     over.appendChild(el('span', null, 'Naar ' + ander.naam));
     menu.appendChild(over);
   }
+  /* De weg naar het bord onderin. In Keuzebord ligt dat hiernaast; in
+     Planbord staat het in de andere app en moet de groep mee. Stond hier
+     een vast bord.html, en dan kwam je in Planbord op de 404 van GitHub
+     uit -- want die uitgave heeft geen bord. */
+  var naarBord = $('zij-naar-bord');
+  if (naarBord) {
+    naarBord.href = KB.bordAdres();
+    var bordTekst = $('zij-naar-bord-tekst');
+    if (bordTekst) {
+      bordTekst.textContent = (window.KB_APP && KB_APP.heeftBord === false)
+        ? 'Naar het bord' : 'Terug naar het bord';
+    }
+  }
   $('zij-groep').textContent = KB.klas().naam;
 }
 
@@ -295,7 +308,7 @@ panelen.vandaag = function (v){
   var hoeken = k.hoekLib || [];
 
   var naarBord = el('a', 'knop knop-primair knop-klein', 'Bord openen');
-  naarBord.href = 'bord.html';
+  naarBord.href = KB.bordAdres();
   v.appendChild(kopregel('Vandaag', k.naam + ' \u00b7 ' + KB.DAGEN_LANG[dag], naarBord));
 
   var backupStand = backupTekst();
@@ -1397,7 +1410,7 @@ panelen.uiterlijk = function (v){
   var u = KB.uiterlijk(k);
 
   var naarBord = el('a', 'knop knop-stil knop-klein', 'Bekijk op het bord');
-  naarBord.href = 'bord.html';
+  naarBord.href = KB.bordAdres();
   v.appendChild(kopregel('Uiterlijk', 'Hoe het bord van ' + k.naam + ' eruitziet', naarBord));
 
   /* levende voorvertoning */

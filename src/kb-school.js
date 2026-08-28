@@ -493,8 +493,10 @@ function groepKaart(k, beheerd){
   acties.appendChild(knop('Beheer openen', 'primair', function () {
     ganaarGroep(k, 'beheer.html');
   }));
+  /* Het bord ligt in Planbord niet hiernaast maar in de andere app;
+     KB.bordAdres weet dat, en zet de groep in het adres. */
   acties.appendChild(knop('Bord openen', 'stil', function () {
-    ganaarGroep(k, 'bord.html');
+    ganaarGroep(k, KB.bordAdres(k.id));
   }));
   if (metServer()) {
     acties.appendChild(knop('Leerkrachten', 'stil', function () { toonLeden(k); }));
