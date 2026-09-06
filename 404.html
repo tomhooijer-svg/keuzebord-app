@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Die pagina is er niet</title>
+<style>
+  body{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+        padding:24px; background:#f7f6f4; color:#1a2233; line-height:1.6;
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; }
+  .kaart{ max-width:460px; text-align:center; }
+  h1{ font-size:1.55rem; letter-spacing:-.02em; margin:0 0 10px; }
+  p{ color:#5a6478; margin:0 0 22px; }
+  .rij{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  a{ display:inline-flex; align-items:center; padding:12px 22px; border-radius:999px;
+     text-decoration:none; font-weight:600; font-size:.95rem; }
+  a.eerst{ background:#3b6ff0; color:#fff; }
+  a.stil{ background:rgba(20,28,44,.07); color:#39435a; }
+  code{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem;
+        background:rgba(20,28,44,.05); padding:2px 6px; border-radius:5px; }
+  .klein{ margin-top:20px; font-size:.82rem; color:#8b93a5; }
+</style>
+</head>
+<body>
+<div class="kaart">
+  <h1>Die pagina is er niet</h1>
+  <p id="uitleg">Waarschijnlijk een oude snelkoppeling. Hieronder staan de twee apps.</p>
+  <div class="rij" id="wegen"></div>
+  <p class="klein" id="adres"></p>
+</div>
+
+<!-- Zonder dit bestand toont GitHub een grijze standaardpagina zonder weg
+     terug: je klikt op een verouderde link, komt in het niets uit, en er
+     staat nergens waar je dan wél moet zijn. -->
+<script src="src/kb-app.js?v=28augustus2026-a4ecc2db"></script>
+<script>
+(function () {
+  var app = window.KB_APP || {};
+  var lijst = app.apps || {
+    keuzebord: { naam:'Keuzebord', map:'keuzebord-app' },
+    planbord:  { naam:'Planbord',  map:'planbord' }
+  };
+  var wegen = document.getElementById('wegen');
+
+  /* Naar de eigen app hier naast ons, en naar de andere. Relatief, want
+     dit bestand wordt ook geserveerd op een testserver of straks een
+     eigen domeinnaam -- en dan moet het nog steeds ergens op uitkomen. */
+  function link(tekst, adres, eerst){
+    var a = document.createElement('a');
+    a.className = eerst ? 'eerst' : 'stil';
+    a.href = adres; a.textContent = tekst;
+    wegen.appendChild(a);
+  }
+
+  var hier = app.id && lijst[app.id] ? lijst[app.id].naam : null;
+  if (hier) link('Terug naar ' + hier, 'index.html', true);
+  else link('Terug naar het begin', 'index.html', true);
+
+  Object.keys(lijst).forEach(function (id) {
+    if (id === app.id) return;
+    link('Naar ' + lijst[id].naam, '../' + lijst[id].map + '/');
+  });
+
+  var a = document.getElementById('adres');
+  a.innerHTML = 'Je vroeg om <code></code>';
+  a.querySelector('code').textContent = location.pathname;
+})();
+</script>
+</body>
+</html>

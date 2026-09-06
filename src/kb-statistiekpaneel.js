@@ -286,7 +286,8 @@ function kindDetail(l, k, opties){
      in dezelfde app, dan gaat het venster hier open. Zit het in de
      andere, dan brengt deze knop je erheen -- met de groep en dit kind
      mee, zodat je daar niet opnieuw hoeft te zoeken. */
-  var ander = window.KB_APP && KB_APP.ander;
+  var app = window.KB_APP || {};
+  var ander = (app.ander && app.apps) ? app.apps[app.ander] : null;
   if (window.KBPLAN && KBPLAN.verslagVoor) {
     rij3.appendChild(knop('Verslag van ' + l.naam, 'stil', function () {
       KBPLAN.verslagVoor(l.id);
@@ -294,9 +295,7 @@ function kindDetail(l, k, opties){
   } else if (ander) {
     var heen = el('a', 'knop knop-stil knop-klein', 'Verslag van ' + l.naam +
                   ' in ' + ander.naam);
-    var g = KBSYNC && KBSYNC.opServer ? KBSYNC.opServer(KB.G.activeKlasId) : null;
-    heen.href = ander.adres + 'beheer.html' +
-                (g ? '?groep=' + encodeURIComponent(g) : '') + '#observaties';
+    heen.href = KB.appAdres(app.ander, 'beheer.html') + '#observaties';
     rij3.appendChild(heen);
   }
   vak.appendChild(rij3);

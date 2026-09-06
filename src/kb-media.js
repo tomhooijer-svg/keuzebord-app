@@ -116,7 +116,15 @@ function haalBinnen(k, groepId){
       return nieuw.reduce(function (rij, r) {
         return rij.then(function (n) {
           return SB.bestandLink(r.pad)
-            .then(function (link) { return fetch(link); })
+            .then(function (link) {
+              /* Ook hier een klok: een foto die blijft hangen mag de rest
+                 niet tegenhouden. */
+              var af = (typeof AbortController === 'function') ? new AbortController() : null;
+              var klok = setTimeout(function () { if (af) af.abort(); }, 30000);
+              return fetch(link, { signal: af ? af.signal : undefined })
+                .then(function (a) { clearTimeout(klok); return a; },
+                      function (e) { clearTimeout(klok); throw e; });
+            })
             .then(function (a) { if (!a.ok) throw new Error('kon de foto niet ophalen'); return a.blob(); })
             .then(naarTekst)
             .then(function (data) {

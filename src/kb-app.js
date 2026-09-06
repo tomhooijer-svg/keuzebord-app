@@ -12,10 +12,17 @@ window.KB_APP = {
      bordmenu en bij Groep, zodat je twee uitgaven van dezelfde dag uit
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
-  bouw: '8620c1ec',
+  bouw: 'a4ecc2db',
   /* Heeft deze uitgave het bord zelf? Planbord niet -- daar wijst een
      knop "Bord openen" naar de andere app, met de groep mee. */
   heeftBord: true,
   panelen: ['statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'],
-  ander: { id:'planbord', naam:'Planbord', adres:'../planbord/' }
+  /* Waar beide uitgaven staan. Volledige adressen, met de mapnaam er los
+     bij als terugval voor een testserver of een ander domein. Dit is de
+     enige plek waar die adressen staan. */
+  apps: {
+    keuzebord: { naam:'Keuzebord', map:'keuzebord-app', url:'https://tomhooijer-svg.github.io/keuzebord-app/' },
+    planbord:  { naam:'Planbord',  map:'planbord', url:'https://tomhooijer-svg.github.io/planbord/' }
+  },
+  ander: 'planbord'
 };

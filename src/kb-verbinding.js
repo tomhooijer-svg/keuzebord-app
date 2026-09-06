@@ -194,8 +194,7 @@ function start(opties){
     if (opties.magZonderInlog) return Promise.resolve({ ingelogd:false });
     /* Sta je al op het inlogscherm, dan is doorsturen een herlaadlus. */
     if (location.pathname.indexOf('inloggen.html') >= 0) return Promise.resolve({ ingelogd:false });
-    location.href = 'inloggen.html';
-    return new Promise(function () {});   // we gaan toch weg
+    return gaWegNaar('inloggen.html');
   }
 
   return SB.wieBenIk().then(function (uit) {
@@ -209,16 +208,12 @@ function start(opties){
     var hier = function (pagina) { return location.pathname.indexOf(pagina) >= 0; };
     if (!ik.profiel) {
       if (hier('inloggen.html')) return { ingelogd:false };
-      location.href = 'inloggen.html';
-      return new Promise(function () {});
+      return gaWegNaar('inloggen.html');
     }
     if (!ik.profiel.school_id) {
       /* Op het schoolbeheer hoor je te zijn als je nog geen school hebt:
          daar maak je hem aan. */
-      if (!hier('school.html')) {
-        location.href = 'school.html?nieuw=1';
-        return new Promise(function () {});
-      }
+      if (!hier('school.html')) return gaWegNaar('school.html?nieuw=1');
       return { ingelogd:true, ik:ik, klasId:null, groepId:null, zonderSchool:true };
     }
 
@@ -447,12 +442,51 @@ function ontkoppelVanGroep(serverGroepId, profielId){
 /* Elk scherm begint hiermee. Is er geen server ingesteld -- de
    voorvertoning, of een losse kopie op een stick -- dan gaat het scherm
    gewoon door op wat er in de browser staat. */
+/* Doorsturen naar een ander scherm. Hierna hoort er niets meer te
+   gebeuren op deze pagina -- we zijn weg. De belofte die we teruggeven
+   wordt daarom nooit vervuld: dat is met opzet, want alles wat erná komt
+   zou draaien in een toestand die halverwege het vertrek hangt.
+
+   Gaat die navigatie niet door -- een adres dat niet bestaat, een pagina
+   die wordt tegengehouden -- dan zou dat eeuwig wachten worden. Daar zit
+   het vangnet in zodraKlaar() voor: dat gaat na GEDULD alsnog verder met
+   wat er lokaal staat. Eén vangnet om het geheel, in plaats van een
+   halve toestand hier. */
+function gaWegNaar(pagina){
+  try { location.href = pagina; } catch (e) {}
+  return new Promise(function () {});
+}
+
+/* Hoe lang de app op het opstarten wacht voordat hij zonder server
+   doorgaat. Ruimer dan de tijdslimiet op één aanroep (15 seconden),
+   zodat een normale trage ronde zichzelf netjes afhandelt en dit alleen
+   invalt als er iets echt vastzit. */
+var GEDULD = 25000;
+
 function zodraKlaar(opties){
   if (!global.SB || !global.KBSYNC) return Promise.resolve({ lokaal:true });
-  return start(opties).catch(function (e) {
+
+  /* Een vangnet om het hele opstarten heen. start() kan op meer dingen
+     blijven staan dan op een fetch alleen -- een navigatie die niet
+     doorgaat bijvoorbeeld. Wat er ook gebeurt: na GEDULD gaat de app
+     verder met wat er in de browser staat, in plaats van leeg te blijven.
+     Komt het antwoord later alsnog, dan pikt de volgende ronde het op. */
+  var gedaan = false;
+  var echt = start(opties).then(function (uit) {
+    gedaan = true; return uit;
+  }, function (e) {
+    gedaan = true;
     console.error('verbinding:', e);
     return { lokaal:true, fout:e };
   });
+
+  var vangnet = new Promise(function (res) {
+    setTimeout(function () {
+      if (!gedaan) res({ lokaal:true, traag:true });
+    }, GEDULD);
+  });
+
+  return Promise.race([echt, vangnet]);
 }
 
 global.KBV = {

@@ -20,6 +20,13 @@ var SLEUTEL = 'sb_publishable_1UK6888YPTYuQ1P7h58XTQ_wKUhKKTP';
 var EMMER   = 'kb-media';
 var BEWAARD = 'kb_sessie';
 
+/* Hoe lang we op de server wachten voor we het opgeven. Ruim genoeg voor
+   een trage schoolverbinding, kort genoeg om niet op een wit scherm te
+   blijven kijken. Een foto uploaden mag langer duren dan een lijst
+   ophalen. */
+var LIMIET = 15000;
+var UPLOAD_LIMIET = 60000;
+
 /* Voor het uittesten: een andere server meegeven mag. Op de echte site
    gebeurt dat niet. */
 try {
@@ -81,14 +88,38 @@ function vraag(pad, opties){
     kop['Content-Type'] = 'application/json';
   }
 
+  /* Een tijdslimiet, en dat is geen luxe. Een netwerk dat weigert geeft
+     meteen een fout; een netwerk dat de verbinding aanneemt en dan zwijgt
+     -- een schoolfirewall, een haperende wifi -- geeft niets. Zo'n fetch
+     wordt nooit afgewezen en nooit vervuld, en alles wat erop wacht blijft
+     eeuwig staan. Dat was een wit bord waar niemand meer uit kwam.
+
+     Een blob is een foto die geüpload wordt; die mag langer duren dan een
+     rij tekst ophalen. */
+  var grens = opties.tijdslimiet ||
+              ((opties.lijf instanceof Blob) ? UPLOAD_LIMIET : LIMIET);
+  var afbreker = (typeof AbortController === 'function') ? new AbortController() : null;
+  var klok = setTimeout(function () {
+    if (afbreker) afbreker.abort();
+  }, grens);
+
   return fetch(ADRES + pad, {
     method: opties.methode || 'GET',
     headers: kop,
+    signal: afbreker ? afbreker.signal : undefined,
     body: opties.lijf === undefined ? undefined
         : (opties.lijf instanceof Blob ? opties.lijf : JSON.stringify(opties.lijf))
   }).catch(function (e) {
+    clearTimeout(klok);
+    /* Afgebroken door onze eigen klok telt als offline: het werk blijft
+       lokaal staan en gaat de volgende ronde alsnog mee. */
+    if (e && (e.name === 'AbortError' || e.code === 20)) {
+      throw OfflineFout(new Error('de server antwoordde niet binnen ' +
+                                  Math.round(grens / 1000) + ' seconden'));
+    }
     throw OfflineFout(e);
   }).then(function (a) {
+    clearTimeout(klok);
     var type = a.headers.get('content-type') || '';
     var lezen = type.indexOf('json') >= 0 ? a.json().catch(function(){ return null; })
                                           : a.text().catch(function(){ return null; });

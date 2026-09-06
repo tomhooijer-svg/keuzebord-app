@@ -99,6 +99,34 @@ function leegKlas(naam){
            wachtrij:[], doelActief:{}, settings:standaardInstellingen() };
 }
 
+/* ── twee schermen, één opslag ───────────────────────────────
+   Keuzebord en Planbord staan op hetzelfde adres en delen dus dezelfde
+   browseropslag. Elk tabblad houdt zijn eigen kopie van alles in het
+   geheugen en schrijft die bij het opslaan in zijn geheel terug. Twee
+   tabbladen open betekent daarom: wie het laatst opslaat wint, en het
+   werk van de ander is stil weg -- ook als je niet tegelijk opslaat,
+   want het tweede tabblad werkt met wat het bij het openen las.
+
+   Samenvoegen is de echte oplossing en die is groter dan dit. Tot die
+   tijd merken we het in elk geval op: schrijft een ander tabblad iets,
+   dan weet dit scherm dat het verouderd is en kan het dat zeggen in
+   plaats van er stilzwijgend overheen te schrijven. */
+var elders = null;              // wat te doen als een ander tabblad schrijft
+var isVerouderd = false;        // heeft een ander tabblad na ons geschreven?
+var schrijftZelf = false;       // zijn wij het zelf die nu schrijven?
+
+function alsElders(fn){ elders = fn; }
+function verouderd(){ return isVerouderd; }
+
+try {
+  window.addEventListener('storage', function (e) {
+    if (!e || e.key !== SLEUTEL) return;      // alleen onze eigen gegevens
+    if (schrijftZelf) return;                 // onze eigen schrijfbeurt
+    isVerouderd = true;
+    if (elders) { try { elders(); } catch (er) {} }
+  });
+} catch (e) {}
+
 function laad(){
   try {
     var s = localStorage.getItem(SLEUTEL);
@@ -153,6 +181,12 @@ function grensVanLog(klasId){
 }
 
 function bewaar(){
+  /* Onze eigen schrijfbeurt telt niet als "een ander tabblad" -- al vuurt
+     de browser die gebeurtenis alleen in ándere tabbladen, dus dit is een
+     riem onder de gordel. */
+  schrijftZelf = true;
+  isVerouderd = false;
+  setTimeout(function () { schrijftZelf = false; }, 0);
   var trappen = 0;
   while (trappen <= 4) {
     try {
@@ -865,16 +899,50 @@ var VERSIE = '28 augustus 2026';
    in het adres -- anders kom je daar op een andere groep uit dan waar je
    net stond. Eén plek die dit weet, zodat elke knop naar het bord er
    hetzelfde over denkt. */
+/* Het adres van een pagina in een van de twee uitgaven.
+
+   Staat die pagina in deze app zelf, dan is het gewoon de bestandsnaam.
+   Staat hij in de andere, dan pakken we het volledige adres uit de
+   configuratie -- behalve als we daar zelf niet op draaien. Dat is het
+   geval op een testserver of als er ooit een eigen domeinnaam bij komt;
+   dan zou een vast adres je uit je eigen omgeving weg sturen. In dat
+   geval nemen we de buur naast ons.
+
+   De groep gaat mee in het adres, zodat je aan de andere kant op
+   dezelfde groep uitkomt als waar je vandaan kwam. */
+function appAdres(welke, pagina, klasId){
+  var app = window.KB_APP || {};
+  var lijst = app.apps || {};
+  var doel = lijst[welke];
+  var pad = pagina || '';
+
+  var g = (window.KBSYNC && KBSYNC.opServer)
+    ? KBSYNC.opServer(klasId || G.activeKlasId) : null;
+  var vraag = g ? '?groep=' + encodeURIComponent(g) : '';
+
+  if (!doel || welke === app.id) return pad + vraag;
+
+  var basis = doel.url || '';
+  try {
+    var eigen = (lijst[app.id] || {}).url;
+    /* Draaien we niet op het adres waar de configuratie van uitgaat, dan
+       is een volledig adres verkeerd -- we zoeken de andere app dan naast
+       ons op de plek waar we nu staan. */
+    if (!eigen || location.href.indexOf(eigen) !== 0) {
+      basis = '../' + (doel.map || welke) + '/';
+    }
+  } catch (e) { basis = '../' + (doel.map || welke) + '/'; }
+
+  return basis + pad + vraag;
+}
+
+/* Waar het bord staat. Heeft deze uitgave het zelf, dan hiernaast; zo
+   niet, dan in Keuzebord. Eén plek die dit weet, zodat elke knop naar
+   het bord er hetzelfde over denkt. */
 function bordAdres(klasId){
   var app = window.KB_APP;
   if (!app || app.heeftBord !== false) return 'bord.html';
-  var elders = app.ander ? app.ander.adres : '';
-  /* In het schoolbeheer klik je op het bord van een gróep waar je nog
-     niet in staat, dus die mag je meegeven. Laat je hem weg, dan is het
-     de groep waar je nu in werkt. */
-  var g = (window.KBSYNC && KBSYNC.opServer)
-    ? KBSYNC.opServer(klasId || G.activeKlasId) : null;
-  return elders + 'bord.html' + (g ? '?groep=' + encodeURIComponent(g) : '');
+  return appAdres('keuzebord', 'bord.html', klasId);
 }
 
 var STANDEN = ['nog', 'bezig', 'behaald'];
@@ -1501,7 +1569,8 @@ global.KB = {
   klas: klas, bord: bord, bordHoeken: bordHoeken, foto: foto, leerling: leerling,
   hoekVan: hoekVan, instelling: instelling,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,
-  VERSIE: VERSIE, bordAdres: bordAdres,
+  VERSIE: VERSIE, bordAdres: bordAdres, appAdres: appAdres,
+  alsElders: alsElders, verouderd: verouderd,
   geefVrij: geefVrij,
   vergrendeldTot: vergrendeldTot, timerDeel: timerDeel,
   plaats: plaats, haalWeg: haalWeg,

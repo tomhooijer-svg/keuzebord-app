@@ -1091,9 +1091,37 @@ function ververTimers(){
 
 /* ── opstarten ───────────────────────────────────────────── */
 KB.laad();
+
+/* Eerst het bord dat hier al staat, dan pas de server. Een digibord dat
+   's ochtends twintig seconden wit blijft omdat het netwerk hapert is
+   voor een klas onbruikbaar -- en alles wat nodig is om te kiezen staat
+   hier al: de hoeken, de kinderen, de picto's. Wat de server straks
+   terugstuurt wordt er overheen getekend.
+
+   Het legen van een nieuwe dag doen we hier ook al, anders zie je eerst
+   een tel het bord van gisteren voordat het wordt schoongeveegd. */
+(function vastLatenZien(){
+  try {
+    var alBekend = KB.beheerKlasId();
+    if (!alBekend) return;
+    KB.G.activeKlasId = alBekend;
+    var k = KB.klas();
+    if (!k) return;
+    if (KB.moetLegen(k)) KB.leegBord(k);
+    toonBord();
+  } catch (e) { /* dan wachten we gewoon op de gewone ronde */ }
+})();
 /* Eerst de doelenlijst en de verbinding: die haalt de groep van dit
    apparaat binnen. Lukt dat niet, dan tekent het bord gewoon wat er in de
    browser staat. */
+/* Wordt er in een ander tabblad gewerkt, dan is dit bord verouderd en zou
+   opslaan daar overheen schrijven. Op een digibord is dat zeldzaam -- daar
+   staat één scherm -- maar het gebeurt zodra iemand het beheer op hetzelfde
+   apparaat openzet. */
+KB.alsElders(function () {
+  meld('Er is in een ander tabblad gewerkt \u2014 vernieuw dit bord');
+});
+
 KB.doelenZorg()
   .then(function () { return window.KBV ? KBV.zodraKlaar() : { lokaal:true }; })
   .then(function () { return KB.fkLees(); })

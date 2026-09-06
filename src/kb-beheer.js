@@ -229,11 +229,11 @@ function tekenMenu(){
   /* De weg naar de andere app. De groep gaat mee, zodat je daar niet
      opnieuw hoeft te zoeken waar je was. Allebei de apps staan onder
      hetzelfde adres, dus je blijft ingelogd. */
-  var ander = window.KB_APP && KB_APP.ander;
+  var ander = anderApp();
   if (ander) {
     menu.appendChild(el('div', 'zij-scheiding'));
     var over = el('a', 'zij-knop zij-over');
-    over.href = ander.adres + 'beheer.html' + oversteekVraag();
+    over.href = KB.appAdres(KB_APP.ander, 'beheer.html');
     over.innerHTML = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" ' +
       'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
       'aria-hidden="true"><path d="M4 12 h14"></path><path d="M13 7 l5 5 -5 5"></path></svg>';
@@ -253,16 +253,16 @@ function tekenMenu(){
         ? 'Naar het bord' : 'Terug naar het bord';
     }
   }
-  $('zij-groep').textContent = KB.klas().naam;
+  var mijnKlas = KB.klas();
+  $('zij-groep').textContent = mijnKlas ? mijnKlas.naam : '\u2014';
 }
 
-/* Wat er in het adres mee moet naar de andere app: welke groep. De
-   andere app staat op dezelfde herkomst en deelt dus de opslag, maar
-   dat geldt niet als je hem op een eigen domeinnaam zet -- en dan is
-   dit het enige wat de oversteek nog draagt. */
-function oversteekVraag(){
-  var g = KBSYNC && KBSYNC.opServer ? KBSYNC.opServer(KB.G.activeKlasId) : null;
-  return g ? '?groep=' + encodeURIComponent(g) : '';
+/* De andere uitgave, zoals hij in de configuratie staat. null als deze
+   app in zijn eentje draait -- dat is de werkplaats. */
+function anderApp(){
+  var app = window.KB_APP;
+  if (!app || !app.ander || !app.apps) return null;
+  return app.apps[app.ander] || null;
 }
 /* Een paneel mag willen weten dat je het opnieuw binnenkomt. Het
    thema-scherm gebruikt dat om terug te vallen op de lijst: op "Thema's"
@@ -1926,16 +1926,49 @@ global.BH = {
     var gebonden = KB.beheerKlasId();
     if (gebonden) KB.G.activeKlasId = gebonden;
 
+    /* Eerst laten zien wat er in de browser staat, dan pas de server
+       vragen. Een scherm dat wacht op het netwerk is een leeg scherm, en
+       op een schoolverbinding kan dat lang duren -- of eeuwig, als de
+       verbinding wordt aangenomen maar nooit beantwoord. Wie al eens is
+       ingelogd heeft alles hier staan en kan meteen doorwerken. */
+    /* Alleen vast tekenen op een apparaat dat al eens is ingericht. Een
+       vers apparaat heeft nog niets dan de lege standaardgroep die
+       KB.laad() aanmaakt, en die vroeg tekenen legt hem vast -- dan houdt
+       een juf na het inloggen "Mijn groep" naast haar echte groep over.
+       Er valt daar toch niets te tonen; wachten op de server is dan het
+       juiste antwoord. */
+    if (KB.beheerKlasId() && KB.klas()) { tekenMenu(); teken(); }
+    else {
+      tekenMenu();
+      var wacht = leeg($('inhoud'));
+      wacht.appendChild(el('p', 'hint', 'Bezig met ophalen\u2026'))
+           .style.cssText = 'padding:26px 2px';
+    }
+
+    /* Schrijft het andere tabblad iets, dan is dit scherm verouderd.
+       Doorwerken zou het werk van daar overschrijven, want elk tabblad
+       slaat zijn eigen kopie in zijn geheel op. Dus zeggen we het. */
+    KB.alsElders(function () {
+      meld('Er is in een ander tabblad gewerkt \u2014 vernieuw dit scherm voordat je verder gaat');
+    });
+
     (window.KBV ? KBV.zodraKlaar() : Promise.resolve({ lokaal:true }))
-      .then(function () {
+      .then(function (uit) {
         var gekozen = KB.beheerKlasId();
         if (gekozen) KB.G.activeKlasId = gekozen;
         zetAccountknop();
-        return KB.fkLees();
+        return KB.fkLees().then(function (m) { return { uit:uit, kluis:m }; });
       })
-      .then(function (m) { if (m) KB.fkPasToe(m); })
-      .catch(function () {})
-      .then(function () { tekenMenu(); teken(); });
+      .then(function (d) { if (d.kluis) KB.fkPasToe(d.kluis); return d.uit; })
+      .catch(function (e) { return { lokaal:true, fout:e }; })
+      .then(function (uit) {
+        tekenMenu(); teken();
+        /* Lukte de server niet, dan zeggen we dat -- en werk je verder op
+           wat er lokaal staat. Dat gaat de volgende ronde alsnog mee. */
+        if (uit && (uit.fout || uit.lokaal) && !uit.zonderSchool) {
+          meld('Geen verbinding met de server \u2014 je werkt op wat er op dit apparaat staat');
+        }
+      });
   }
 };
 
