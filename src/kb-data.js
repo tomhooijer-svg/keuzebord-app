@@ -128,10 +128,11 @@ try {
 } catch (e) {}
 
 function laad(){
+  var rauw = null;
   try {
-    var s = localStorage.getItem(SLEUTEL);
-    if (s) { G = JSON.parse(s); }
-  } catch (e) { G = null; }
+    rauw = localStorage.getItem(SLEUTEL);
+    if (rauw) { G = JSON.parse(rauw); }
+  } catch (e) { G = null; rauw = null; }
   if (!G || !Array.isArray(G.klassen) || !G.klassen.length) {
     var k = leegKlas('Mijn groep');
     G = { klassen:[k], activeKlasId:k.id, settings:standaardInstellingen() };
@@ -145,6 +146,10 @@ function laad(){
       if (!b.hoekLibIds)  b.hoekLibIds  = [];
     });
   });
+  /* Vanaf hier weten we hoe alles eruitzag toen wij het lazen. Dat is de
+     maat waarmee bij het opslaan bepaald wordt wat wíj hebben veranderd
+     en wat van een ander tabblad komt. */
+  onthoudStand(rauw);
   return G;
 }
 
@@ -180,19 +185,133 @@ function grensVanLog(klasId){
   catch (e) { return 0; }
 }
 
+/* ── samenvoegen in plaats van overschrijven ─────────────────
+   Elk tabblad houdt alles in het geheugen en schreef dat bij het opslaan
+   in zijn geheel terug. Twee tabbladen op één apparaat betekende daarom:
+   wie het laatst opslaat wint, en het werk van de ander is stil weg --
+   ook zonder tegelijk op te slaan, want het tweede tabblad werkt met wat
+   het bij het openen las.
+
+   Nu kijken we vlak voor het schrijven wat er intussen in de opslag
+   staat. Is dat nog van onszelf, dan schrijven we gewoon door. Heeft een
+   ander tabblad geschreven, dan voegen we samen: per groep wint onze
+   versie alleen als wíj hem hebben aangeraakt. Groepen waar we niets aan
+   deden nemen we over zoals ze daar staan, en groepen die we niet eens
+   kennen laten we met rust.
+
+   De maat waarmee we "aangeraakt" bepalen is een korte code per groep,
+   genomen bij onze vorige lees- of schrijfbeurt. */
+function vingerVan(tekst){
+  var h = 5381;
+  for (var i = 0; i < tekst.length; i++) h = ((h * 33) ^ tekst.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+var vorigePerGroep = {};    // hoe elke groep eruitzag toen wij hem lazen of schreven
+var vorigeInstellingen = 0; // idem voor de instellingen die niet bij één groep horen
+var vorigGeheel = 0;        // en van het geheel, om snel te zien of er iets veranderde
+
+function onthoudStand(tekst){
+  vorigePerGroep = {};
+  (G.klassen || []).forEach(function (k) {
+    try { vorigePerGroep[k.id] = vingerVan(JSON.stringify(k)); } catch (e) {}
+  });
+  try { vorigeInstellingen = vingerVan(JSON.stringify(G.settings || {})); } catch (e) {}
+  vorigGeheel = tekst ? vingerVan(tekst) : 0;
+}
+
+/* Geeft terug of we iets van een ander tabblad hebben overgenomen. */
+function voegSamenMetOpslag(){
+  var rauw;
+  try { rauw = localStorage.getItem(SLEUTEL); } catch (e) { return false; }
+  if (!rauw) return false;
+  /* Staat er nog precies wat wij er het laatst neerzetten, dan heeft
+     niemand anders geschreven en hoeven we niets te doen. Dit is het
+     gewone geval en het kost één keer doorlezen. */
+  if (vingerVan(rauw) === vorigGeheel) return false;
+
+  var daar;
+  try { daar = JSON.parse(rauw); } catch (e) { return false; }
+  if (!daar || !Array.isArray(daar.klassen)) return false;
+
+  var hier = {};
+  (G.klassen || []).forEach(function (k) { hier[k.id] = k; });
+
+  var wijVeranderden = function (k) {
+    if (vorigePerGroep[k.id] === undefined) return true;   // door ons toegevoegd
+    try { return vingerVan(JSON.stringify(k)) !== vorigePerGroep[k.id]; }
+    catch (e) { return true; }
+  };
+
+  var samen = [], gezien = {}, overgenomen = false;
+  daar.klassen.forEach(function (hunne) {
+    gezien[hunne.id] = true;
+    var onze = hier[hunne.id];
+    if (!onze) { samen.push(hunne); overgenomen = true; return; }
+    if (wijVeranderden(onze)) { samen.push(onze); return; }
+    /* Een groep die daar is uitgekleed omdat de opslag vol zat, mag onze
+       volledige versie niet vervangen -- dan zouden we hier gegevens
+       kwijtraken die alleen in het geheugen staan. */
+    if (hunne.magOpnieuwOphalen && !onze.magOpnieuwOphalen) { samen.push(onze); return; }
+    samen.push(hunne);
+    try {
+      if (vingerVan(JSON.stringify(hunne)) !== vorigePerGroep[hunne.id]) overgenomen = true;
+    } catch (e) {}
+  });
+  (G.klassen || []).forEach(function (onze) {
+    if (gezien[onze.id]) return;
+    /* Stond deze groep er bij onze vorige beurt wél en nu niet meer, dan
+       heeft het andere tabblad hem weggehaald. Die verwijdering hoort te
+       blijven staan -- anders zet elke volgende opslagbeurt hem terug en
+       krijg je een groep die niet weg te krijgen is.
+
+       Behalve als wij er sindsdien nog in hebben gewerkt: dan houden we
+       hem. Werk kwijtraken is erger dan een groep die terugkomt, en die
+       kun je gewoon nog eens weghalen. */
+    if (vorigePerGroep[onze.id] !== undefined && !wijVeranderden(onze)) {
+      overgenomen = true;
+      return;
+    }
+    samen.push(onze);                            // door ons gemaakt of bewerkt
+  });
+  G.klassen = samen;
+
+  /* De instellingen die niet bij één groep horen: alleen overnemen als
+     wij er zelf niets aan deden. */
+  try {
+    var nuInstellingen = vingerVan(JSON.stringify(G.settings || {}));
+    if (nuInstellingen === vorigeInstellingen && daar.settings) {
+      G.settings = daar.settings;
+    }
+  } catch (e) {}
+
+  /* activeKlasId blijft van ons: dat is de groep waar dit scherm naar
+     kijkt, niet iets van de gegevens zelf. */
+  return overgenomen;
+}
+
 function bewaar(){
   /* Onze eigen schrijfbeurt telt niet als "een ander tabblad" -- al vuurt
      de browser die gebeurtenis alleen in ándere tabbladen, dus dit is een
      riem onder de gordel. */
   schrijftZelf = true;
-  isVerouderd = false;
   setTimeout(function () { schrijftZelf = false; }, 0);
+
+  var namenOver = false;
+  try { namenOver = voegSamenMetOpslag(); } catch (e) {}
+  isVerouderd = false;
+
   var trappen = 0;
   while (trappen <= 4) {
     try {
-      localStorage.setItem(SLEUTEL, JSON.stringify(uitgedund(trappen)));
+      var tekst = JSON.stringify(uitgedund(trappen));
+      localStorage.setItem(SLEUTEL, tekst);
+      onthoudStand(tekst);
       if (trappen > 0) laatsteAfpelling = Date.now();
       if (naBewaren) { try { naBewaren(); } catch (e) {} }
+      /* Hebben we werk van een ander tabblad overgenomen, dan klopt wat er
+         nu op dit scherm staat niet meer met de gegevens. Zeggen dus. */
+      if (namenOver && elders) { try { elders(); } catch (e) {} }
       return true;
     } catch (e) {
       trappen++;

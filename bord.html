@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=28augustus2026-a4ecc2db">
+<link rel="stylesheet" href="src/kb-stijl.css?v=28augustus2026-d1cdb8f2">
 <style>
 /* ── het bord ─────────────────────────────────────────── */
 /* Een zachte, warme ondergrond met een vleugje kleur in de hoeken —
@@ -290,7 +290,38 @@ body.bord{
 }
 .strook-kop{ font-size: .96rem; font-weight: 550; color: var(--inkt-3); white-space: nowrap;
              flex: none; letter-spacing: -.012em; }
-.strook-kinderen{ display: flex; gap: 20px; overflow-x: auto; padding: 4px 2px; }
+/* De ruimte boven is er voor de gloed die om een kind verschijnt als je
+   erover gaat: die steekt elf pixels boven de bol uit (drie van het
+   optillen, twee van het vergroten, zes van de ring).
+
+   Dat het uitmaakt komt door een regel die je makkelijk over het hoofd
+   ziet: staat één as op overflow auto en de andere op visible, dan maakt
+   de browser van die andere óók auto. Hier stond alleen overflow-x, om
+   te kunnen schuiven bij veel kinderen -- maar daarmee werd er verticaal
+   net zo goed afgesneden. Met vier pixels ruimte werd de ronde gloed
+   vlak afgesneden: een rechte lijn dwars over een cirkel, en dat ziet
+   eruit als een vierkant om het kind heen.
+
+   Onder is minder nodig; daar loopt de gloed achter de naam langs. */
+/* Bij veel kinderen moet deze rij kunnen schuiven, dus staat er
+   overflow-x op. Twee dingen die daaruit volgen en die je makkelijk
+   over het hoofd ziet:
+
+   Ten eerste maakt de browser van de andere as dan óók 'auto' -- staat
+   één as op auto en de andere op visible, dan wordt die visible
+   genegeerd. Er wordt verticaal dus net zo goed afgesneden.
+
+   Ten tweede helpt ruimte eróm niet. Ik heb het gemeten: met elf pixels
+   speling tussen de rand van het vak en de bol werd de gloed nog steeds
+   vlak afgesneden, en met overflow:visible bij precies dezelfde marge
+   niet. Een scrollvak snijdt strakker af dan de buitenrand doet
+   vermoeden.
+
+   Dus zit de ruimte nu in de picto zelf: die schuift mee, en daarmee valt
+   de gloed binnen de inhoud in plaats van erbuiten. De negatieve marge
+   houdt de strook even hoog als voorheen. */
+.strook-kinderen{ display: flex; gap: 6px; overflow-x: auto; padding: 2px 0; }
+.strook-kinderen .picto{ padding: 14px 10px 0; }
 .strook .picto-rond{ width: 62px; height: 62px; font-size: 1.4rem; }
 .hoek-kinderen .picto-rond{ width: 46px; height: 46px; font-size: 1.05rem; }
 .hoek-kinderen .picto-naam{ display: none; }
@@ -428,12 +459,12 @@ body.bord{
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
-<script src="src/kb-app.js?v=28augustus2026-a4ecc2db"></script>
-<script src="src/kb-data.js?v=28augustus2026-a4ecc2db"></script>
-<script src="src/kb-supabase.js?v=28augustus2026-a4ecc2db"></script>
-<script src="src/kb-media.js?v=28augustus2026-a4ecc2db"></script>
-<script src="src/kb-sync.js?v=28augustus2026-a4ecc2db"></script>
-<script src="src/kb-verbinding.js?v=28augustus2026-a4ecc2db"></script>
-<script src="src/kb-bord.js?v=28augustus2026-a4ecc2db"></script>
+<script src="src/kb-app.js?v=28augustus2026-d1cdb8f2"></script>
+<script src="src/kb-data.js?v=28augustus2026-d1cdb8f2"></script>
+<script src="src/kb-supabase.js?v=28augustus2026-d1cdb8f2"></script>
+<script src="src/kb-media.js?v=28augustus2026-d1cdb8f2"></script>
+<script src="src/kb-sync.js?v=28augustus2026-d1cdb8f2"></script>
+<script src="src/kb-verbinding.js?v=28augustus2026-d1cdb8f2"></script>
+<script src="src/kb-bord.js?v=28augustus2026-d1cdb8f2"></script>
 </body>
 </html>
