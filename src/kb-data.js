@@ -155,8 +155,17 @@ function laad(){
 
 /* Wie hierop luistert, hoort het zodra er iets is opgeslagen. Zo hoeft
    geen enkele plek in de app zelf te weten dat er ook een server is. */
-var naBewaren = null;
-function opBewaard(fn){ naBewaren = fn; }
+/* Wie wil weten dat er iets opgeslagen is. Dat waren er eerst één -- de
+   verbinding, die het meteen wil opsturen -- en de tweede aanmelder gooide
+   de eerste er stilletjes uit. Nu is het een rijtje: de verbinding stuurt
+   het op, en het scherm zet de stand op "bezig". */
+var naBewaren = [];
+function opBewaard(fn){
+  if (typeof fn === 'function' && naBewaren.indexOf(fn) < 0) naBewaren.push(fn);
+}
+function zegDatErBewaardIs(){
+  naBewaren.forEach(function (fn) { try { fn(); } catch (e) {} });
+}
 
 /* Opslaan, en niet omvallen als het niet past.
 
@@ -308,7 +317,7 @@ function bewaar(){
       localStorage.setItem(SLEUTEL, tekst);
       onthoudStand(tekst);
       if (trappen > 0) laatsteAfpelling = Date.now();
-      if (naBewaren) { try { naBewaren(); } catch (e) {} }
+      zegDatErBewaardIs();
       /* Hebben we werk van een ander tabblad overgenomen, dan klopt wat er
          nu op dit scherm staat niet meer met de gegevens. Zeggen dus. */
       if (namenOver && elders) { try { elders(); } catch (e) {} }
@@ -323,7 +332,7 @@ function bewaar(){
      weg, dus we vragen om een ronde versturen en melden dat het krap is.
      De aanroeper krijgt `false` en mag het zeggen. */
   laatsteAfpelling = Date.now();
-  if (naBewaren) { try { naBewaren(); } catch (e) {} }
+  zegDatErBewaardIs();
   return false;
 }
 
@@ -818,6 +827,31 @@ function week(sleutel, k){
   return w;
 }
 
+/* Alle doelen die deze week meelopen, met waar ze vandaan komen. Je hoeft
+   er zelf geen te kiezen: hangt er een doel aan een taak die je inplant of
+   aan het thema van de week, dan werk je er deze week aan. Dat stond
+   eerder los van elkaar -- het weekplan zei "nog geen doelen" terwijl er
+   drie aan de ingeplande taak hingen. */
+function weekDoelen(sleutel, k){
+  k = k || klas();
+  sleutel = sleutel || weekSleutel();
+  var w = (k.weken || {})[sleutel] || { centraleDoelIds:[], taken:[] };
+  var uit = [], gezien = {};
+  var zet = function (id, via, bron) {
+    if (!id || gezien[id]) return;
+    gezien[id] = true;
+    uit.push({ id:id, via:via, bron:bron || '' });
+  };
+  (w.centraleDoelIds || []).forEach(function (id) { zet(id, 'eigen', ''); });
+  (w.taken || []).forEach(function (wt) {
+    var t = taakVan(wt.taakId, k);
+    if (t) (t.doelIds || []).forEach(function (id) { zet(id, 'taak', t.naam); });
+  });
+  var th = themaVanWeek(sleutel, k);
+  if (th) (th.doelIds || []).forEach(function (id) { zet(id, 'thema', th.naam); });
+  return uit;
+}
+
 /* ── taken ───────────────────────────────────────────────── */
 function taken(k){ k = k || klas(); if (!k.taken) k.taken = []; return k.taken; }
 function taakVan(id, k){
@@ -857,11 +891,17 @@ function zorgVoorWerkplaats(k){
 }
 
 /* ── beurten: wie doet welke taak op welke dag ───────────── */
-/* Alleen kijken of een taak deze week gepland staat, zonder hem aan te
-   maken. weekTaak() maakt er namelijk eentje als hij nog niet bestaat, en
-   dat is voor lezen precies wat je niet wilt. */
+/* Alleen kijken, zonder aan te maken. week() zet er namelijk eentje neer
+   als hij nog niet bestaat -- handig als je gaat schrijven, maar bij lezen
+   precies wat je niet wilt: dan staan er na een middag bladeren zes lege
+   weken in de groep, die ook nog eens naar de server gaan. */
+function weekAls(sleutel, k){
+  k = k || klas();
+  return ((k.weken || {})[sleutel || weekSleutel()]) || null;
+}
 function weekTaakAls(sleutel, taakId, k){
-  var w = week(sleutel, k);
+  var w = weekAls(sleutel, k);
+  if (!w) return null;
   return (w.taken || []).filter(function (x) { return x.taakId === taakId; })[0] || null;
 }
 
@@ -1011,7 +1051,7 @@ function heeftBeurtVandaag(leerlingId, k){
 /* Welke versie van de app draait hier. Staat onder in het bordmenu en
    bij Groep, zodat je kunt zien of je de nieuwe versie al voor je hebt
    of nog naar de oude uit de cache van je browser kijkt. */
-var VERSIE = '28 augustus 2026';
+var VERSIE = '6 september 2026';
 
 /* Waar het bord staat. In Keuzebord is dat gewoon bord.html hiernaast.
    In Planbord ligt het bord in de andere app, en dan moet de groep mee
@@ -1167,6 +1207,17 @@ function haalThemaWeg(id, k){
 
 /* De taken die bij een thema horen. Eén kant vastleggen is genoeg: de
    taak weet bij welk thema hij hoort, de rest leiden we af. */
+/* In welke weken staat deze taak ingepland? De taakomgeving laat dat zien,
+   zodat je niet in het weekplan hoeft te kijken of je hem al hebt gepland. */
+function wekenVanTaak(taakId, k){
+  k = k || klas();
+  return Object.keys(k.weken || {}).filter(function (sleutel) {
+    return ((k.weken[sleutel] || {}).taken || []).some(function (wt) {
+      return wt.taakId === taakId;
+    });
+  }).sort();
+}
+
 function takenVanThema(themaId, k){
   return taken(k).filter(function (t) { return t.themaId === themaId; });
 }
@@ -1182,8 +1233,8 @@ function hoekenVanThema(thema, k){
    periode erbij, maar nog niet aan de week gehangen. */
 function themaVanWeek(sleutel, k){
   k = k || klas();
-  var w = week(sleutel, k);
-  if (w.themaId) {
+  var w = weekAls(sleutel, k);
+  if (w && w.themaId) {
     var gekozen = themaVan(w.themaId, k);
     if (gekozen) return gekozen;
   }
@@ -1208,6 +1259,83 @@ function themaStand(t, k){
     heeftStart: !!(t.start || '').trim(),
     heeftAfsluiting: !!(t.afsluiting || '').trim()
   };
+}
+
+/* Hoever is dit thema uitgewerkt? Acht dingen waar je bij een thema
+   langsgaat. Niet alles hóéft -- een thema dat halverwege een andere kant
+   op gaat is geen mislukt thema -- maar het is fijn om in één blik te zien
+   waar je staat. */
+function themaVoortgang(t, k){
+  var st = themaStand(t, k);
+  var punten = [
+    { naam:'Startactiviteit',        goed: st.heeftStart },
+    { naam:'Onderzoeksvraag',        goed: !!(t.vraag || '').trim() },
+    { naam:'Vragen van de kinderen', goed: st.vragen > 0 },
+    { naam:'Hoeken',                 goed: st.hoeken > 0 },
+    { naam:'Activiteiten',           goed: st.activiteiten > 0 },
+    { naam:'Taken',                  goed: st.taken > 0 },
+    { naam:'Doelen',                 goed: st.doelen > 0 },
+    { naam:'Afsluiting',             goed: st.heeftAfsluiting }
+  ];
+  var gedaan = punten.filter(function (p) { return p.goed; }).length;
+  return { punten:punten, gedaan:gedaan, totaal:punten.length,
+           deel: Math.round((gedaan / punten.length) * 100) };
+}
+
+/* Waar staat elk doel? Niet als een lijst om aan te vinken, maar als een
+   overzicht: dit loopt deze week, dit staat gepland, dit is geweest. Het
+   komt allemaal ergens vandaan -- een taak die in een week staat, een
+   thema dat loopt, of een beoordeling die je hebt gegeven -- dus rekenen
+   we het daaruit uit in plaats van het apart bij te houden. */
+function doelenOverzicht(k){
+  k = k || klas();
+  var nu = weekSleutel();
+  var perDoel = {};
+  var zorg = function (id) {
+    if (!perDoel[id]) perDoel[id] = { id:id, bronnen:[], stand:'niet',
+                                      ontdekken:0, hulp:0, zelf:0 };
+    return perDoel[id];
+  };
+  var sterker = { niet:0, geweest:1, straks:2, nu:3 };
+  var zet = function (v, stand) {
+    if (sterker[stand] > sterker[v.stand]) v.stand = stand;
+  };
+
+  taken(k).forEach(function (t) {
+    var weken = wekenVanTaak(t.id, k);
+    var loopt  = weken.indexOf(nu) >= 0;
+    var straks = weken.some(function (w) { return w > nu; });
+    var eerder = weken.some(function (w) { return w < nu; });
+    (t.doelIds || []).forEach(function (id) {
+      var v = zorg(id);
+      v.bronnen.push({ soort:'taak', naam:t.naam,
+        wanneer: loopt ? 'deze week' : straks ? 'gepland' : eerder ? 'geweest' : 'niet ingepland' });
+      zet(v, loopt ? 'nu' : straks ? 'straks' : eerder ? 'geweest' : 'niet');
+    });
+  });
+
+  var vanDezeWeek = themaVanWeek(nu, k);
+  themas(k).forEach(function (th) {
+    var loopt = !!vanDezeWeek && vanDezeWeek.id === th.id;
+    (th.doelIds || []).forEach(function (id) {
+      var v = zorg(id);
+      v.bronnen.push({ soort:'thema', naam:th.naam,
+        wanneer: th.archief ? 'geweest' : loopt ? 'deze week' : 'gepland' });
+      zet(v, loopt ? 'nu' : th.archief ? 'geweest' : 'straks');
+    });
+  });
+
+  Object.keys(k.beoordelingen || {}).forEach(function (sleutel) {
+    var deel = sleutel.split('|');
+    if (deel.length !== 2 || deel[1].indexOf('taak:') === 0) return;
+    var v = zorg(deel[1]), b = k.beoordelingen[sleutel] || {};
+    if (b.stand === 'behaald') v.zelf++;
+    else if (b.stand === 'bezig') v.hulp++;
+    else v.ontdekken++;
+    zet(v, 'geweest');
+  });
+
+  return perDoel;
 }
 
 /* ── waar een hoek voor is ─────────────────────────────────
@@ -1715,9 +1843,9 @@ global.KB = {
   DAGEN_KORT: DAGEN_KORT, DAGEN_LANG: DAGEN_LANG, WERKPLAATS_PLEKKEN: WERKPLAATS_PLEKKEN,
   STANDEN: STANDEN,
   weekSleutel: weekSleutel, weekVerschoven: weekVerschoven, weekLabel: weekLabel,
-  dagVanVandaag: dagVanVandaag, week: week,
+  dagVanVandaag: dagVanVandaag, week: week, weekAls: weekAls, weekDoelen: weekDoelen,
   weekNummer: weekNummer, weekDatums: weekDatums,
-  taken: taken, taakVan: taakVan, nieuweTaak: nieuweTaak,
+  taken: taken, taakVan: taakVan, nieuweTaak: nieuweTaak, wekenVanTaak: wekenVanTaak,
   werkplaatsHoek: werkplaatsHoek, zorgVoorWerkplaats: zorgVoorWerkplaats,
   weekTaak: weekTaak, weekTaakAls: weekTaakAls, haalWeekTaakWeg: haalWeekTaakWeg,
   standaardWerkmomenten: standaardWerkmomenten, werkmomenten: werkmomenten,
@@ -1734,7 +1862,8 @@ global.KB = {
   ACTIVITEITSOORTEN: ACTIVITEITSOORTEN,
   themas: themas, themaVan: themaVan, nieuwThema: nieuwThema, haalThemaWeg: haalThemaWeg,
   takenVanThema: takenVanThema, hoekenVanThema: hoekenVanThema,
-  themaVanWeek: themaVanWeek, themaStand: themaStand,
+  themaVanWeek: themaVanWeek, themaStand: themaStand, themaVoortgang: themaVoortgang,
+  doelenOverzicht: doelenOverzicht,
   LEERLIJNEN: LEERLIJNEN, DOMEINEN: DOMEINEN,
   domeinVanLeerlijn: domeinVanLeerlijn, leerlijnenPerDomein: leerlijnenPerDomein,
   hoekLeerlijnen: hoekLeerlijnen, hoekDomeinen: hoekDomeinen,

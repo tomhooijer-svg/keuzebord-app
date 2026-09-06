@@ -204,7 +204,8 @@ function werkplaatsRondes(hoek, k, b){
 
   var aanwezig = KB.bezetting(hoek.id, b).map(function (p) { return p.leerlingId; });
   var dag = KB.dagVanVandaag();
-  var w = KB.week(KB.weekSleutel(), k);
+  var w = KB.weekAls(KB.weekSleutel(), k);
+  if (!w) return leeg;
   var nu = [], straks = [];
 
   (w.taken || []).forEach(function (wt) {

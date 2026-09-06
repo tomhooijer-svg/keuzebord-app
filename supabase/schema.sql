@@ -260,6 +260,9 @@ create table if not exists public.taak_toewijzing (
   geweest          date,
   stand            text not null default 'nog'
                      check (stand in ('nog','bezig','behaald')),
+  -- een kort briefje van de leerkracht bij dit kind bij deze taak:
+  -- "heeft hulp nodig", "kan het voordoen"
+  notitie          text not null default '',
   bijgewerkt       timestamptz not null default now(),
   unique (weekplan_taak_id, leerling_id)
 );
@@ -307,6 +310,7 @@ alter table public.taken  add column if not exists kleur   text;
 alter table public.borden add column if not exists volgorde int not null default 0;
 alter table public.borden add column if not exists stand   jsonb not null default '{}'::jsonb;
 alter table public.taak_toewijzing add column if not exists geweest date;
+alter table public.taak_toewijzing add column if not exists notitie text not null default '';
 -- Waar een hoek voor is: de leerlijnen uit de doelenlijst. Zo praten
 -- hoeken en doelen dezelfde taal en zie je of je aanbod in balans is.
 alter table public.hoeken add column if not exists leerlijnen text[] not null default '{}';
@@ -320,6 +324,8 @@ alter table public.themas add column if not exists tot          date;
 alter table public.themas add column if not exists kleur        text;
 alter table public.themas add column if not exists archief      boolean not null default false;
 alter table public.themas add column if not exists volgorde     int not null default 0;
+-- of de leerkracht dit thema af heeft: uitgewerkt en klaar om te draaien.
+alter table public.themas add column if not exists klaar        boolean not null default false;
 -- de vragenmuur en de activiteiten: korte lijstjes, als geheel bewaard
 alter table public.themas add column if not exists vragen       jsonb not null default '[]'::jsonb;
 alter table public.themas add column if not exists activiteiten jsonb not null default '[]'::jsonb;
