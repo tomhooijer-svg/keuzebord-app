@@ -131,7 +131,7 @@ function vraag(pad, opties){
 }
 
 /* Loopt de sessie bijna af, dan vernieuwen we hem eerst. Anders krijgt de
-   juf midden in een handeling ineens een inlogscherm. */
+   leerkracht midden in een handeling ineens een inlogscherm. */
 function zorgVoorSessie(){
   if (!sessie) return Promise.resolve(null);
   var over = (sessie.verlooptOp || 0) - Date.now();

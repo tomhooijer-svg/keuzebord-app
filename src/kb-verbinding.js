@@ -169,9 +169,16 @@ function haalOp(){
   // het. Dat geldt ook voor een wijziging die nog op zijn beurt wacht,
   // dus zetten we een eventuele wachttijd meteen stop.
   clearTimeout(timer);
-  // Loopt er nog iets? Dan wachten we dat af in plaats van te vertrekken.
+  /* Loopt er nog iets? Dan wachten we dat af in plaats van te vertrekken.
+
+     En daarna versturen we altijd, niet alleen als er een vlaggetje staat.
+     Dat vlaggetje was één plek die het kon missen -- en één gemiste plek
+     kost een weekplan, want wat hier niet weg is wordt bij het ophalen
+     overschreven. Versturen is goedkoop als er niets te versturen valt:
+     het vergelijkt eerst met de laatste afdruk en stuurt alleen wat
+     verschilt. */
   var eerst = lopend.catch(function () {}).then(function () {
-    return KBSYNC.wachtErIetsOp(klasId) ? stuurNu().catch(function () {}) : null;
+    return stuurNu().catch(function () {});
   });
   return eerst.then(function () {
     return KBSYNC.haalBinnen(klasId, groepId).then(function () {
@@ -197,6 +204,14 @@ function start(opties){
     return gaWegNaar('inloggen.html');
   }
 
+  /* Dit haakje hoort er te hangen vóórdat er iets getekend wordt. Het
+     scherm is tegenwoordig al bruikbaar terwijl de verbinding nog loopt --
+     dat is met opzet, anders kijk je op een trage school naar niets. Maar
+     stond dit haakje er nog niet, dan werd wat je in die seconden
+     opsloeg niet gemarkeerd als "moet nog weg", en schreef de eerste
+     ophaalronde het weer weg. Zo raakte een weekplan zoek. */
+  KB.opBewaard(planOpsturen);
+
   return SB.wieBenIk().then(function (uit) {
     ik = uit;
     /* Doorsturen naar de pagina waar je al staat is geen doorsturen maar
@@ -221,9 +236,6 @@ function start(opties){
     klasId = kiesGroep();
     groepId = klasId ? KBSYNC.opServer(klasId) : null;
     if (klasId) { KB.G.activeKlasId = klasId; KB.bewaar(); }
-
-    // vanaf nu gaat alles wat opgeslagen wordt vanzelf mee
-    KB.opBewaard(planOpsturen);
 
     var eerste = groepId ? haalOp() : Promise.resolve(false);
     return eerste.catch(function () { return false; }).then(function (gelukt) {

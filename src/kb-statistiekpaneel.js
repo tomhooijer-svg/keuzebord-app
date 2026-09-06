@@ -18,7 +18,7 @@ var teken = BH.teken;
    STATISTIEKEN
    Wat je in de drukte van een schooldag niet ziet: wie waar
    vaak zit, wie elkaar nooit tegenkomt, welke hoek leeg blijft.
-   Geen oordeel -- tellingen. De juf weet wat ze betekenen.
+   Geen oordeel -- tellingen. De leerkracht weet wat ze betekenen.
    ══════════════════════════════════════════════════════════ */
 
 /* De periode waar je naar kijkt: hoe lang, en tot wanneer. Dat tweede

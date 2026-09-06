@@ -744,7 +744,7 @@ function wachtErIetsOp(klasId){
 }
 
 /* Het gewone gebruik: probeer op te sturen, en klaag niet als het even
-   niet kan. Een juf hoeft niet te weten dat de wifi hikte. */
+   niet kan. Een leerkracht hoeft niet te weten dat de wifi hikte. */
 function stuurOp(klasId, groepId, schoolId){
   return duw(klasId, groepId, schoolId).then(function (wat) {
     markeerWachtend(klasId, false);

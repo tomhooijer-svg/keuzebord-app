@@ -608,7 +608,7 @@ function minutenTekst(ms){
   var m = Math.ceil(ms / 60000);
   return m <= 1 ? 'nog even' : 'nog ' + m + ' minuten';
 }
-/* ── de juf mag de timer overrulen ────────────────────────
+/* ── de leerkracht mag de timer overrulen ─────────────────
    Een timer die niet te doorbreken is, is geen hulpmiddel maar een baas.
    Er gaat iets mis in de bouwhoek, er moet iemand naar de logopedist, de
    kring begint eerder: dan moet een kind eruit kunnen voordat het rondje
@@ -617,7 +617,7 @@ function minutenTekst(ms){
    Het zit achter dezelfde code als het menu, zodat een kleuter er niet
    bij kan. Staat er geen code op, dan gaat het meteen door -- dat is de
    keuze van de groep zelf. */
-function juffenIngreep(leerling, hoek, naAfloop){
+function leerkrachtIngreep(leerling, hoek, naAfloop){
   vraagPin(function () {
     toonBlad(function (blad) {
       blad.appendChild(el('div', null, leerling.naam)).style.cssText =
@@ -685,18 +685,34 @@ function toonNogEven(leerling, hoek, restMs){
     knop.addEventListener('click', sluitBlad);
     blad.appendChild(knop);
 
-    /* Klein en onderaan: dit is niet voor het kind dat net te horen
-       kreeg dat het nog even moet wachten, maar voor de juf die ernaast
-       staat. Er zit een code op. */
-    var juf = el('button', null, 'Juf: toch eruit halen');
-    juf.style.cssText = 'display:block;margin:16px auto 0;background:none;border:0;' +
-                        'font-size:.9rem;color:var(--inkt-4);text-decoration:underline;' +
-                        'cursor:pointer';
-    juf.addEventListener('click', function () {
-      sluitBlad();
-      juffenIngreep(leerling, hoek);
-    });
-    blad.appendChild(juf);
+    /* Hier stond een knop "toch eruit halen". Die was te makkelijk te
+       vinden: een kind dat te horen krijgt dat het nog even moet wachten,
+       leest die regel ook -- en probeert hem.
+
+       Nu is het een handeling die je moet weten: twee keer op de foto
+       tikken. Dat doet een kleuter niet per ongeluk, en er zit daarna nog
+       steeds de code op. Waar het staat uitgelegd is in het beheer, bij
+       de timer -- niet hier op het scherm dat het kind leest. */
+    var opFoto = kop.querySelector('.picto-rond');
+    if (opFoto) {
+      opFoto.style.cursor = 'default';
+      opFoto.addEventListener('dblclick', function () {
+        sluitBlad();
+        leerkrachtIngreep(leerling, hoek);
+      });
+      /* Op een aanraakscherm bestaat dubbelklikken niet; daar tellen we
+         zelf twee tikken kort na elkaar. */
+      var vorigeTik = 0;
+      opFoto.addEventListener('pointerup', function (e) {
+        if (e.pointerType === 'mouse') return;      // die heeft dblclick al
+        var nu = Date.now();
+        if (nu - vorigeTik < 400) {
+          vorigeTik = 0;
+          sluitBlad();
+          leerkrachtIngreep(leerling, hoek);
+        } else vorigeTik = nu;
+      });
+    }
   });
 }
 
@@ -836,15 +852,15 @@ function toonHoekDetail(hoek, index){
       else if (rest === 0)             stand.textContent = 'Mag wisselen';
       else                             stand.textContent = minutenTekst(rest);
       vak.appendChild(stand);
-      /* Op een kind tikken opent wat de juf ermee kan: de timer voor hem
+      /* Op een kind tikken opent wat je ermee kunt: de timer voor hem
          afronden, of hem uit de hoek halen. Achter de code, dus een
          kleuter die op zijn eigen plaatje tikt komt er niet in. */
       vak.style.cursor = 'pointer';
-      vak.title = 'Wat de juf met ' + l.naam + ' kan doen';
+      vak.title = 'Wat je met ' + l.naam + ' kunt doen';
       (function (kind) {
         vak.addEventListener('click', function () {
           sluitBlad();
-          juffenIngreep(kind, hoek);
+          leerkrachtIngreep(kind, hoek);
         });
       })(l);
       plekken.appendChild(vak);
@@ -881,7 +897,7 @@ function toonHoekDetail(hoek, index){
 
 /* ── het codeslot ─────────────────────────────────────────
    De instellingen zitten achter een code van vier cijfers, zodat een kind
-   niet per ongeluk het bord leegmaakt. De juf typt hem op het digibord,
+   niet per ongeluk het bord leegmaakt. De leerkracht typt hem op het digibord,
    dus grote toetsen en geen toetsenbord. */
 
 function vraagPin(klaar){
@@ -971,7 +987,7 @@ function toonAanUit(){
    dus we kijken eerst of ze er zijn. */
 (function () {
   var aanuit = $('knop-aanuit');
-  /* De code zit er ook op: het bord aan- of uitzetten is iets van de juf,
+  /* De code zit er ook op: het bord aan- of uitzetten is iets van de leerkracht,
      niet van een kind dat langs de knop loopt. Staat de code uit, dan
      vraagt vraagPin niets en gaat het meteen door. */
   if (aanuit) aanuit.addEventListener('click', function () {

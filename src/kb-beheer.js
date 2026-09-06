@@ -1553,7 +1553,7 @@ panelen.uiterlijk = function (v){
    FUNCTIES
    ══════════════════════════════════════════════════════════ */
 var FUNCTIES_BORD = [
-  ['timerAan',    'Tijdvergrendeling', 'Een kind blijft even in de gekozen hoek. De ring op het picto loopt vol.'],
+  ['timerAan',    'Tijdvergrendeling', 'Een kind blijft even in de gekozen hoek. De ring op het picto loopt vol. Moet een kind er toch eerder uit: tik op het bord twee keer op zijn foto \u2014 daarna vraagt het bord om de code.'],
   ['wachtrijAan', 'Wachtrij bij volle hoek', 'Kinderen melden zich aan en schuiven door zodra er plek is.'],
   ['tellingAan',  'Telling op het picto', 'Laat zien hoe vaak een kind deze week in die hoek was.'],
   ['werkplaatsAan','Werkplaats klaarzetten', 'Zet de kinderen die aan de beurt zijn alvast in de werkplaats.'],
@@ -1934,7 +1934,8 @@ global.BH = {
     /* Alleen vast tekenen op een apparaat dat al eens is ingericht. Een
        vers apparaat heeft nog niets dan de lege standaardgroep die
        KB.laad() aanmaakt, en die vroeg tekenen legt hem vast -- dan houdt
-       een juf na het inloggen "Mijn groep" naast haar echte groep over.
+       een leerkracht na het inloggen "Mijn groep" naast de echte groep
+       over.
        Er valt daar toch niets te tonen; wachten op de server is dan het
        juiste antwoord. */
     if (KB.beheerKlasId() && KB.klas()) { tekenMenu(); teken(); }

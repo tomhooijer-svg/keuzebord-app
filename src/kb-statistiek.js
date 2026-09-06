@@ -6,7 +6,7 @@
    altijd in de bouwhoek zit, dat Noor en Liam elkaar nooit tegenkomen, dat
    er één kind is dat in geen enkele hoek met iemand anders speelt.
 
-   Niets hiervan is een oordeel. Het zijn tellingen, en de juf weet wat ze
+   Niets hiervan is een oordeel. Het zijn tellingen, en de leerkracht weet wat ze
    betekenen.
    ═══════════════════════════════════════════════════════════════════════ */
 

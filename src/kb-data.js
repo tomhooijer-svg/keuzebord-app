@@ -496,7 +496,7 @@ function hoekVan(id, k){
   return (k.hoekLib || []).filter(function (h) { return h.id === id; })[0] || null;
 }
 
-/* De juf haalt de wachttijd van dit kind weg. Soms moet een kind eruit
+/* De leerkracht haalt de wachttijd van dit kind weg. Soms moet een kind eruit
    voordat het rondje vol is -- het gaat mis in de hoek, er moet iemand
    naar de logopedist, of de kring begint. Dan hoort de timer niet in de
    weg te staan.
@@ -783,7 +783,7 @@ function weekLabel(sleutel){
   return d.getDate() + ' ' + m[d.getMonth()] + ' t/m ' + eind.getDate() + ' ' + m[eind.getMonth()];
 }
 /* Het weeknummer zoals de school het gebruikt (ISO): week 1 is de week
-   waar 4 januari in valt. Handig om te noemen -- "week 38" zegt een juf
+   waar 4 januari in valt. Handig om te noemen -- "week 38" zegt een leerkracht
    meer dan "15 september". */
 function weekNummer(sleutel){
   var d = new Date(sleutel + 'T12:00:00');
@@ -1103,7 +1103,7 @@ function volgendeStand(huidig){
 /* ── thema's ───────────────────────────────────────────────
    Thematisch onderzoekend leren, zoals Tessel van der Linde het voor
    kleuters beschrijft, loopt langs vier bewegingen. Wij houden die
-   volgorde aan, want het is precies de volgorde waarin een juf een thema
+   volgorde aan, want het is precies de volgorde waarin je een thema
    voorbereidt:
 
      1. Verwonderen   iets wat de kinderen raakt: een startactiviteit,
