@@ -189,9 +189,30 @@ function tekenBord(){
   hoeken.forEach(function (hoek, i) {
     rooster.appendChild(maakHoekKaart(hoek, i, k, b, indeling));
   });
+  pasNamenAan(rooster);
   tekenStrook(k, b);
   toonAanUit();
   tik();
+}
+
+/* De naam onder een kind in een hoek moet er helemaal staan. Een naam die
+   halverwege ophoudt kun je niet lezen, en juist het lezen is waar hij
+   voor staat -- eind groep 2 lezen ze hun eigen naam en die van hun
+   vriendjes van het bord af.
+
+   Op maat gokken aan de hand van het aantal letters werkte niet: een 'm'
+   is breder dan een 'i'. Dus meten we hem één keer nadat hij staat, en
+   krimpen we alleen wat niet past. */
+function pasNamenAan(rooster){
+  var namen = rooster.querySelectorAll('.plek.bezet .picto-naam');
+  for (var i = 0; i < namen.length; i++) {
+    var n = namen[i];
+    var ruimte = n.clientWidth;
+    if (!ruimte || n.scrollWidth <= ruimte + 1) continue;
+    var nu = parseFloat(getComputedStyle(n).fontSize) || 14;
+    // tekst schaalt recht evenredig mee, dus dit is in één keer raak
+    n.style.fontSize = Math.max(10, Math.floor(nu * ruimte / n.scrollWidth)) + 'px';
+  }
 }
 
 /* Wie er vandaag in de werkplaats hoort. Met werkmomenten aan komt dat in
@@ -282,11 +303,14 @@ function berekenIndeling(rooster, aantal){
 }
 
 /* De plekmaat voor één kaart: n plekken met n-1 tussenruimtes van
-   0,16 keer die maat moeten samen binnen de kaart passen. */
+   0,28 keer die maat moeten samen binnen de kaart passen. Diezelfde 0,28
+   staat als gap bij .hoek-plekken in bord.html; ze horen bij elkaar. Hij
+   was krapper toen er alleen rondjes stonden -- nu staat er een naam
+   onder, en die heeft naast zijn buurman ruimte nodig. */
 function slotVoor(indeling, aantal){
   if (!indeling) return null;
   aantal = Math.max(1, aantal);
-  var passend = Math.floor(indeling.ruimte / (aantal + 0.16 * (aantal - 1)));
+  var passend = Math.floor(indeling.ruimte / (aantal + 0.28 * (aantal - 1)));
   return Math.max(16, Math.min(indeling.algemeneSlot, passend));
 }
 function begrens(waarde, laag, hoog){ return Math.round(Math.max(laag, Math.min(hoog, waarde))); }
@@ -337,7 +361,10 @@ function maakHoekKaart(hoek, index, k, b, indeling){
     var l = KB.leerling(p.leerlingId, k);
     if (!l) return;
     var plek = el('div', 'plek bezet');
-    var picto = maakPicto(l, { plaatsing: p, hoek: hoek, zonderNaam: true });
+    /* Mét zijn naam eronder. Op het bord is dat niet alleen handig voor
+       de leerkracht: eind groep 2 lezen ze hun eigen naam en die van hun
+       vriendjes, en dit is een plek waar dat elke dag vanzelf gebeurt. */
+    var picto = maakPicto(l, { plaatsing: p, hoek: hoek });
     picto.title = l.naam;
     maakSleepbaar(picto, l, hoek.id);
     plek.appendChild(picto);

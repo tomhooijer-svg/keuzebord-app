@@ -155,16 +155,26 @@ function naarRijen(k){
     if (k.doelActief[d]) uit.groep_doelen.push({ _id:'gd~' + d, _doel:d });
   });
 
+  /* Het weekplan heeft geen eigen id, dus verzinnen we er een uit de
+     maandag. Dat ging mis op het apparaat van een schoolbeheerder: die
+     ziet zes groepen, en "wp~2026-08-31" is voor alle zes hetzelfde. De
+     vertaaltabel naar de server-id's is één lijst, dus wees de sleutel van
+     groep 1B naar het weekplan van groep 1A -- en dan werk je de week van
+     je collega bij in plaats van je eigen week aan te maken. Van de
+     vierentwintig weken kwamen er zo vier aan. Dus hoort de groep in de
+     sleutel. */
   Object.keys(k.weken || {}).forEach(function (sleutel) {
     var w = k.weken[sleutel];
-    uit.weekplannen.push({ _id:'wp~' + sleutel, maandag:sleutel, notitie:w.notitie || '',
+    var wpId = 'wp~' + k.id + '~' + sleutel;
+    uit.weekplannen.push({ _id:wpId, maandag:sleutel, notitie:w.notitie || '',
                            _thema:w.themaId || null });
     (w.centraleDoelIds || []).forEach(function (d) {
-      uit.week_doelen.push({ _id:'wd~' + sleutel + '~' + d, _weekplan:'wp~' + sleutel, _doel:d });
+      uit.week_doelen.push({ _id:'wd~' + k.id + '~' + sleutel + '~' + d,
+                             _weekplan:wpId, _doel:d });
     });
     (w.taken || []).forEach(function (wt, i) {
-      var wtId = 'wt~' + sleutel + '~' + wt.taakId;
-      uit.weekplan_taken.push({ _id:wtId, _weekplan:'wp~' + sleutel, _taak:wt.taakId, volgorde:i });
+      var wtId = 'wt~' + k.id + '~' + sleutel + '~' + wt.taakId;
+      uit.weekplan_taken.push({ _id:wtId, _weekplan:wpId, _taak:wt.taakId, volgorde:i });
       DAGEN.forEach(function (dag, nr) {
         (wt.verdeling && wt.verdeling[dag] || []).forEach(function (lid) {
           uit.taak_toewijzing.push({
@@ -329,13 +339,13 @@ function naarKlas(rijen, bestaande){
   k.weken = {};
   (rijen.weekplannen || []).forEach(function (r) {
     var sleutel = String(r.maandag).slice(0, 10);
-    onthoud('wp~' + sleutel, r.id);
+    onthoud('wp~' + k.id + '~' + sleutel, r.id);
     var taken = (rijen.weekplan_taken || []).filter(function (x) { return x.weekplan_id === r.id; })
       .sort(function (a, b) { return a.volgorde - b.volgorde; })
       .map(function (wt) {
         var verdeling = {}; DAGEN.forEach(function (d) { verdeling[d] = []; });
         var afgerond = {}, geweest = {}, notities = {};
-        var wtId = 'wt~' + sleutel + '~' + lok(wt.taak_id);
+        var wtId = 'wt~' + k.id + '~' + sleutel + '~' + lok(wt.taak_id);
         onthoud(wtId, wt.id);
         (rijen.taak_toewijzing || []).filter(function (t) { return t.weekplan_taak_id === wt.id; })
           .forEach(function (t) {

@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-22fe4893">
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-c3ff9aa6">
 <style>
 /* ── het bord ─────────────────────────────────────────── */
 /* Een zachte, warme ondergrond met een vleugje kleur in de hoeken —
@@ -215,8 +215,13 @@ body.bord{
 
 /* zoveel plekken als de hoek heeft, altijd zichtbaar */
 .hoek-plekken{
-  display: flex; flex-wrap: nowrap; align-items: center;
-  gap: calc(var(--slot, 40px) * .16);
+  display: flex; flex-wrap: nowrap; align-items: flex-start;
+  /* Deze tussenruimte staat ook in slotVoor() in kb-bord.js -- die rekent
+     uit hoeveel plekken er naast elkaar passen. Verander je hem hier, dan
+     ook daar, anders lopen de plekken van een volle hoek van de kaart af.
+     Hij is ruimer dan je voor rondjes alleen nodig hebt: er staat een
+     naam onder, en die moet naast de buurman passen. */
+  gap: calc(var(--slot, 40px) * .28);
 }
 .plek{
   width: var(--slot, 40px); height: var(--slot, 40px); border-radius: 50%;
@@ -252,11 +257,31 @@ body.bord{
   border-color: rgba(255,255,255,.5); background: rgba(12,17,28,.3);
   color: rgba(255,255,255,.85);
 }
+/* Wie in een hoek zit staat er met zijn naam onder. Die naam stond er
+   eerst niet: de plek was precies zo groot als het rondje. Nu houdt de
+   rij er ruimte voor vrij -- ook als er nog niemand zit, zodat de kaart
+   niet gaat springen zodra er een kind bij komt -- en is het rondje een
+   tikje kleiner. Het is er om gelezen te worden, dus staat de naam er
+   stevig in en niet in muizenletters. */
+.hoek-plekken{ padding-bottom: calc(var(--slot, 40px) * .42); }
+.plek{ position: relative; }
+.plek.bezet .picto{ position: static; }
 .plek.bezet .picto-rond{
-  width: var(--slot, 40px); height: var(--slot, 40px);
-  font-size: calc(var(--slot, 40px) * .42);
+  width: calc(var(--slot, 40px) * .82); height: calc(var(--slot, 40px) * .82);
+  font-size: calc(var(--slot, 40px) * .36);
 }
-.plek.bezet .picto-naam{ display: none; }
+.plek.bezet .picto-naam{
+  display: block; position: absolute; left: 50%; transform: translateX(-50%);
+  top: calc(var(--slot, 40px) * .88);
+  width: calc(var(--slot, 40px) * 1.26);
+  font-size: max(12px, calc(var(--slot, 40px) * .32));
+  line-height: 1.05; font-weight: 600; letter-spacing: -.01em;
+  color: var(--hoektekst, var(--inkt-2));
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hoek.fotohoek .plek.bezet .picto-naam{
+  color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5);
+}
 
 /* als er nog helemaal niets klaarstaat */
 .nogniets{
@@ -459,12 +484,12 @@ body.bord{
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
-<script src="src/kb-app.js?v=6september2026-22fe4893"></script>
-<script src="src/kb-data.js?v=6september2026-22fe4893"></script>
-<script src="src/kb-supabase.js?v=6september2026-22fe4893"></script>
-<script src="src/kb-media.js?v=6september2026-22fe4893"></script>
-<script src="src/kb-sync.js?v=6september2026-22fe4893"></script>
-<script src="src/kb-verbinding.js?v=6september2026-22fe4893"></script>
-<script src="src/kb-bord.js?v=6september2026-22fe4893"></script>
+<script src="src/kb-app.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-data.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-supabase.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-media.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-sync.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-verbinding.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-bord.js?v=6september2026-c3ff9aa6"></script>
 </body>
 </html>
