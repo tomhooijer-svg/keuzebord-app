@@ -131,7 +131,15 @@ function pictoBol(l, maat){
   maat = maat || 54;
   rond.style.width = rond.style.height = maat + 'px';
   rond.style.fontSize = Math.round(maat * 0.42) + 'px';
-  rond.style.background = (l && l.kleur) || '#3b6ff0';
+  /* Een tekening moet je helemaal zien -- een paddenstoel waar de hoed van
+     af is gesneden is niet meer jouw paddenstoel. Die krijgt dus wit onder
+     zich en past zich in het rondje in plaats van het te vullen. Bij een
+     foto is vullen juist goed: een gezicht hoort het rondje te vullen. */
+  var tekening = l && l.image && KB.isTekening(l);
+  if (tekening) rond.classList.add('tekening');
+  // backgroundColor, niet background: de verkorte vorm wist background-size
+  rond.style.backgroundColor = tekening ? '#fff' : ((l && l.kleur) || '#3b6ff0');
+  if (tekening) rond.style.setProperty('--kindkleur', (l && l.kleur) || '#3b6ff0');
   if (l && l.image) rond.style.backgroundImage = 'url(' + l.image + ')';
   else rond.textContent = ((l && l.naam) || '?').charAt(0).toUpperCase();
   return rond;
@@ -707,6 +715,17 @@ panelen.groep = function (v){
   instellen.appendChild(niveauVeld);
   v.appendChild(instellen);
 
+  /* ── toegang tot een andere groep vragen ──
+     Zelf een groep aan jezelf hangen kan niet, en dat is met opzet: dan
+     zou de grens tussen groepen niets meer voorstellen en kon iedereen die
+     kan inloggen bij de kinderen, de foto's en de observaties van elke
+     groep -- ook in de observatie-app, want die kijkt naar dezelfde regel.
+     Vragen kan wel, en je schoolbeheerder beslist. */
+  if (window.KBV && KBV.wie && KBV.wie() && KBV.wie().profiel &&
+      KBV.wie().profiel.school_id) {
+    v.appendChild(toegangPaneel());
+  }
+
   var beheer = paneel('Schoolbeheer');
   beheer.appendChild(el('p', 'hint',
     'Deze omgeving hoort bij \u00e9\u00e9n groep. Groepen aanmaken, wisselen of over de hele ' +
@@ -724,6 +743,83 @@ panelen.groep = function (v){
   merk.style.cssText = 'margin:22px 2px 0;font-size:.82rem;color:var(--inkt-4)';
   v.appendChild(merk);
 };
+
+/* De groepen van deze school, met erbij of je er al bij mag en of je er al
+   naar hebt gevraagd. De namen mag je zien; de inhoud niet -- daar gaat het
+   verzoek nu juist over. */
+function toegangPaneel(){
+  var p = paneel('Bij een andere groep');
+  p.appendChild(el('p', 'hint',
+    'Je ziet alleen de groepen waar je aan gekoppeld bent. Hoor je ergens anders ' +
+    'ook bij, vraag het dan aan \u2014 je schoolbeheerder keurt het goed.'));
+  var lijst = el('div', 'kindrij');
+  lijst.appendChild(el('p', 'hint', 'Bezig met ophalen\u2026'));
+  p.appendChild(lijst);
+
+  SB.roep('groepen_van_mijn_school', {}).then(function (groepen) {
+    leeg(lijst);
+    var anderen = (groepen || []).filter(function (g) { return !g.ben_ik_lid; });
+    if (!anderen.length) {
+      lijst.appendChild(el('p', 'hint', 'Je mag al bij alle groepen van deze school.'));
+      return;
+    }
+    anderen.forEach(function (g) {
+      var rij = el('div', 'rij');
+      var tekst = el('div');
+      tekst.style.flexGrow = '1';
+      tekst.appendChild(el('div', 'rij-naam', g.naam));
+      tekst.appendChild(el('div', 'rij-sub', g.gevraagd
+        ? 'je verzoek staat open'
+        : 'je mag hier nu niet bij'));
+      rij.appendChild(tekst);
+      var acties = el('div', 'rij-acties');
+      if (!g.gevraagd) {
+        acties.appendChild(knop('Toegang vragen', 'stil', function () {
+          vraagToegang(g);
+        }));
+      }
+      rij.appendChild(acties);
+      lijst.appendChild(rij);
+    });
+  }, function () {
+    leeg(lijst);
+    lijst.appendChild(el('p', 'hint', 'De groepen van de school zijn nu niet op te halen.'));
+  });
+  return p;
+}
+
+function vraagToegang(groep){
+  toonBlad(function (blad) {
+    blad.appendChild(bladTitel('Toegang vragen', groep.naam));
+    blad.appendChild(el('p', 'hint',
+      'Je schoolbeheerder ziet dit verzoek en beslist erover. Schrijf er even bij ' +
+      'waarom \u2014 dat scheelt heen en weer vragen.'));
+    var veld = el('div', 'veld');
+    veld.appendChild(el('label', null, 'Waarom (mag kort)'));
+    var invoer = el('input');
+    invoer.type = 'text';
+    invoer.placeholder = 'bijvoorbeeld: ik sta er dit jaar op donderdag';
+    veld.appendChild(invoer);
+    blad.appendChild(veld);
+
+    var rij = el('div', 'knoprij');
+    rij.appendChild(knop('Verzoek versturen', 'primair', function () {
+      SB.schrijf('groep_verzoeken', [{ groep_id: groep.id,
+                                       profiel_id: KBV.wie().profiel.id,
+                                       reden: (invoer.value || '').trim() }])
+        .then(function () {
+          sluitBlad(); teken();
+          meld('Je verzoek staat bij je schoolbeheerder');
+        }, function (e) {
+          meld(/duplicate|unique/i.test(e && e.message || '')
+            ? 'Je hebt hier al een verzoek voor openstaan'
+            : 'Dat lukte niet: ' + (e && e.message));
+        });
+    }));
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    blad.appendChild(rij);
+  });
+}
 
 /* ══════════════════════════════════════════════════════════
    LEERLINGEN
@@ -785,7 +881,7 @@ function leesWordBestand(file){
       return;
     }
     return Promise.all(uit.paren.map(function (p) {
-      return KB.verklein(p.blob, KB.FOTO_MAAT.leerling)
+      return KB.verkleinTekening(p.blob, KB.TEKENING_MAAT)
         .then(function (data) { return { naam: p.naam, data: data }; })
         .catch(function () { return null; });
     })).then(function (lijst) {
@@ -883,6 +979,7 @@ function toonWordBevestiging(lijst){
         vak.appendChild(vink);
         var bol = el('div', 'picto-rond');
         bol.style.cssText = 'width:64px;height:64px;background-image:url(' + item.data + ')';
+        bol.classList.add('tekening');
         vak.appendChild(bol);
         var invoer = el('input');
         invoer.type = 'text'; invoer.value = item.naam || '';
@@ -926,14 +1023,16 @@ function toonWordBevestiging(lijst){
         var bestaand = groep.leerlingen.filter(function (l) {
           return l.naam.trim().toLowerCase() === naam.toLowerCase();
         })[0];
-        if (bestaand) { bestaand.image = item.data; bestaand._c = false; gekoppeld++; }
-        else {
+        var picto = KB.voegPictoToe(naam, item.data, groep);
+        if (bestaand) {
+          bestaand.image = item.data; bestaand.pictoId = picto.id;
+          bestaand._c = false; gekoppeld++;
+        } else {
           groep.leerlingen.push({ id:'ll' + KB.uid(), naam:naam,
             kleur: KB.KIND_KLEUREN[groep.leerlingen.length % KB.KIND_KLEUREN.length],
-            image:item.data, lid:true });
+            image:item.data, pictoId:picto.id, lid:true });
           nieuwAantal++;
         }
-        KB.voegPictoToe(naam, item.data, groep);
       });
 
       if (doelGroep === 'nieuw') {
@@ -953,7 +1052,7 @@ function toonWordBevestiging(lijst){
 function bewerkLeerling(l){
   var k = KB.klas(), nieuw = !l;
   var concept = { naam: l ? l.naam : '', kleur: l ? l.kleur : KB.KIND_KLEUREN[0],
-                  image: l ? l.image : null };
+                  image: l ? l.image : null, pictoId: l ? (l.pictoId || null) : null };
 
   toonBlad(function (blad) {
     blad.appendChild(bladTitel(nieuw ? 'Kind toevoegen' : l.naam));
@@ -965,6 +1064,7 @@ function bewerkLeerling(l){
     boven.appendChild(bestandKnop('Foto kiezen', 'image/*', false, function (f) {
       KB.verklein(f, KB.FOTO_MAAT.leerling).then(function (d) {
         concept.image = d;
+        concept.pictoId = null;          // dit is een foto, geen tekening
         bol.style.backgroundImage = 'url(' + d + ')'; bol.textContent = '';
         meld('Foto klaar · ' + Math.round(d.length * 0.75 / 1024) + ' KB');
       }).catch(function () { meld('Die foto lukte niet'); });
@@ -972,7 +1072,7 @@ function bewerkLeerling(l){
     boven.appendChild(knop("Uit picto's kiezen", 'stil', function () {
       // Het formulier wordt opnieuw getekend zodra de kiezer sluit, dus
       // hoeven we hier alleen het concept bij te werken.
-      kiesPicto(function (p) { concept.image = p.data; });
+      kiesPicto(function (p) { concept.image = p.data; concept.pictoId = p.id; });
     }));
     blad.appendChild(boven);
 
@@ -1012,10 +1112,11 @@ function bewerkLeerling(l){
       if (!naam) { meld('Vul een naam in'); return; }
       if (nieuw) {
         k.leerlingen.push({ id:'ll' + KB.uid(), naam:naam, kleur:concept.kleur,
-                            image:concept.image, lid:true });
+                            image:concept.image, pictoId:concept.pictoId || null, lid:true });
       } else {
         l.naam = naam; l.kleur = concept.kleur;
         if (concept.image !== l.image) { l.image = concept.image; l._c = false; }
+        l.pictoId = concept.pictoId || null;
       }
       bewaarOfKlaag(); sluitBlad(); teken(); meld('Opgeslagen');
     }));
@@ -1055,7 +1156,7 @@ panelen.pictos = function (v){
     rooster.style.marginTop = '14px';
     lijst.forEach(function (picto) {
       var kaart = el('button', 'leerlingkaart');
-      var bol = el('div', 'picto-rond');
+      var bol = el('div', 'picto-rond tekening');
       bol.style.cssText = 'width:54px;height:54px;background-image:url(' + picto.data + ')';
       kaart.appendChild(bol);
       kaart.appendChild(el('div', 'picto-naam', picto.naam));
@@ -1071,7 +1172,7 @@ function voegPictosToe(bestanden){
   var k = KB.klas(), klaar = 0, gelukt = 0;
   meld('Bezig met ' + bestanden.length + ' afbeeldingen…');
   bestanden.forEach(function (f) {
-    KB.verklein(f, KB.FOTO_MAAT.leerling).then(function (data) {
+    KB.verkleinTekening(f, KB.TEKENING_MAAT).then(function (data) {
       KB.voegPictoToe(f.name.replace(/\.[^.]+$/, '').slice(0, 30), data, k);
       gelukt++;
     }).catch(function () {}).then(function () {
@@ -1087,7 +1188,7 @@ function bewerkPicto(picto){
   var k = KB.klas();
   toonBlad(function (blad) {
     blad.appendChild(bladTitel(picto.naam));
-    var bol = el('div', 'picto-rond');
+    var bol = el('div', 'picto-rond tekening');
     bol.style.cssText = 'width:96px;height:96px;margin-bottom:16px;background-image:url(' + picto.data + ')';
     blad.appendChild(bol);
 
@@ -1136,7 +1237,7 @@ function kiesPicto(bijKeuze){
       var rooster = el('div', 'leerlingrooster');
       lijst.forEach(function (p) {
         var kaart = el('button', 'leerlingkaart');
-        var bol = el('div', 'picto-rond');
+        var bol = el('div', 'picto-rond tekening');
         bol.style.cssText = 'width:54px;height:54px;background-image:url(' + p.data + ')';
         kaart.appendChild(bol);
         kaart.appendChild(el('div', 'picto-naam', p.naam));
@@ -1211,8 +1312,84 @@ panelen.hoeken = function (v){
   }
   v.appendChild(p);
 
+  if ((b.hoekLibIds || []).length > 1) v.appendChild(volgordePaneel(k, b));
   if ((k.hoekLib || []).length) v.appendChild(balansPaneel(k, b));
 };
+
+/* ── waar staat welke hoek ────────────────────────────────
+   Het bord vult van linksboven naar rechts en dan de volgende rij, in de
+   volgorde van deze lijst. Dus is "de werkplaats linksbovenin" hetzelfde
+   als "de werkplaats vooraan". Met een kaartje erbij, want die zin moet je
+   twee keer lezen en een plaatje niet. */
+function volgordePaneel(k, b){
+  var opBord = (b.hoekLibIds || []).map(function (id) { return KB.hoekVan(id, k); })
+                 .filter(Boolean);
+  var p = paneel('Waar staat welke hoek');
+  p.appendChild(el('p', 'hint',
+    'Het bord vult van linksboven naar rechts, en dan de volgende rij. ' +
+    'Verschuif een hoek naar voren om hem meer naar linksboven te zetten. ' +
+    'Hoeveel kolommen het bord neemt hangt af van het scherm; hieronder ' +
+    'staat hoe het op een breed digibord uitpakt.'));
+
+  /* het kaartje: dezelfde som als het bord zelf maakt */
+  var kolommen = KB.bordKolommen(1600, 760, opBord.length, 18);
+  var kaartje = el('div', 'bordkaartje');
+  kaartje.style.gridTemplateColumns = 'repeat(' + kolommen + ', 1fr)';
+  opBord.forEach(function (h, i) {
+    var vak = el('div', 'bordkaartje-vak' + (h.werkplaats ? ' werkplaats' : ''));
+    vak.style.borderColor = KB.hoekKleur(h, k.hoekLib.indexOf(h));
+    vak.appendChild(el('span', 'bordkaartje-nr', String(i + 1)));
+    vak.appendChild(el('span', 'bordkaartje-naam', h.naam));
+    kaartje.appendChild(vak);
+  });
+  p.appendChild(kaartje);
+
+  var verschuif = function (van, naar) {
+    var lijst = b.hoekLibIds.slice();
+    var eruit = lijst.splice(van, 1)[0];
+    lijst.splice(naar, 0, eruit);
+    b.hoekLibIds = lijst;
+    bewaarOfKlaag(); teken();
+  };
+
+  opBord.forEach(function (h, i) {
+    var rij = el('div', 'rij');
+    var nr = el('span', 'volgnummer', String(i + 1));
+    rij.appendChild(nr);
+    var naam = el('div');
+    naam.style.flexGrow = '1';
+    var titel = el('div', 'rij-naam', h.naam);
+    if (h.werkplaats) titel.appendChild(el('span', 'merkje', 'werkplaats'));
+    naam.appendChild(titel);
+    naam.appendChild(el('div', 'rij-sub', plaatsZin(i, kolommen, opBord.length)));
+    rij.appendChild(naam);
+
+    var acties = el('div', 'rij-acties');
+    var terug = knop('\u2190 Naar voren', 'stil', function () { verschuif(i, i - 1); });
+    terug.disabled = i === 0;
+    acties.appendChild(terug);
+    var door = knop('Naar achteren \u2192', 'stil', function () { verschuif(i, i + 1); });
+    door.disabled = i === opBord.length - 1;
+    acties.appendChild(door);
+    if (i > 0) acties.appendChild(knop('Vooraan', 'stil', function () { verschuif(i, 0); }));
+    rij.appendChild(acties);
+    p.appendChild(rij);
+  });
+  return p;
+}
+
+/* "tweede rij, eerste van links" -- in gewone woorden waar hij komt. */
+function plaatsZin(i, kolommen, totaal){
+  var rij = Math.floor(i / kolommen) + 1;
+  var kolom = (i % kolommen) + 1;
+  var rijen = Math.ceil(totaal / kolommen);
+  var rijWoord = rijen === 1 ? '' :
+    (rij === 1 ? 'bovenste rij' : rij === rijen ? 'onderste rij' : rij + 'e rij') + ', ';
+  var kolomWoord = kolom === 1 ? 'links'
+                 : kolom === kolommen ? 'rechts'
+                 : kolom + 'e van links';
+  return rijWoord + kolomWoord;
+}
 
 /* Waar zit een gat? Per domein hoeveel hoeken op het bord er iets mee
    doen. Niet als oordeel -- niet alles hoort in een hoek -- maar zodat

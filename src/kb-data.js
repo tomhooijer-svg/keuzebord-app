@@ -701,6 +701,30 @@ function fkPasToe(kluis){
   return n;
 }
 
+/* ── de indeling van het bord ─────────────────────────────
+   Hoeveel kolommen krijgt een bord met zoveel hoeken? Het bord rekent dat
+   zelf uit op de maat van het scherm; het beheer wil hetzelfde antwoord om
+   te laten zien waar een hoek terechtkomt. Dus staat de som hier, op één
+   plek, in plaats van twee keer half. */
+function bordKolommen(breedte, hoogte, aantal, tussen){
+  tussen = tussen == null ? 18 : tussen;
+  if (!aantal) return 1;
+  var beste = 1, besteScore = -Infinity;
+  for (var kol = 1; kol <= aantal; kol++) {
+    var rijen = Math.ceil(aantal / kol);
+    var kb = (breedte - tussen * (kol - 1)) / kol;
+    var kh = (hoogte - tussen * (rijen - 1)) / rijen;
+    if (kb < 130 || kh < 110) continue;
+    var verhouding = kb / kh;
+    // een kaart die te smal of te breed wordt telt minder mee
+    var straf = verhouding < 0.95 ? Math.pow(verhouding / 0.95, 2)
+              : verhouding > 2.1  ? Math.pow(2.1 / verhouding, 2) : 1;
+    var score = Math.sqrt(kb * kh) * straf;
+    if (score > besteScore) { besteScore = score; beste = kol; }
+  }
+  return beste;
+}
+
 /* ── afbeeldingen verkleinen ─────────────────────────────── */
 /* Hoe groot een foto hoogstens wordt bewaard, in pixels op de langste
    zijde. De verhouding blijft altijd staan. Een foto van 4200x3200 uit een
@@ -708,6 +732,48 @@ function fkPasToe(kluis){
    een digibord nog altijd scherp. */
 var FOTO_MAAT = { leerling:256, hoek:800, archief:640 };
 var FOTO_KWALITEIT = { leerling:0.82, hoek:0.7 };
+/* Een picto is geen foto. Het is een lijntekening: zwarte lijnen op wit,
+   met een handvol vlakke kleuren. Zulke platen gaan stuk van jpeg en webp
+   -- je krijgt grijze wolkjes rond elke lijn -- en juist die lijnen zijn
+   waar een kleuter zijn plaatje aan herkent. Dus bewaren we ze zonder
+   verlies, en wat groter, want zonder verlies is een tekening alsnog
+   kleiner dan een foto. */
+var TEKENING_MAAT = 384;
+
+/* Een tekening klaarmaken om te bewaren. Twee verschillen met verklein():
+   hij komt er als png uit (geen verlies), en past de plaat al -- wat vaak
+   zo is, want picto's uit een woordbestand zijn meestal al klein -- dan
+   raken we hem niet aan. Opnieuw opslaan kan alleen maar kwaad. */
+function verkleinTekening(file, maxPx){
+  maxPx = maxPx || TEKENING_MAAT;
+  return new Promise(function (res, rej) {
+    if (!file) { rej(new Error('geen bestand')); return; }
+    var r = new FileReader();
+    r.onload = function (e) {
+      var bron = e.target.result;
+      var im = new Image();
+      im.onload = function () {
+        try {
+          var langste = Math.max(im.naturalWidth, im.naturalHeight);
+          // past hij al, dan blijven de oorspronkelijke tekens staan
+          if (langste <= maxPx && bron.length < 90000) { res(bron); return; }
+          var schaal = maxPx / langste;
+          var w = Math.max(1, Math.round(im.naturalWidth * schaal));
+          var h = Math.max(1, Math.round(im.naturalHeight * schaal));
+          var c = document.createElement('canvas'); c.width = w; c.height = h;
+          var ctx = c.getContext('2d');
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(im, 0, 0, w, h);
+          res(c.toDataURL('image/png'));
+        } catch (fout) { rej(fout); }
+      };
+      im.onerror = function () { rej(new Error('kon de afbeelding niet lezen')); };
+      im.src = bron;
+    };
+    r.onerror = function () { rej(new Error('kon het bestand niet lezen')); };
+    r.readAsDataURL(file);
+  });
+}
 
 function verklein(file, maxPx, kwaliteit){
   kwaliteit = kwaliteit || 0.82;
@@ -1455,6 +1521,24 @@ function voegPictoToe(naam, data, k){
 function pictoVan(id, k){
   return pictos(k).filter(function (p) { return p.id === id; })[0] || null;
 }
+/* Is het plaatje van dit kind een tekening uit de picto-bibliotheek, of
+   een echte foto? Dat bepaalt hoe hij in het rondje hoort te staan: een
+   tekening helemaal in beeld, een foto vullend bijgesneden.
+
+   Nieuwe koppelingen onthouden het met pictoId. Voor wat er al stond
+   vergelijken we met de bibliotheek -- op lengte en de eerste tekens, want
+   twee verschillende platen zijn nooit even lang én beginnen hetzelfde. */
+function isTekening(l, k){
+  if (!l || !l.image) return false;
+  if (l.pictoId) return true;
+  var lijst = pictos(k);
+  for (var i = 0; i < lijst.length; i++) {
+    var d = lijst[i].data;
+    if (d && d.length === l.image.length && d.slice(0, 48) === l.image.slice(0, 48)) return true;
+  }
+  return false;
+}
+
 function koppelPicto(leerlingId, pictoId, k){
   k = k || klas();
   var l = leerling(leerlingId, k), p = pictoVan(pictoId, k);
@@ -1828,7 +1912,7 @@ global.KB = {
   doelenNeemOver: doelenNeemOver,
   doelenBewaar: doelenBewaar, klasNiveaus: klasNiveaus, doelenVanKlas: doelenVanKlas,
   fkLees: fkLees, fkBewaar: fkBewaar, fkWis: fkWis, fkPasToe: fkPasToe,
-  verklein: verklein,
+  verklein: verklein, bordKolommen: bordKolommen,
   beheerKlasId: beheerKlasId, zetBeheerKlas: zetBeheerKlas,
   laatsteBackup: laatsteBackup, dagenSindsBackup: dagenSindsBackup,
   maakBackup: maakBackup, zetBackupTerug: zetBackupTerug,
@@ -1868,7 +1952,8 @@ global.KB = {
   domeinVanLeerlijn: domeinVanLeerlijn, leerlijnenPerDomein: leerlijnenPerDomein,
   hoekLeerlijnen: hoekLeerlijnen, hoekDomeinen: hoekDomeinen,
   stelLeerlijnenVoor: stelLeerlijnenVoor, dekkingVanHoeken: dekkingVanHoeken,
-  pictos: pictos, voegPictoToe: voegPictoToe, pictoVan: pictoVan, koppelPicto: koppelPicto
+  pictos: pictos, voegPictoToe: voegPictoToe, pictoVan: pictoVan, koppelPicto: koppelPicto,
+  isTekening: isTekening, verkleinTekening: verkleinTekening, TEKENING_MAAT: TEKENING_MAAT
 };
 
 })(window);

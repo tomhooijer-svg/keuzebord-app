@@ -68,7 +68,18 @@ function maakPicto(leerling, opties){
   wrap.title = leerling.naam || '';
 
   var rond = el('div', 'picto-rond');
-  rond.style.background = leerling.kleur || '#3b6ff0';
+  /* Zie pictoBol in kb-beheer.js: een tekening past zich in het rondje, een
+     foto vult het. Met vullen sneed het bord de plaatjes aan alle kanten
+     af -- van een lieveheersbeestje bleef een rode vlek over. */
+  var tekening = leerling.image && KB.isTekening(leerling);
+  if (tekening) rond.classList.add('tekening');
+  /* Let op: backgroundColor, niet background. De verkorte vorm zet álle
+     achtergrond-eigenschappen terug op hun beginwaarde -- ook
+     background-size. Die stond in de stijl op 'cover', maar werd hier dus
+     inline weer op 'auto' gezet, en dan tekent de browser het plaatje op
+     ware grootte. Een picto van 260 bij 180 in een rondje van 62: je zag
+     een uitvergrote hoek. Dát was wat er misging op het bord. */
+  rond.style.backgroundColor = tekening ? '#fff' : (leerling.kleur || '#3b6ff0');
   if (leerling.image) {
     rond.style.backgroundImage = 'url(' + leerling.image + ')';
   } else {
@@ -210,8 +221,14 @@ function pasNamenAan(rooster){
     var ruimte = n.clientWidth;
     if (!ruimte || n.scrollWidth <= ruimte + 1) continue;
     var nu = parseFloat(getComputedStyle(n).fontSize) || 14;
-    // tekst schaalt recht evenredig mee, dus dit is in één keer raak
-    n.style.fontSize = Math.max(10, Math.floor(nu * ruimte / n.scrollWidth)) + 'px';
+    /* Tekst schaalt recht evenredig mee, dus één rekensom volstaat. Wel
+       twee tekens speling: het meten gaat in hele pixels, en precies passen
+       betekent in de praktijk net niet passen -- dan staat er alsnog een
+       puntje achter de naam. */
+    var maat = Math.floor(nu * Math.max(0, ruimte - 2) / n.scrollWidth);
+    n.style.fontSize = Math.max(9, maat) + 'px';
+    // en anders nog één keer, want onder de negen krimpen we niet meer
+    if (n.scrollWidth > n.clientWidth + 1) n.style.letterSpacing = '-.03em';
   }
 }
 
@@ -261,19 +278,8 @@ function berekenIndeling(rooster, aantal){
   if (breedte < 40 || hoogte < 40) return null;
   var tussen = 18;
 
-  var besteKolommen = 1, besteScore = -Infinity;
-  for (var kol = 1; kol <= aantal; kol++) {
-    var rijen = Math.ceil(aantal / kol);
-    var kb = (breedte - tussen * (kol - 1)) / kol;
-    var kh = (hoogte - tussen * (rijen - 1)) / rijen;
-    if (kb < 130 || kh < 110) continue;
-    var verhouding = kb / kh;
-    // een kaart die te smal of te breed wordt telt minder mee
-    var straf = verhouding < 0.95 ? Math.pow(verhouding / 0.95, 2)
-              : verhouding > 2.1  ? Math.pow(2.1 / verhouding, 2) : 1;
-    var score = Math.sqrt(kb * kh) * straf;
-    if (score > besteScore) { besteScore = score; besteKolommen = kol; }
-  }
+  // dezelfde som gebruikt het beheer om te laten zien waar een hoek komt
+  var besteKolommen = KB.bordKolommen(breedte, hoogte, aantal, tussen);
   var rijenNu = Math.ceil(aantal / besteKolommen);
   rooster.style.setProperty('--kolommen', besteKolommen);
   rooster.style.setProperty('--rijen', rijenNu);
@@ -284,7 +290,12 @@ function berekenIndeling(rooster, aantal){
   // alles op de kaart schaalt mee met de kaartgrootte
   var maat = Math.min(kaartH, kaartB * 0.72);
   rooster.style.setProperty('--tussen', tussen + 'px');
-  rooster.style.setProperty('--slot', begrens(maat * 0.20, 24, 52) + 'px');
+  /* De plek waar een kind in staat. Hij was klein gehouden toen er alleen
+     rondjes stonden; nu staat er een tekening in én een naam onder, en dan
+     is groter gewoon beter leesbaar -- zeker op een digibord waar je er
+     vanaf twee meter naar kijkt. De breedte blijft bewaakt door slotVoor:
+     een hoek met acht plekken krimpt zelf naar wat er past. */
+  rooster.style.setProperty('--slot', begrens(maat * 0.24, 24, 80) + 'px');
   rooster.style.setProperty('--naamgrootte', begrens(maat * 0.115, 13, 24) + 'px');
   rooster.style.setProperty('--tellinggrootte', begrens(maat * 0.105, 12, 21) + 'px');
   rooster.style.setProperty('--icoongrootte', begrens(maat * 0.30, 26, 66) + 'px');
@@ -298,19 +309,19 @@ function berekenIndeling(rooster, aantal){
   var pad = begrens(maat * 0.055, 8, 18) + 4;
   return {
     ruimte: kaartB - pad * 2,
-    algemeneSlot: begrens(maat * 0.20, 24, 52)
+    algemeneSlot: begrens(maat * 0.24, 24, 80)
   };
 }
 
 /* De plekmaat voor één kaart: n plekken met n-1 tussenruimtes van
-   0,28 keer die maat moeten samen binnen de kaart passen. Diezelfde 0,28
+   0,34 keer die maat moeten samen binnen de kaart passen. Diezelfde 0,34
    staat als gap bij .hoek-plekken in bord.html; ze horen bij elkaar. Hij
    was krapper toen er alleen rondjes stonden -- nu staat er een naam
    onder, en die heeft naast zijn buurman ruimte nodig. */
 function slotVoor(indeling, aantal){
   if (!indeling) return null;
   aantal = Math.max(1, aantal);
-  var passend = Math.floor(indeling.ruimte / (aantal + 0.28 * (aantal - 1)));
+  var passend = Math.floor(indeling.ruimte / (aantal + 0.34 * (aantal - 1)));
   return Math.max(16, Math.min(indeling.algemeneSlot, passend));
 }
 function begrens(waarde, laag, hoog){ return Math.round(Math.max(laag, Math.min(hoog, waarde))); }
@@ -377,7 +388,9 @@ function maakHoekKaart(hoek, index, k, b, indeling){
     if (!l) return;
     var plek = el('div', 'plek gereserveerd');
     var bol = el('div', 'picto-rond');
-    bol.style.background = l.kleur || '#3b6ff0';
+    if (KB.isTekening(l)) bol.classList.add('tekening');
+    bol.style.backgroundColor = KB.isTekening(l) ? '#fff' : (l.kleur || '#3b6ff0');
+    bol.style.setProperty('--kindkleur', l.kleur || '#3b6ff0');
     if (l.image) bol.style.backgroundImage = 'url(' + l.image + ')';
     else bol.textContent = (l.naam || '?').charAt(0).toUpperCase();
     plek.appendChild(bol);

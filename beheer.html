@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord — beheer</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-c3ff9aa6">
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-30ee2b33">
 <style>
 
 
@@ -422,6 +422,23 @@
 .hoekvoorbeeld-plek{ width:14px; height:14px; border-radius:50%; border:2px dashed; opacity:.4; box-sizing:border-box; }
 .schuif{ width:100%; accent-color:var(--accent); margin:4px 0 6px; }
 
+/* het kaartje van het bord: waar komt welke hoek te staan */
+.bordkaartje{ display:grid; gap:8px; margin:14px 0 6px; }
+.bordkaartje-vak{ border:2px solid var(--lijn); border-radius:10px; padding:10px 8px;
+                  min-height:52px; display:flex; flex-direction:column; gap:3px;
+                  align-items:center; justify-content:center; text-align:center;
+                  background:var(--vlak); }
+.bordkaartje-vak.werkplaats{ border-style:dashed; }
+.bordkaartje-nr{ font-size:.7rem; font-weight:700; color:var(--inkt-4);
+                 font-variant-numeric:tabular-nums; }
+.bordkaartje-naam{ font-size:.86rem; font-weight:600; letter-spacing:-.01em;
+                   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+                   max-width:100%; }
+.volgnummer{ width:26px; height:26px; border-radius:50%; flex:none;
+             display:flex; align-items:center; justify-content:center;
+             background:var(--vlak-2); color:var(--inkt-3);
+             font-size:.78rem; font-weight:700; font-variant-numeric:tabular-nums; }
+
 </style>
 </head>
 <body class="beheer">
@@ -453,19 +470,19 @@
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
-<script src="src/kb-app.js?v=6september2026-c3ff9aa6"></script>
-<script src="src/kb-data.js?v=6september2026-c3ff9aa6"></script>
-<script src="src/kb-supabase.js?v=6september2026-c3ff9aa6"></script>
-<script src="src/kb-media.js?v=6september2026-c3ff9aa6"></script>
-<script src="src/kb-sync.js?v=6september2026-c3ff9aa6"></script>
-<script src="src/kb-verbinding.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-app.js?v=6september2026-30ee2b33"></script>
+<script src="src/kb-data.js?v=6september2026-30ee2b33"></script>
+<script src="src/kb-supabase.js?v=6september2026-30ee2b33"></script>
+<script src="src/kb-media.js?v=6september2026-30ee2b33"></script>
+<script src="src/kb-sync.js?v=6september2026-30ee2b33"></script>
+<script src="src/kb-verbinding.js?v=6september2026-30ee2b33"></script>
 <!-- het rekenwerk van de statistieken: Keuzebord toont het, Planbord
      gebruikt het voor het verslag -- allebei dus. -->
-<script src="src/kb-statistiek.js?v=6september2026-c3ff9aa6"></script>
-<script src="src/kb-beheer.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-statistiek.js?v=6september2026-30ee2b33"></script>
+<script src="src/kb-beheer.js?v=6september2026-30ee2b33"></script>
 <!-- schermen: het uitgeefscript laat hier per app staan wat erbij hoort -->
-<script src="src/kb-statistiekpaneel.js?v=6september2026-c3ff9aa6"></script>
-<script src="src/kb-docx.js?v=6september2026-c3ff9aa6"></script>
+<script src="src/kb-statistiekpaneel.js?v=6september2026-30ee2b33"></script>
+<script src="src/kb-docx.js?v=6september2026-30ee2b33"></script>
 <script>KB.laad(); KB.doelenZorg().then(BH.start);</script>
 </body>
 </html>

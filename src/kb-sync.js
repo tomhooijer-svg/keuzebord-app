@@ -725,7 +725,18 @@ function duwNu(klasId, groepId, schoolId){
         d.gewijzigd.forEach(function (r) {
           stappen.push(function () {
             var waarden = serverRij(r, tabel, groepId, schoolId);
-            if (tabel.samengesteld) return Promise.resolve();   // niets om te wijzigen
+            if (tabel.samengesteld) {
+              /* Hier stond "niets om te wijzigen". Dat klopte toen zo'n rij
+                 alleen uit zijn sleutel bestond, maar er staat meer in: de
+                 volgorde van de hoeken op het bord bijvoorbeeld. Verschoof
+                 je een hoek naar voren, dan bleef dat op dit apparaat en
+                 kwam het bij het ophalen weer terug zoals het was.
+
+                 De server mag hem op zijn sleutel terugvinden en de rest
+                 bijwerken -- dezelfde weg als bij het toevoegen. */
+              return SB.schrijf(tabel.naam, [waarden],
+                { opKolommen: tabel.samengesteld.join(','), bijBotsing: true });
+            }
             var id = opServer(r._id);
             if (!id) {
               // Weten we niet welke rij dit is, dan mag de server hem op

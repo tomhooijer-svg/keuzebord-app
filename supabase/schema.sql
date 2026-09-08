@@ -43,9 +43,29 @@ create table if not exists public.uitnodigingen (
   rol         text not null default 'leerkracht'
                 check (rol in ('leerkracht','schoolbeheerder')),
   groep_id    uuid,
+  -- Een korte code die je ook mondeling kunt doorgeven. Zonder eigen
+  -- mailserver komt een uitnodiging per mail vaak niet aan; met deze code
+  -- kan een collega zich alsnog bij de goede school melden, ook als ze
+  -- zich met een ander adres heeft aangemeld dan jij had ingevuld.
+  code        text,
+  -- Een uitnodiging die een half jaar blijft slingeren is een sleutel die
+  -- blijft slingeren. Na deze datum doet de code niets meer.
+  verloopt    timestamptz not null default (now() + interval '21 days'),
+  -- Wanneer de code is gebruikt. Apart van 'verzilverd', want er zijn twee
+  -- deuren: iemand meldt zich aan met het adres waarop je haar uitnodigde
+  -- (dan doet de trekker het werk), of ze typt de code in omdat de mail
+  -- nooit aankwam. Wie als eerste binnen is sluit ze allebei -- anders
+  -- blijft er een sleutel rondslingeren nadat de collega al binnen is.
+  code_gebruikt timestamptz,
   aangemaakt  timestamptz not null default now(),
   verzilverd  timestamptz
 );
+alter table public.uitnodigingen add column if not exists code          text;
+alter table public.uitnodigingen add column if not exists code_gebruikt timestamptz;
+alter table public.uitnodigingen add column if not exists verloopt      timestamptz
+  not null default (now() + interval '21 days');
+create unique index if not exists uitnodiging_per_code
+  on public.uitnodigingen (upper(code)) where code_gebruikt is null and code is not null;
 create unique index if not exists uitnodiging_per_email
   on public.uitnodigingen (school_id, lower(email)) where verzilverd is null;
 
@@ -70,6 +90,26 @@ create table if not exists public.groep_leden (
   aangemaakt  timestamptz not null default now(),
   primary key (groep_id, profiel_id)
 );
+
+/* Een leerkracht kan zichzelf niet bij een groep zetten -- dat mag alleen
+   de schoolbeheerder, en dat is met opzet: anders is de grens tussen
+   groepen decoratief en kan iedereen die kan inloggen bij de kinderen,
+   de foto's en de observaties van elke groep. Maar ze kan het wel vrágen.
+   Dat is deze tabel: de collega zet er een verzoek in, de beheerder keurt
+   het goed of af, en achteraf is te zien wie wat wanneer heeft besloten. */
+create table if not exists public.groep_verzoeken (
+  id          uuid primary key default gen_random_uuid(),
+  groep_id    uuid not null references public.groepen(id) on delete cascade,
+  profiel_id  uuid not null references public.profielen(id) on delete cascade,
+  reden       text not null default '',
+  aangemaakt  timestamptz not null default now(),
+  behandeld   timestamptz,
+  door        uuid references public.profielen(id) on delete set null,
+  toegekend   boolean
+);
+-- één openstaand verzoek per persoon per groep
+create unique index if not exists verzoek_per_groep
+  on public.groep_verzoeken (groep_id, profiel_id) where behandeld is null;
 
 create table if not exists public.leerlingen (
   id          uuid primary key default gen_random_uuid(),
@@ -403,6 +443,17 @@ returns boolean language sql stable security definer set search_path = public as
                   where groep_id = g and profiel_id = auth.uid());
 $$;
 
+-- Hoort deze groep bij mijn school? Let op waarom dit een eigen functie is
+-- en niet zomaar een 'exists' in een regel: de leesregel op groepen laat
+-- een leerkracht alleen haar eigen groepen zien, dus zo'n subvraag vindt
+-- niets voor precies de groepen waar het hier om gaat -- die waar ze nog
+-- niet bij mag. Deze functie kijkt eroverheen, en zegt alleen ja of nee.
+create or replace function public.groep_van_mijn_school(g uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.groepen k
+                  where k.id = g and k.school_id = public.mijn_school());
+$$;
+
 -- Een schoolbeheerder mag bij elke groep van haar eigen school. Een
 -- leerkracht alleen bij de groepen waar ze aan gekoppeld is.
 create or replace function public.mag_bij_groep(g uuid)
@@ -421,7 +472,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'scholen','profielen','uitnodigingen','groepen','groep_leden','leerlingen',
+    'scholen','profielen','uitnodigingen','groepen','groep_leden','groep_verzoeken','leerlingen',
     'media','hoeken','themas','thema_hoeken','thema_doelen','borden','bord_hoeken','groep_doelen',
     'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
     'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen']
@@ -523,6 +574,20 @@ create policy "beheerder koppelt" on public.groep_leden
   for insert with check (public.ben_schoolbeheerder() and public.mag_bij_groep(groep_id));
 create policy "beheerder ontkoppelt" on public.groep_leden
   for delete using (public.ben_schoolbeheerder() and public.mag_bij_groep(groep_id));
+
+/* Vragen mag iedereen van de school, maar alleen voor zichzelf en alleen
+   voor een groep van de eigen school. Toekennen doet de beheerder; dat
+   gebeurt in verzoek_behandelen(), zodat het goedkeuren en het koppelen
+   niet los van elkaar kunnen mislukken. */
+create policy "eigen verzoek zien" on public.groep_verzoeken
+  for select using (
+    profiel_id = auth.uid()
+    or (public.ben_schoolbeheerder() and public.groep_van_mijn_school(groep_id)));
+create policy "voor jezelf toegang vragen" on public.groep_verzoeken
+  for insert with check (
+    profiel_id = auth.uid() and public.groep_van_mijn_school(groep_id));
+create policy "eigen verzoek intrekken" on public.groep_verzoeken
+  for delete using (profiel_id = auth.uid() and behandeld is null);
 
 -- ── alles wat bij één groep hoort ──────────────────────────────────────
 -- Voor deze tabellen is de regel telkens hetzelfde: je mag erbij als je
@@ -636,7 +701,11 @@ begin
   on conflict (id) do nothing;
 
   if u.id is not null then
-    update public.uitnodigingen set verzilverd = now() where id = u.id;
+    -- ook de code opbranden: de collega is binnen, dus die sleutel hoeft
+    -- niet meer te werken
+    update public.uitnodigingen
+       set verzilverd = now(), code_gebruikt = coalesce(code_gebruikt, now())
+     where id = u.id;
     if u.groep_id is not null then
       insert into public.groep_leden (groep_id, profiel_id)
       values (u.groep_id, new.id) on conflict do nothing;
@@ -673,10 +742,124 @@ begin
   return nieuwe;
 end $$;
 
+/* Een uitnodiging verzilveren met de code die de beheerder je gaf.
+
+   Dit is de weg voor wie geen mail heeft gekregen -- of zich heeft
+   aangemeld met een ander adres dan de beheerder had ingevuld. De code
+   hoort bij één school, is eenmalig en verloopt vanzelf.
+
+   Alleen wie nog bij geen school hoort mag hem gebruiken. Anders zou een
+   code een manier zijn om van school te wisselen, en dat hoort een
+   beheerder te doen, niet een code die iemand doorstuurt. */
+create or replace function public.uitnodiging_verzilveren(toegangscode text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare u public.uitnodigingen%rowtype;
+        mijn_id uuid := auth.uid();
+        huidige uuid;
+begin
+  if mijn_id is null then
+    raise exception 'Je moet ingelogd zijn.';
+  end if;
+  if coalesce(trim(toegangscode), '') = '' then
+    raise exception 'Vul de code in die je van je schoolbeheerder kreeg.';
+  end if;
+
+  select school_id into huidige from public.profielen where id = mijn_id;
+  if huidige is not null then
+    raise exception 'Dit account hoort al bij een school.';
+  end if;
+
+  select * into u from public.uitnodigingen
+   where upper(code) = upper(trim(toegangscode))
+     and code_gebruikt is null
+     and verloopt > now()
+   limit 1;
+  if u.id is null then
+    raise exception 'Deze code klopt niet, is al gebruikt of is verlopen.';
+  end if;
+
+  perform set_config('kb.systeem', 'aan', true);
+  update public.profielen
+     set school_id = u.school_id,
+         rol = u.rol
+   where id = mijn_id;
+  perform set_config('kb.systeem', '', true);
+
+  update public.uitnodigingen
+     set verzilverd = coalesce(verzilverd, now()), code_gebruikt = now()
+   where id = u.id;
+  if u.groep_id is not null then
+    insert into public.groep_leden (groep_id, profiel_id)
+    values (u.groep_id, mijn_id) on conflict do nothing;
+  end if;
+
+  return jsonb_build_object('school_id', u.school_id, 'rol', u.rol, 'groep_id', u.groep_id);
+end $$;
+
+/* Een verzoek om bij een groep te mogen goedkeuren of afwijzen. Alleen de
+   schoolbeheerder van diezelfde school, en het koppelen zit hier in
+   dezelfde stap -- een goedgekeurd verzoek zonder koppeling zou een
+   belofte zijn die niemand nakomt. */
+create or replace function public.verzoek_behandelen(verzoek uuid, toekennen boolean)
+returns void language plpgsql security definer set search_path = public as $$
+declare v public.groep_verzoeken%rowtype;
+        school uuid;
+begin
+  select * into v from public.groep_verzoeken where id = verzoek;
+  if v.id is null then
+    raise exception 'Dat verzoek bestaat niet meer.';
+  end if;
+  if v.behandeld is not null then
+    raise exception 'Dat verzoek is al behandeld.';
+  end if;
+
+  select g.school_id into school from public.groepen g where g.id = v.groep_id;
+  if not (public.ben_schoolbeheerder() and school is not distinct from public.mijn_school()) then
+    raise exception 'Alleen de schoolbeheerder van deze school beslist hierover.';
+  end if;
+
+  -- de aanvrager moet nog steeds bij deze school horen
+  if not exists (select 1 from public.profielen p
+                  where p.id = v.profiel_id and p.school_id = school) then
+    raise exception 'Die collega hoort niet (meer) bij deze school.';
+  end if;
+
+  if toekennen then
+    insert into public.groep_leden (groep_id, profiel_id)
+    values (v.groep_id, v.profiel_id) on conflict do nothing;
+  end if;
+
+  update public.groep_verzoeken
+     set behandeld = now(), door = auth.uid(), toegekend = toekennen
+   where id = verzoek;
+end $$;
+
+/* De namen van de groepen op mijn school. Niet de inhoud -- alleen hoe ze
+   heten -- zodat een collega kan aanwijzen tot welke groep ze toegang
+   vraagt. De leesregel op groepen blijft daarmee zoals hij is: wie er niet
+   bij hoort ziet nog steeds geen kind, geen hoek en geen observatie. */
+create or replace function public.groepen_van_mijn_school()
+returns table (id uuid, naam text, volgorde int, ben_ik_lid boolean, gevraagd boolean)
+language sql stable security definer set search_path = public as $$
+  select g.id, g.naam, g.volgorde,
+         exists (select 1 from public.groep_leden l
+                  where l.groep_id = g.id and l.profiel_id = auth.uid()),
+         exists (select 1 from public.groep_verzoeken v
+                  where v.groep_id = g.id and v.profiel_id = auth.uid()
+                    and v.behandeld is null)
+    from public.groepen g
+   where g.school_id = public.mijn_school()
+   order by g.volgorde, g.naam;
+$$;
+
+grant execute on function public.groepen_van_mijn_school() to authenticated;
+grant execute on function public.uitnodiging_verzilveren(text) to authenticated;
+grant execute on function public.verzoek_behandelen(uuid, boolean) to authenticated;
 grant execute on function public.school_beginnen(text) to authenticated;
 grant execute on function public.mijn_school()        to authenticated;
 grant execute on function public.ben_schoolbeheerder() to authenticated;
 grant execute on function public.mag_bij_groep(uuid)  to authenticated;
+grant execute on function public.groep_van_mijn_school(uuid) to authenticated;
 grant execute on function public.zit_in_groep(uuid)   to authenticated;
 
 -- Zonder deze rechten komt de app niet eens bij de tabellen; de regels

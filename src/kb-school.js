@@ -67,6 +67,23 @@ var TESTKINDEREN = ['Bram','Isa','Kees','Yara','Otis','Loua','Sam','Fenne','Joep
 var STANDAARDHOEKEN = [['Bouwhoek',4],['Huishoek',3],['Zandtafel',4],
                        ['Knutselhoek',4],['Leeshoek',3]];
 
+/* Een code die je door de telefoon kunt doorgeven. Geen i, l, o, 0 of 1
+   erin: die haalt iedereen door elkaar. Acht tekens uit tweeëndertig is
+   ruim een biljoen mogelijkheden, dus raden heeft geen zin -- en hij
+   vervalt vanzelf na drie weken. */
+var CODETEKENS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function nieuweCode(){
+  var uit = '';
+  var ruw = new Uint8Array(8);
+  if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(ruw);
+  else for (var j = 0; j < 8; j++) ruw[j] = Math.floor(Math.random() * 256);
+  for (var i = 0; i < 8; i++) uit += CODETEKENS.charAt(ruw[i] % CODETEKENS.length);
+  return uit;
+}
+function codeLeesbaar(code){
+  return code ? String(code).slice(0, 4) + '-' + String(code).slice(4) : '';
+}
+
 function codeVan(klas){
   var m = (klas.naam || '').match(/([12][ABC])/i);
   return m ? m[1].toUpperCase() : null;
@@ -189,6 +206,8 @@ var alleCollegas      = [];
 var perProfiel        = {};
 var ledenVanGroep     = {};
 var openUitnodigingen = [];
+var openVerzoeken     = [];
+var groepenOpServer   = null;   // null = niet gevraagd
 var naamVanGroep      = {};
 
 function metServer(){
@@ -202,15 +221,32 @@ function haalMensen(){
     KBV.collegas(),
     KBV.ledenPerGroep(),
     // alleen wat nog openstaat: een verzilverde uitnodiging is een account
-    SB.lees('uitnodigingen', { kies:'id,email,rol,groep_id',
-                               waar:{ verzilverd:'is.null' }, volgorde:'email' })
-      .catch(function () { return []; })
+    /* Alleen wat nog echt openstaat. Een uitnodiging is binnen als iemand
+       zich met dat adres aanmeldde (verzilverd) óf als de code is gebruikt;
+       oudere uitnodigingen hebben helemaal geen code, dus we kijken naar
+       allebei. */
+    SB.lees('uitnodigingen', { kies:'id,email,rol,groep_id,code',
+                               waar:{ verzilverd:'is.null', code_gebruikt:'is.null' },
+                               volgorde:'email' })
+      .catch(function () { return []; }),
+    // wie er toegang tot een groep heeft gevraagd
+    SB.lees('groep_verzoeken', { kies:'id,groep_id,profiel_id,reden,aangemaakt',
+                                 waar:{ behandeld:'is.null' }, volgorde:'aangemaakt' })
+      .catch(function () { return []; }),
+    /* Wat er écht op de server staat. Het oordeel "deze school is nog niet
+       ingericht" kwam uit wat er toevallig in deze browser stond -- en
+       daaronder zit een knop die alle groepen wist en opnieuw begint. Op
+       een vers apparaat, of als het ophalen net was mislukt, stond die
+       knop er dus terwijl de school gewoon vol was. */
+    SB.lees('groepen', { kies:'id' }).catch(function () { return null; })
   ]).then(function (uit) {
     alleCollegas = uit[0] || [];
     perProfiel = {};
     alleCollegas.forEach(function (p) { perProfiel[p.id] = p; });
     ledenVanGroep = uit[1] || {};
     openUitnodigingen = uit[2] || [];
+    openVerzoeken = uit[3] || [];
+    groepenOpServer = uit[4] ? uit[4].length : null;
     naamVanGroep = {};
     (KB.G.klassen || []).forEach(function (k) {
       var sid = KBSYNC.opServer(k.id);
@@ -283,9 +319,73 @@ function teken(){
   return tekenGroepen(v);
 }
 
+/* ── nog bij geen school ──────────────────────────────────────────────
+   Twee wegen: je hoort bij een school die er al is (dan heb je een code
+   van de beheerder), of je begint er zelf een. Meer smaken zijn er niet --
+   en zonder een van de twee kun je hier niets, want alles hangt aan een
+   school. */
+function tekenZonderSchool(v){
+  v.appendChild(kopregel('Welkom', 'Dit account hoort nog bij geen school'));
+
+  var p1 = el('div', 'paneel');
+  p1.appendChild(el('div', 'paneelkop', 'Ik ben uitgenodigd'));
+  p1.appendChild(el('p', 'hint',
+    'Je schoolbeheerder heeft een code voor je. Vul die hieronder in, dan kom je ' +
+    'bij de goede school en groep terecht. Werkt hij niet meer, vraag dan een ' +
+    'nieuwe — een code geldt drie weken en werkt één keer.'));
+  var rij = el('div', 'veldrij');
+  var invoer = el('input', 'invoer');
+  invoer.type = 'text'; invoer.placeholder = 'ABCD-2345';
+  invoer.autocapitalize = 'characters'; invoer.spellcheck = false;
+  rij.appendChild(invoer);
+  p1.appendChild(rij);
+  var knopRij = el('div', 'knoprij-onder');
+  knopRij.appendChild(knop('Aanmelden bij de school', 'primair', function () {
+    var code = (invoer.value || '').replace(/[^A-Za-z0-9]/g, '');
+    if (code.length < 4) { meld('Vul de code in die je van je schoolbeheerder kreeg'); return; }
+    meld('Bezig…');
+    SB.roep('uitnodiging_verzilveren', { toegangscode: code })
+      .then(function () { return KBV.herstart(); })
+      .then(function () { location.href = 'school.html'; },
+            function (e) { meld(e && e.message ? e.message : 'Dat lukte niet'); });
+  }));
+  p1.appendChild(knopRij);
+  v.appendChild(p1);
+
+  var p2 = el('div', 'paneel');
+  p2.appendChild(el('div', 'paneelkop', 'Ik begin een nieuwe school'));
+  p2.appendChild(el('p', 'hint',
+    'Hoort er nog geen school bij dit account en ben jij degene die hem opzet? ' +
+    'Dan word je de schoolbeheerder: jij nodigt de collega\u2019s uit en bepaalt ' +
+    'wie bij welke groep mag.'));
+  var rij2 = el('div', 'veldrij');
+  var naamVak = el('input', 'invoer');
+  naamVak.type = 'text'; naamVak.placeholder = 'De naam van je school';
+  rij2.appendChild(naamVak);
+  p2.appendChild(rij2);
+  var knopRij2 = el('div', 'knoprij-onder');
+  knopRij2.appendChild(knop('School beginnen', 'stil', function () {
+    var naam = (naamVak.value || '').trim();
+    if (naam.length < 2) { meld('Geef de school een naam'); return; }
+    meld('Bezig…');
+    SB.roep('school_beginnen', { schoolnaam: naam })
+      .then(function () { return KBV.herstart(); })
+      .then(function () { location.href = 'school.html'; },
+            function (e) { meld(e && e.message ? e.message : 'Dat lukte niet'); });
+  }));
+  p2.appendChild(knopRij2);
+  v.appendChild(p2);
+}
+
 /* ── groepen ─────────────────────────────────────────────────────────── */
 
 function tekenGroepen(v){
+  /* Wie nog bij geen school hoort kwam hier vast te zitten: het enige wat
+     er stond was "zes groepen aanmaken", en dat ketst af op de rechten
+     omdat er geen school is om ze in te zetten. Nu staan hier de twee
+     wegen die er echt zijn. */
+  if (metServer() && !KBV.wie().profiel.school_id) { tekenZonderSchool(v); return; }
+
   var beheerd = KB.beheerKlasId();
   var klassen = KB.G.klassen || [];
 
@@ -297,6 +397,11 @@ function tekenGroepen(v){
   // tonen valt. Die telt hier niet mee.
   var nogLeeg = !opServer.length || (opServer.length === 1 &&
     !(opServer[0].leerlingen || []).length && !(opServer[0].hoekLib || []).length);
+  /* En de server moet het ook vinden. Deze knop gooit namelijk alle groepen
+     weg voordat hij zes nieuwe neerzet -- met de kinderen, weekplannen en
+     observaties eraan vast. Weet dit apparaat het even niet, dan hoort hij
+     er niet te staan. */
+  if (metServer() && groepenOpServer !== 0) nogLeeg = false;
 
   v.appendChild(kopregel('Groepen',
     nogLeeg ? 'Nog niet ingericht'
@@ -626,6 +731,29 @@ function mensenPaneel(){
     p.appendChild(rij);
   });
 
+  if (openVerzoeken.length) {
+    p.appendChild(el('div', 'restvak-kop', 'Vraagt toegang'));
+    openVerzoeken.forEach(function (v) {
+      var wie = perProfiel[v.profiel_id];
+      var rij = el('div', 'ledenrij wacht');
+      var links = el('div');
+      links.appendChild(el('div', 'ledennaam',
+        (wie ? (wie.naam || wie.email) : 'een collega') + ' vraagt ' +
+        (naamVanGroep[v.groep_id] || 'een groep')));
+      links.appendChild(el('div', 'ledenmail', v.reden
+        ? '\u201c' + v.reden + '\u201d'
+        : 'geen toelichting erbij'));
+      rij.appendChild(links);
+      rij.appendChild(knop('Goedkeuren', 'primair', function () {
+        beslis(v, true);
+      }));
+      rij.appendChild(knop('Afwijzen', 'stil', function () {
+        beslis(v, false);
+      }));
+      p.appendChild(rij);
+    });
+  }
+
   if (openUitnodigingen.length) {
     p.appendChild(el('div', 'restvak-kop', 'Nog niet aangemeld'));
     openUitnodigingen.forEach(function (u) {
@@ -636,7 +764,14 @@ function mensenPaneel(){
         (u.rol === 'schoolbeheerder' ? 'schoolbeheerder' : 'leerkracht') +
         (u.groep_id && naamVanGroep[u.groep_id] ? ' · ' + naamVanGroep[u.groep_id] : '') +
         ' — wacht tot zij een account maakt'));
+      if (u.code) {
+        var codeRegel = el('div', 'ledencode', 'code ' + codeLeesbaar(u.code));
+        links.appendChild(codeRegel);
+      }
       rij.appendChild(links);
+      if (u.code) rij.appendChild(knop('Code tonen', 'stil', function () {
+        toonCode(u.email, u.code);
+      }));
       rij.appendChild(knop('Intrekken', 'gevaar', function () {
         SB.wis('uitnodigingen', { id:'eq.' + u.id }).then(haalMensen).then(function () {
           teken(); meld('Uitnodiging voor ' + u.email + ' ingetrokken');
@@ -646,6 +781,57 @@ function mensenPaneel(){
     });
   }
   return p;
+}
+
+/* Goedkeuren of afwijzen gaat in één stap in de database: goedkeuren zonder
+   koppelen zou een belofte zijn die niemand nakomt. */
+function beslis(verzoek, toekennen){
+  SB.roep('verzoek_behandelen', { verzoek: verzoek.id, toekennen: !!toekennen })
+    .then(function () { return KBV.herstart().catch(function () {}); })
+    .then(haalMensen)
+    .then(function () {
+      teken();
+      meld(toekennen ? 'Toegang gegeven' : 'Verzoek afgewezen');
+    }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+}
+
+/* De code laten zien zodra de uitnodiging klaarstaat. Dit is de weg die
+   het altijd doet: jij leest hem voor, zij typt hem in. De mail eronder is
+   extra gemak -- zonder eigen mailserver stuurt Supabase er maar een
+   handjevol per uur en belandt hij vaak in de ongewenste post. */
+function toonCode(email, code){
+  toonBlad(function (blad) {
+    blad.appendChild(el('h3', 'titel', 'Uitnodiging staat klaar'));
+    blad.appendChild(el('p', 'hint',
+      'Geef ' + email + ' het adres van deze site én de code hieronder. Ze maakt ' +
+      'zelf een account en vult dan de code in — daarna zit ze bij de goede school ' +
+      'en groep. De code werkt één keer en vervalt na drie weken.'));
+
+    var vak = el('div', 'codevak');
+    vak.appendChild(el('div', 'codetekst', codeLeesbaar(code)));
+    blad.appendChild(vak);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Code kopiëren', 'stil', function () {
+      var tekst = codeLeesbaar(code);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tekst).then(function () { meld('Code gekopieerd'); },
+                                                  function () { meld('Kopiëren lukte niet — schrijf hem over'); });
+      } else meld('Kopiëren kan hier niet — schrijf hem over');
+    }));
+    rij.appendChild(knop('Ook een inloglink mailen', 'stil', function () {
+      meld('Bezig met versturen…');
+      SB.inloglinkSturen(email).then(function () {
+        meld('Er is een inloglink gestuurd naar ' + email + '. Komt hij niet aan, ' +
+             'dan werkt de code gewoon.');
+      }, function (e) {
+        meld('Mailen lukte niet (' + (e && e.message || 'onbekend') + '). ' +
+             'Geef haar de code door.');
+      });
+    }));
+    rij.appendChild(knop('Klaar', 'primair', sluitBlad));
+    blad.appendChild(rij);
+  });
 }
 
 /* ── iemand uitnodigen ────────────────────────────────────────────────
@@ -715,11 +901,12 @@ function toonUitnodigen(concept){
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
         meld('Dat lijkt geen geldig e-mailadres'); return;
       }
-      var rijGegevens = { school_id: KBV.wie().profiel.school_id, email: email, rol: concept.rol };
+      var rijGegevens = { school_id: KBV.wie().profiel.school_id, email: email,
+                          rol: concept.rol, code: nieuweCode() };
       if (concept.rol === 'leerkracht' && concept.groepId) rijGegevens.groep_id = concept.groepId;
       SB.schrijf('uitnodigingen', [rijGegevens]).then(haalMensen).then(function () {
         sluitBlad(); teken();
-        meld(email + ' is uitgenodigd. Geef haar het adres van de site door.');
+        toonCode(email, rijGegevens.code);
       }, function (e) {
         meld(/duplicate|unique/i.test(e && e.message || '')
           ? 'Voor dat adres staat al een uitnodiging klaar.'

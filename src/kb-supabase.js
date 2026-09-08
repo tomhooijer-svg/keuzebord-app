@@ -207,6 +207,24 @@ function wachtwoordVergeten(email){
   });
 }
 
+/* Een inloglink mailen. Wie hem aanklikt is ingelogd zonder wachtwoord;
+   bestaat het account nog niet, dan wordt het meteen aangemaakt en pakt de
+   trekker in de database de uitnodiging op dat adres op.
+
+   Let op: dit leunt op de mailserver van Supabase. Zonder eigen SMTP staat
+   die op een handvol berichten per uur en komt hij vaak in de ongewenste
+   post. Daarom is de code bij de uitnodiging de hoofdweg en dit het extra
+   gemak; de app moet ook werken als deze mail nooit aankomt. */
+function inloglinkSturen(email){
+  return vraag('/auth/v1/otp', {
+    methode: 'POST', zonderSessie: true,
+    lijf: { email: String(email || '').trim(),
+            create_user: true,
+            options: { email_redirect_to: location.origin + location.pathname
+                        .replace(/[^/]*$/, 'inloggen.html') } }
+  });
+}
+
 /* ── gegevens ────────────────────────────────────────────────────────── */
 /* PostgREST leest zijn opdracht uit de adresregel. 'kies' is de lijst met
    kolommen, 'waar' een verzameling voorwaarden: {groep_id: 'eq.123'}. */
@@ -325,7 +343,7 @@ global.SB = {
   aanmelden: aanmelden,
   registreren: registreren,
   afmelden: afmelden,
-  wachtwoordVergeten: wachtwoordVergeten,
+  wachtwoordVergeten: wachtwoordVergeten, inloglinkSturen: inloglinkSturen,
   vernieuw: vernieuw,
   lees: lees, schrijf: schrijf, wijzig: wijzig, wis: wis, roep: roep,
   bestandOp: bestandOp, bestandLink: bestandLink, bestandWeg: bestandWeg,
