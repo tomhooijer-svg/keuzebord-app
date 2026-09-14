@@ -15,7 +15,7 @@ je van de een naar de ander, met de groep mee.
 # Keuzebord
 
 Een digitaal keuzebord voor kleutergroepen. Kinderen kiezen zelf een hoek
-op het digibord; de leerkracht plant er haar week omheen.
+op het digibord; de leerkracht plant er de week omheen.
 
 Draait zonder bouwstap: het zijn gewone HTML-bestanden met een paar
 scripts ernaast. De gegevens staan in Supabase, achter een login.
@@ -25,7 +25,7 @@ scripts ernaast. De gegevens staan in Supabase, achter een login.
 | bestand | waarvoor |
 |---|---|
 | `bord.html` | het keuzebord op het digibord, waar de kinderen kiezen |
-| `beheer.html` | de omgeving van één leerkracht: haar groep, taken, weekplan |
+| `beheer.html` | de omgeving van één leerkracht: de eigen groep, taken, weekplan |
 | `school.html` | het schoolbeheer: alle groepen, wie waar bij mag |
 | `inloggen.html` | inloggen en accounts |
 | `testbord.html` | los testbord om te kijken hoeveel vingers tegelijk werken |

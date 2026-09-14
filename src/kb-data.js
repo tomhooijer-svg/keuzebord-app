@@ -27,6 +27,8 @@ function standaardInstellingen(){
            werkplaatsAan:false, signaleringAan:false,
            werkmomentenAan:false, werkmomenten:standaardWerkmomenten(),
            bordLegen:'dag', dagdeelUur:12,
+           afkoelAan:true, afkoelSeconden:20,
+           sluitenSoort:'nooit', sluitenTijd:'14:30', sluitenNaMinuten:45,
            pinAan:false, pincode:'1234', kolommen:3 };
 }
 
@@ -144,6 +146,8 @@ function laad(){
     (k.borden || []).forEach(function (b) {
       if (!b.plaatsingen) b.plaatsingen = {};
       if (!b.hoekLibIds)  b.hoekLibIds  = [];
+      /* Een bord van voor het afsluiten bestond: dat staat gewoon open. */
+      if (b.gesloten === undefined) b.gesloten = false;
     });
   });
   /* Vanaf hier weten we hoe alles eruitzag toen wij het lazen. Dat is de
@@ -454,8 +458,24 @@ function plaatsingVan(leerlingId, b){
 }
 
 /* Hoeveel milliseconden een kind nog vastzit. 0 = mag wisselen. */
+/* De speling vlak na het kiezen.
+
+   Een kleuter sleept zijn plaatje naar de bouwhoek en raakt net de
+   knutselhoek ernaast. Zit hij dan meteen twintig minuten vast, dan moet
+   de leerkracht eraan te pas komen voor iets wat het kind zelf had kunnen
+   rechtzetten. Dus: de eerste seconden staat hij er nog los in en mag hij
+   het zelf overdoen. Daarna geldt de tijd van de hoek gewoon. */
+function afkoelRest(plaatsing, k){
+  k = k || klas();
+  if (!plaatsing || !instelling('afkoelAan', k)) return 0;
+  var seconden = instelling('afkoelSeconden', k);
+  if (!(seconden > 0)) return 0;
+  return Math.max(0, (plaatsing.startTijd || 0) + seconden * 1000 - Date.now());
+}
+
 function vergrendeldTot(plaatsing, hoek, k){
   k = k || klas();
+  if (afkoelRest(plaatsing, k) > 0) return 0;
   if (!instelling('timerAan', k)) return 0;
   var minuten = (hoek && hoek.timerMinuten) || instelling('timerMinuten', k);
   var eind = (plaatsing.startTijd || 0) + minuten * 60000;
@@ -1822,6 +1842,88 @@ function moetLegen(k){
   return true;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   HET BORD AFSLUITEN
+   Leegmaken is iets anders dan afsluiten. Leegmaken hoort bij een nieuw
+   dagdeel: iedereen mag opnieuw kiezen. Afsluiten is het einde van de
+   keuzemomenten -- de kring, naar huis. Dan gaat wat er stond het
+   logboek in, is het bord blanco, en valt er niets meer te kiezen tot de
+   leerkracht hem weer opent. De volgende dag staat hij vanzelf weer open;
+   een bord dat je elke ochtend eerst moet aanzetten is een bord waar je
+   elke ochtend voor stilstaat.
+   ══════════════════════════════════════════════════════════════ */
+function dagBegin(){
+  var d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
+}
+
+/* Het tijdstip van vandaag waarop dit bord zichzelf afsluit, of null als
+   de groep dat niet zo geregeld heeft. */
+function sluitTijdstip(k){
+  k = k || klas();
+  if (!k) return null;
+  if (instelling('sluitenSoort', k) !== 'tijd') return null;
+  var tekst = String(instelling('sluitenTijd', k) || '14:30');
+  var delen = tekst.split(':');
+  var uur = parseInt(delen[0], 10), minuut = parseInt(delen[1], 10);
+  if (!(uur >= 0 && uur <= 23)) return null;
+  var d = new Date(); d.setHours(uur, minuut >= 0 && minuut <= 59 ? minuut : 0, 0, 0);
+  return d.getTime();
+}
+
+function bordGesloten(k){
+  k = k || klas();
+  if (!k) return false;
+  var b = bord(k);
+  if (!b || !b.gesloten) return false;
+  // Een sluiting geldt tot de volgende ochtend.
+  return (b.laatstGesloten || 0) >= dagBegin();
+}
+
+function moetSluiten(k){
+  k = k || klas();
+  if (!k) return false;
+  var b = bord(k);
+  if (!b || bordGesloten(k)) return false;
+  var soort = instelling('sluitenSoort', k);
+  if (soort === 'tijd') {
+    var grens = sluitTijdstip(k);
+    if (grens === null || Date.now() < grens) return false;
+    /* Is dit tijdstip al afgehandeld, dan gebeurt er vandaag niets meer --
+       ook niet als de leerkracht het bord daarna weer openzette. Anders
+       zat je na half drie in een lus: openen, meteen weer dicht, openen,
+       weer dicht. Daarom staat dit los van "is hij nu dicht". */
+    return (b.sluitingGedaan || 0) < grens;
+  }
+  if (soort === 'duur') {
+    var minuten = parseInt(instelling('sluitenNaMinuten', k), 10);
+    if (!(minuten > 0)) return false;
+    var open = b.geopendOp || 0;
+    if (!open) return false;
+    return Date.now() - open >= minuten * 60000;
+  }
+  return false;
+}
+
+function sluitBord(k){
+  k = k || klas();
+  var b = bord(k);
+  var aantal = leegBord(k);
+  b.gesloten = true;
+  b.laatstGesloten = Date.now();
+  b.sluitingGedaan = Date.now();
+  logGebeurtenis('afgesloten', { aantal: aantal }, k);
+  bewaar();
+  return aantal;
+}
+
+function openBord(k){
+  k = k || klas();
+  var b = bord(k);
+  b.gesloten = false;
+  b.geopendOp = Date.now();
+  bewaar();
+}
+
 function leegBord(k){
   k = k || klas();
   var b = bord(k);
@@ -1838,6 +1940,10 @@ function leegBord(k){
   });
   k.wachtrij = [];
   b.laatstGeleegd = Date.now();
+  /* Een blanco bord is een nieuw begin, en daar rekent "sluit na zoveel
+     minuten" vanaf. Anders zou die tijd lopen vanaf een moment waar
+     niemand meer weet heeft. */
+  b.geopendOp = Date.now();
   bewaar();
   return aantal;
 }
@@ -1919,6 +2025,9 @@ global.KB = {
   downloadBackup: downloadBackup, leesBackupBestand: leesBackupBestand,
   cryptoKan: cryptoKan,
   legenGrens: legenGrens, moetLegen: moetLegen, leegBord: leegBord,
+  sluitTijdstip: sluitTijdstip, bordGesloten: bordGesloten, moetSluiten: moetSluiten,
+  sluitBord: sluitBord, openBord: openBord,
+  afkoelRest: afkoelRest,
   HOEKKLEUREN: HOEKKLEUREN, hoekKleur: hoekKleur, hoekTinten: hoekTinten,
   mengMetWit: mengMetWit, donkerder: donkerder,
   SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,

@@ -109,7 +109,10 @@ function schakelaar(aan, bijWissel){
   });
   return s;
 }
-function teller(waarde, min, max, bijWijziging){
+/* Een teller met twee knoppen. `stap` is er voor de tellers die in
+   seconden rekenen: van twintig naar negentig klikken gaat niet per stuk. */
+function teller(waarde, min, max, bijWijziging, stap){
+  stap = stap || 1;
   var t = el('div', 'teller');
   var m = el('button', null, '−'), w = el('div', 'w', String(waarde)), p = el('button', null, '+');
   /* Staat de teller op zijn laagste of hoogste stand, dan wordt de knop
@@ -120,8 +123,8 @@ function teller(waarde, min, max, bijWijziging){
     n = Math.max(min, Math.min(max, n));
     w.textContent = String(n); grenzen(n); bijWijziging(n);
   }
-  m.addEventListener('click', function () { zet(parseInt(w.textContent, 10) - 1); });
-  p.addEventListener('click', function () { zet(parseInt(w.textContent, 10) + 1); });
+  m.addEventListener('click', function () { zet(parseInt(w.textContent, 10) - stap); });
+  p.addEventListener('click', function () { zet(parseInt(w.textContent, 10) + stap); });
   t.appendChild(m); t.appendChild(w); t.appendChild(p);
   grenzen(Math.max(min, Math.min(max, waarde)));
   return t;
@@ -1947,6 +1950,77 @@ panelen.functies = function (v){
     legen.appendChild(uurVak);
   }
   bord.appendChild(legen);
+
+  /* De speling na het kiezen. Hij hoort onder de tijdvergrendeling, want
+     hij gaat erover: hoe lang het slot er nóg niet op zit. */
+  bord.appendChild(functieRij(k, 'afkoelAan', 'Even mogen verbeteren',
+    'Sleept een kind per ongeluk de verkeerde hoek, dan mag het dat de eerste seconden zelf rechtzetten. ' +
+    'Zolang die speling loopt staat er een streepjesring om het picto.'));
+  if (KB.instelling('afkoelAan', k)) {
+    var koel = el('div');
+    koel.style.cssText = 'padding:4px 2px 12px';
+    koel.appendChild(el('div', 'rij-sub', 'Hoeveel seconden mag een kind verbeteren?'));
+    var koelTeller = teller(KB.instelling('afkoelSeconden', k) || 20, 5, 120, function (n) {
+      k.settings.afkoelSeconden = n; bewaarOfKlaag();
+    }, 5);
+    koelTeller.style.marginTop = '8px';
+    koel.appendChild(koelTeller);
+    bord.appendChild(koel);
+  }
+
+  /* Het einde van de keuzemomenten. Twee manieren, want de ene groep werkt
+     met een vaste dagsluiting en de andere met losse momenten van een
+     klokuur. Handmatig kan altijd: op het bord zelf, bij Menu. */
+  var sluit = el('div');
+  sluit.style.cssText = 'padding:14px 2px 4px;border-top:1px solid var(--vlak-2);margin-top:6px';
+  sluit.appendChild(el('div', 'rij-naam', 'Wanneer sluit het bord zichzelf af?'));
+  sluit.appendChild(el('div', 'rij-sub',
+    'Afsluiten is het einde van de keuzemomenten: wat er staat gaat het logboek in, ' +
+    'het bord wordt blanco en er valt niets meer te kiezen. De volgende ochtend staat ' +
+    'hij weer open. Zelf afsluiten kan altijd, op het bord bij Menu.'));
+  var sluitChips = el('div', 'chips');
+  sluitChips.style.marginTop = '10px';
+  [['nooit', 'Alleen als ik het zeg'], ['tijd', 'Op een tijdstip'], ['duur', 'Na een tijdsduur']]
+    .forEach(function (paar) {
+      var aan = (KB.instelling('sluitenSoort', k) || 'nooit') === paar[0];
+      var c = el('button', 'chip' + (aan ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () {
+        k.settings.sluitenSoort = paar[0]; bewaarOfKlaag(); teken();
+      });
+      sluitChips.appendChild(c);
+    });
+  sluit.appendChild(sluitChips);
+
+  if (KB.instelling('sluitenSoort', k) === 'tijd') {
+    var tijdVak = el('div');
+    tijdVak.style.marginTop = '12px';
+    tijdVak.appendChild(el('div', 'rij-sub', 'Het bord sluit om:'));
+    var tijdRij = el('div', 'knoprij');
+    var tijdIn = el('input', 'invoer');
+    tijdIn.type = 'time';
+    tijdIn.value = String(KB.instelling('sluitenTijd', k) || '14:30');
+    tijdIn.style.cssText = 'max-width:140px;font-size:1.1rem';
+    tijdIn.addEventListener('change', function () {
+      if (!/^\d{1,2}:\d{2}$/.test(tijdIn.value)) { meld('Vul een tijd in, zoals 14:30'); return; }
+      k.settings.sluitenTijd = tijdIn.value; bewaarOfKlaag(); meld('Sluitingstijd opgeslagen');
+    });
+    tijdRij.appendChild(tijdIn);
+    tijdVak.appendChild(tijdRij);
+    sluit.appendChild(tijdVak);
+  }
+  if (KB.instelling('sluitenSoort', k) === 'duur') {
+    var duurVak = el('div');
+    duurVak.style.marginTop = '12px';
+    duurVak.appendChild(el('div', 'rij-sub',
+      'Zoveel minuten nadat het bord blanco begint of jij hem opent:'));
+    var duurTeller = teller(KB.instelling('sluitenNaMinuten', k) || 45, 5, 240, function (n) {
+      k.settings.sluitenNaMinuten = n; bewaarOfKlaag();
+    }, 5);
+    duurTeller.style.marginTop = '8px';
+    duurVak.appendChild(duurTeller);
+    sluit.appendChild(duurVak);
+  }
+  bord.appendChild(sluit);
 
   var duur = el('div');
   duur.style.cssText = 'padding:14px 2px 4px;border-top:1px solid var(--vlak-2);margin-top:6px';

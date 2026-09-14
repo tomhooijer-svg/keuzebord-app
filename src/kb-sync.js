@@ -106,7 +106,14 @@ function naarRijen(k){
                               // of het bord aan staat. Ging dit niet mee, dan
                               // stond een bord dat je aan het eind van de dag
                               // uitzette de volgende ochtend weer aan.
-                              aan: b.aan !== false } });
+                              aan: b.aan !== false,
+                              // en of de dag is afgesloten. Sluit je op het
+                              // digibord af, dan hoort de laptop van de
+                              // leerkracht dat ook te weten.
+                              gesloten: !!b.gesloten,
+                              laatstGesloten: b.laatstGesloten || 0,
+                              sluitingGedaan: b.sluitingGedaan || 0,
+                              geopendOp: b.geopendOp || 0 } });
     (b.hoekLibIds || []).forEach(function (hid, j) {
       uit.bord_hoeken.push({ _id:b.id + '~' + hid, _bord:b.id, _hoek:hid, volgorde:j });
     });
@@ -240,13 +247,23 @@ function naarKlas(rijen, bestaande){
     k.uiterlijk = rijen.groep.uiterlijk;
   }
 
-  k.leerlingen = (rijen.leerlingen || []).map(function (r) {
+  /* Op volgorde, en dat is geen detail. De server geeft rijen terug in de
+     volgorde waarin ze toevallig op schijf staan, en die verspringt zodra
+     er iets aan een rij verandert. Sorteerden we niet, dan stonden de
+     kinderen na het ophalen in een andere volgorde in de strook, kregen
+     hoeken zonder eigen kleur de kleur van hun buurman, en stuurde dit
+     apparaat die nieuwe volgorde ook nog eens als "zo hoort het" naar de
+     andere apparaten. Zo veranderde de indeling zonder dat iemand iets
+     deed. */
+  var opVolgorde = function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); };
+
+  k.leerlingen = (rijen.leerlingen || []).slice().sort(opVolgorde).map(function (r) {
     var oud = (bestaande && bestaande.leerlingen || []).filter(function (x) { return x.id === lok(r.id); })[0];
     return { id:lok(r.id), naam:r.naam, kleur:r.kleur,
              actief:r.actief, image:oud ? oud.image : null };
   });
 
-  k.hoekLib = (rijen.hoeken || []).map(function (r) {
+  k.hoekLib = (rijen.hoeken || []).slice().sort(opVolgorde).map(function (r) {
     var oud = (bestaande && bestaande.hoekLib || []).filter(function (x) { return x.id === lok(r.id); })[0];
     return { id:lok(r.id), naam:r.naam, maxKinderen:r.max_kinderen, kleur:r.kleur,
              icoon:r.icoon, timerMinuten:r.timer_minuten, werkplaats:r.werkplaats,
@@ -254,9 +271,7 @@ function naarKlas(rijen, bestaande){
              fotoId:oud ? oud.fotoId : null };
   });
 
-  k.themas = (rijen.themas || [])
-    .slice().sort(function (a, b) { return (a.volgorde || 0) - (b.volgorde || 0); })
-    .map(function (r) {
+  k.themas = (rijen.themas || []).slice().sort(opVolgorde).map(function (r) {
       var id = lok(r.id);
       return { id:id, naam:r.naam, vraag:r.vraag || '', start:r.start_tekst || '',
                afsluiting:r.afsluiting || '',
@@ -275,7 +290,7 @@ function naarKlas(rijen, bestaande){
                gemaakt:new Date(r.aangemaakt || Date.now()).getTime() };
     });
 
-  k.borden = (rijen.borden || []).map(function (r) {
+  k.borden = (rijen.borden || []).slice().sort(opVolgorde).map(function (r) {
     var stand = r.stand || {};
     var bordId = lok(r.id);
     var hoekIds = (rijen.bord_hoeken || [])
@@ -297,7 +312,11 @@ function naarKlas(rijen, bestaande){
              dagOpen:!!stand.dagOpen, dagGesloten:!!stand.dagGesloten,
              dagStart:stand.dagStart || null, thema:stand.thema || 'geen',
              laatstGeleegd: stand.laatstGeleegd || 0,
-             aan: stand.aan !== false };
+             aan: stand.aan !== false,
+             gesloten: !!stand.gesloten,
+             laatstGesloten: stand.laatstGesloten || 0,
+             sluitingGedaan: stand.sluitingGedaan || 0,
+             geopendOp: stand.geopendOp || 0 };
   });
   // Een groep die op de server is aangemaakt heeft nog geen bord. De app
   // gaat er wel altijd van uit dat er eentje is, dus die maken we hier --
@@ -310,7 +329,7 @@ function naarKlas(rijen, bestaande){
   var actief = (rijen.borden || []).filter(function (r) { return r.actief; })[0];
   k.activeBordId = actief ? lok(actief.id) : k.borden[0].id;
 
-  k.wachtrij = (rijen.wachtrij || []).map(function (r) {
+  k.wachtrij = (rijen.wachtrij || []).slice().sort(opVolgorde).map(function (r) {
     var kind = lok(r.leerling_id);
     onthoud('w~' + kind, r.id);
     return { leerlingId:kind, hoekId:lok(r.hoek_id), volgorde:r.volgorde };
@@ -800,6 +819,17 @@ function duwNu(klasId, groepId, schoolId){
         try { Object.defineProperty(wat, 'mislukt', { value:mislukt, enumerable:false }); }
         catch (e) { wat.mislukt = mislukt; }
       }
+      /* En net zo onzichtbaar: is er tijdens deze ronde nog iets
+         veranderd? `nu` is een foto van hoe het er bij stond toen deze
+         ronde begon; wie daarna koos staat daar niet op. Dat is geen
+         theorie -- zo raakte er een kind van het bord: de ronde zette
+         aan het eind "alles is weg" neer, en het ophalen schreef daarna
+         de server over zijn keus heen. Dus leggen we het nieuwe naast de
+         afdruk die we net vastlegden. */
+      if (ietsOnverstuurds(klasId)) {
+        try { Object.defineProperty(wat, 'ondertussen', { value:true, enumerable:false }); }
+        catch (e) { wat.ondertussen = true; }
+      }
       return wat;
     });
   });
@@ -857,16 +887,64 @@ function haal(groepId){
   });
 }
 
+/* Staat er hier iets dat nog niet op de server staat? Niet "heeft er
+   iemand opgeslagen" -- de app slaat ook op als er niets te versturen is,
+   en dan zou het bord zichzelf nooit meer bijpraten. De vraag is: is er
+   verschil tussen wat hier staat en de afdruk van de server. Dat is
+   precies dezelfde som die het opsturen maakt. */
+function ietsOnverstuurds(klasId){
+  var k = (KB.G.klassen || []).filter(function (x) { return x.id === klasId; })[0];
+  var toen = afdrukVan(klasId);
+  if (!k || !k.borden || !toen) return false;
+  /* Een groep die hier is uitgekleed omdat de opslag vol zat is juist leeg
+     omdát alles al op de server staat. Het verschil met de afdruk is dan
+     enorm, maar er staat niets klaar -- en hem daarom niet meer ophalen
+     zou betekenen dat zo'n groep nooit meer terugkomt. */
+  if (k.magOpnieuwOphalen) return false;
+  try {
+    if (JSON.stringify(toen._groep) !== JSON.stringify(groepGegevens(k))) return true;
+    return Object.keys(verschil(naarRijen(k), toen)).length > 0;
+  } catch (e) { return false; }
+}
+
 /* Haal de groep op en zet hem in de app. Wat de server heeft, wint --
-   deze kant gebruiken we als een apparaat bijgepraat moet worden. */
+   deze kant gebruiken we als een apparaat bijgepraat moet worden.
+
+   Ophalen duurt ook tijd -- een groep is een stuk of vijftien lijsten.
+   Wordt er in die seconden hier iets opgeslagen, dan wint dat: wat de
+   server stuurt is dan al ouder dan wat er voor je staat. We laten de
+   binnengekomen rijen dan liggen en proberen het straks opnieuw, nadat
+   het nieuwe eerst is opgestuurd. Liever een scherm dat een halve minuut
+   niet is bijgepraat dan een kind dat van het bord verdwijnt. */
 function haalBinnen(klasId, groepId){
   return haal(groepId).then(function (rijen) {
+    if (ietsOnverstuurds(klasId)) {
+      markeerWachtend(klasId, true);
+      var fout = new Error('Er is hier iets opgeslagen terwijl we ophaalden.');
+      fout.ondertussen = true;
+      throw fout;
+    }
     var bestaande = (KB.G.klassen || []).filter(function (x) { return x.id === klasId; })[0];
     if (!bestaande) { bestaande = { id:klasId }; KB.G.klassen.push(bestaande); }
     naarKlas(rijen, bestaande);
     // hij is er weer helemaal; het slot van hierboven mag eraf
     delete bestaande.magOpnieuwOphalen;
     koppel(klasId, groepId);
+
+    /* De afdruk hoort te beschrijven wat er op de server staat, en dat is
+       precies wat hier nu staat -- op dit moment, voordat er iemand kan
+       kiezen. Hij werd hier pas veel later genomen: na het ophalen van
+       alle foto's, wat op een schooldigibord seconden duurt. Koos een
+       kleuter in die seconden, dan stond zijn keus wel in de afdruk maar
+       niet op de server, en dus zag de volgende ronde "niets veranderd"
+       en ging hij nooit meer weg. Het bord zei "bijgewerkt" en het kind
+       was toch kwijt zodra er ergens opnieuw werd opgehaald. */
+    var plaat = naarRijen(bestaande);
+    plaat._groep = groepGegevens(bestaande);
+    padenVanServer(plaat, rijen);
+    zetAfdruk(klasId, plaat);
+    KB.bewaar();
+
     // de foto's erbij, en dan de kinderen en hoeken er weer aan hangen
     var foto = global.KBMEDIA
       ? KBMEDIA.haalBinnen(bestaande, groepId)
@@ -874,16 +952,23 @@ function haalBinnen(klasId, groepId){
           .then(function () { return KBMEDIA.bewaarInKluis(bestaande); })
           .catch(function () {})
       : Promise.resolve();
-    return foto.then(function () { return doorMetAfdruk(bestaande, klasId); });
+    return foto.then(function () { return bestaande; });
   });
 }
 
-function doorMetAfdruk(bestaande, klasId){
-    KB.bewaar();
-    var plaat = naarRijen(bestaande);
-    plaat._groep = groepGegevens(bestaande);
-    zetAfdruk(klasId, plaat);
-    return bestaande;
+/* Het enige veld dat we op dat vroege moment nog niet zelf kunnen
+   invullen: waar de foto van dit kind of deze hoek ligt. Dat hangt pas na
+   het ophalen van de media weer aan het kind. Maar de server heeft het
+   ons net verteld, dus nemen we het daarvandaan over. */
+function padenVanServer(plaat, rijen){
+  ['leerlingen', 'hoeken'].forEach(function (tabel) {
+    var opId = {};
+    (rijen[tabel] || []).forEach(function (r) { opId[r.id] = r.foto_pad || null; });
+    (plaat[tabel] || []).forEach(function (r) {
+      var serverId = opServer(r._id) || r._id;
+      if (Object.prototype.hasOwnProperty.call(opId, serverId)) r.foto_pad = opId[serverId];
+    });
+  });
 }
 
 /* ── wat er nog weg moet ─────────────────────────────────────────────── */
@@ -914,6 +999,15 @@ function stuurOp(klasId, groepId, schoolId){
     if (wat && wat.mislukt) {
       markeerWachtend(klasId, true);
       return { gelukt:false, mislukt:wat.mislukt };
+    }
+    /* Tijdens de ronde is er nog iets opgeslagen -- een kind dat koos
+       terwijl de vorige keus onderweg was. Dat staat nog nergens, dus
+       het vlaggetje blijft staan. Zetten we het hier uit, dan denkt het
+       ophalen dat alles weg is en schrijft het de nieuwe keus weg.
+       Precies zo raakte er een kind van het bord. */
+    if (wat && wat.ondertussen) {
+      markeerWachtend(klasId, true);
+      return { gelukt:true, ondertussen:true, veranderd:wat };
     }
     markeerWachtend(klasId, false);
     return { gelukt:true, veranderd:wat };

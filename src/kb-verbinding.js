@@ -204,15 +204,34 @@ function haalOp(){
        weekplan dat verdwijnt -- de volgende ronde probeert het opnieuw.
        Dat het niet gelukt is blijft zichtbaar: de stand onderin zegt
        "nog niet verstuurd" en je kunt er zelf op drukken. */
-    if ((uit && uit.gelukt === false) || KBSYNC.wachtErIetsOp(klasId)) {
-      meldStand('wacht'); return false;
-    }
-    return KBSYNC.haalBinnen(klasId, groepId).then(function () {
-      meldStand('klaar');
-      return true;
-    }, function (e) {
-      if (e && e.offline) { meldStand('wacht'); return false; }
-      throw e;
+    if (uit && uit.gelukt === false) { meldStand('wacht'); return false; }
+
+    /* Is er tijdens die ronde nog iets opgeslagen -- een kind dat koos
+       terwijl de vorige keus onderweg was -- dan brengen we dat eerst
+       weg. Eerder stond hier alleen "dan doen we het straks wel", en
+       straks was dertig seconden later: al die tijd zag je op het
+       digibord niet wat er in de andere groep gebeurde. Eén keer
+       naleveren haalt de gewone drukte binnen één ronde in. */
+    var klaarOmTeHalen = KBSYNC.wachtErIetsOp(klasId)
+      ? stuurNu().catch(function () { return { gelukt:false }; })
+          .then(function (nog) {
+            return !(nog && nog.gelukt === false) && !KBSYNC.wachtErIetsOp(klasId);
+          })
+      : Promise.resolve(true);
+
+    return klaarOmTeHalen.then(function (mag) {
+      if (!mag) { meldStand('wacht'); return false; }
+      return KBSYNC.haalBinnen(klasId, groepId).then(function () {
+        meldStand('klaar');
+        return true;
+      }, function (e) {
+        if (e && e.offline) { meldStand('wacht'); return false; }
+        /* Er werd hier iets opgeslagen terwijl we ophaalden. Dat is geen
+           storing: het is nieuwer dan wat er binnenkwam en het gaat de
+           volgende ronde weg. */
+        if (e && e.ondertussen) { meldStand('wacht'); return false; }
+        throw e;
+      });
     });
   });
 }
@@ -449,7 +468,7 @@ function maakAccountknop(opties){
 
 /* ── wie mag bij welke groep ──────────────────────────────────────────
    Het schoolbeheer regelt dit. De database bewaakt het: alleen een
-   schoolbeheerder mag koppelen, en alleen binnen haar eigen school. Een
+   schoolbeheerder mag koppelen, en alleen binnen de eigen school. Een
    groep kan meer dan één leerkracht hebben, en een leerkracht meer dan
    één groep. */
 

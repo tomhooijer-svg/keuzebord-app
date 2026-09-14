@@ -495,7 +495,7 @@ function tekenSchool(v){
   uitleg.appendChild(el('div', 'paneelkop', 'Hoe dit werkt'));
   uitleg.appendChild(el('p', 'hint',
     'Wie waar bij mag regel je bij Accounts, of met "Leerkrachten" op een groepskaart. ' +
-    'Een leerkracht ziet alleen de groepen die aan haar zijn toegewezen. Een groep mag ' +
+    'Een leerkracht ziet alleen de groepen die aan hem of haar zijn toegewezen. Een groep mag ' +
     'meer dan één leerkracht hebben, en een leerkracht meer dan één groep — handig bij ' +
     'een duobaan of een invaller.'));
   uitleg.appendChild(el('p', 'hint',
@@ -692,8 +692,8 @@ function mensenPaneel(){
   kop.appendChild(kopknoppen);
   p.appendChild(kop);
   p.appendChild(el('p', 'hint',
-    'Een account maak je niet hier, maar door iemand uit te nodigen op haar ' +
-    'e-mailadres. Zodra zij naar de site gaat en op "Er een maken" klikt met datzelfde ' +
+    'Een account maak je niet hier, maar door iemand uit te nodigen op zijn of haar ' +
+    'e-mailadres. Zodra die persoon naar de site gaat en op "Er een maken" klikt met datzelfde ' +
     'adres, staat ze meteen bij de goede school en groep.'));
 
   var leerkrachten = alleCollegas.filter(function (x) { return x.rol === 'leerkracht'; });
@@ -763,7 +763,7 @@ function mensenPaneel(){
       links.appendChild(el('div', 'ledenmail',
         (u.rol === 'schoolbeheerder' ? 'schoolbeheerder' : 'leerkracht') +
         (u.groep_id && naamVanGroep[u.groep_id] ? ' · ' + naamVanGroep[u.groep_id] : '') +
-        ' — wacht tot zij een account maakt'));
+        ' — wacht tot die persoon een account maakt'));
       if (u.code) {
         var codeRegel = el('div', 'ledencode', 'code ' + codeLeesbaar(u.code));
         links.appendChild(codeRegel);
@@ -796,7 +796,7 @@ function beslis(verzoek, toekennen){
 }
 
 /* De code laten zien zodra de uitnodiging klaarstaat. Dit is de weg die
-   het altijd doet: jij leest hem voor, zij typt hem in. De mail eronder is
+   het altijd doet: jij leest hem voor, je collega typt hem in. De mail eronder is
    extra gemak -- zonder eigen mailserver stuurt Supabase er maar een
    handjevol per uur en belandt hij vaak in de ongewenste post. */
 function toonCode(email, code){
@@ -826,7 +826,7 @@ function toonCode(email, code){
              'dan werkt de code gewoon.');
       }, function (e) {
         meld('Mailen lukte niet (' + (e && e.message || 'onbekend') + '). ' +
-             'Geef haar de code door.');
+             'Geef de code door.');
       });
     }));
     rij.appendChild(knop('Klaar', 'primair', sluitBlad));
@@ -835,9 +835,9 @@ function toonCode(email, code){
 }
 
 /* ── iemand uitnodigen ────────────────────────────────────────────────
-   Een account aanmaken kan alleen de persoon zelf, met haar eigen
+   Een account aanmaken kan alleen de persoon zelf, met een eigen
    wachtwoord. Wat wij hier doen is de plek klaarzetten: e-mailadres, rol
-   en eventueel een groep. Zodra zij zich aanmeldt valt alles op zijn
+   en eventueel een groep. Zodra die persoon zich aanmeldt valt alles op zijn
    plaats. */
 
 function toonUitnodigen(concept){
@@ -845,13 +845,13 @@ function toonUitnodigen(concept){
   toonBlad(function (blad) {
     blad.appendChild(el('h3', 'titel', 'Iemand uitnodigen'));
     blad.appendChild(el('p', 'hint',
-      'Vul het e-mailadres in waarmee zij een account gaat maken. Ze krijgt van ons ' +
-      'geen mailtje — geef haar zelf even het adres van de site door.'));
+      'Vul het e-mailadres in waarmee je collega een account gaat maken. Er gaat van ons ' +
+      'geen mailtje uit — geef zelf even het adres van de site door.'));
 
     var veld = el('div', 'veldrij');
     veld.appendChild(el('label', 'veldlabel', 'E-mailadres'));
     var invoer = el('input', 'invoer');
-    invoer.type = 'email'; invoer.placeholder = 'juf.marieke@school.nl';
+    invoer.type = 'email'; invoer.placeholder = 'collega@school.nl';
     invoer.autocapitalize = 'off'; invoer.spellcheck = false;
     invoer.value = concept.email;
     invoer.addEventListener('input', function () { concept.email = invoer.value; });
@@ -859,9 +859,9 @@ function toonUitnodigen(concept){
     blad.appendChild(veld);
 
     var rolrij = el('div', 'veldrij');
-    rolrij.appendChild(el('label', 'veldlabel', 'Wat mag zij?'));
+    rolrij.appendChild(el('label', 'veldlabel', 'Wat mag deze collega?'));
     var chips = el('div', 'knoprij');
-    [['leerkracht', 'Leerkracht — alleen haar eigen groepen'],
+    [['leerkracht', 'Leerkracht — alleen de eigen groepen'],
      ['schoolbeheerder', 'Schoolbeheerder — alles']].forEach(function (paar) {
       var c = el('button', 'chip' + (concept.rol === paar[0] ? ' aan' : ''), paar[1]);
       c.addEventListener('click', function () {

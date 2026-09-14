@@ -62,6 +62,42 @@
   rij('adres', location.href);
   rij('map', location.pathname.replace(/[^/]*$/, ''));
 
+  /* Kan deze browser het bord aan?
+     Het bord hangt op school aan een digibord, en dat draait vaak zijn
+     eigen browser -- die van Prowise bijvoorbeeld. Zo'n browser is soms
+     een paar jaar oud. Dan is de vraag niet "werkt het" maar "wat mist
+     hij", en dat hoort hier te staan in plaats van in een wit scherm. */
+  kop('kan deze browser het bord aan');
+  var steunt = function (eigenschap, waarde) {
+    try { return !!(window.CSS && CSS.supports && CSS.supports(eigenschap, waarde)); }
+    catch (e) { return false; }
+  };
+  var eisen = [
+    ['opslag in de browser', (function(){ try { localStorage.setItem('_kb_proef','1');
+        localStorage.removeItem('_kb_proef'); return true; } catch (e) { return false; } })()],
+    ['fotokluis (IndexedDB)', !!window.indexedDB],
+    ['verbinding met de server (fetch)', typeof fetch === 'function'],
+    ['beloften (Promise)', typeof Promise === 'function'],
+    ['tekst aanvullen (padStart)', typeof ''.padStart === 'function'],
+    ['adresregel lezen (URLSearchParams)', typeof URLSearchParams === 'function'],
+    ['eigenschappen samenvoegen (Object.assign)', typeof Object.assign === 'function'],
+    ['slepen met een vinger (pointer events)', 'PointerEvent' in window],
+    ['rooster voor de hoeken (css grid)', steunt('display', 'grid')],
+    ['kleuren van de app (css-variabelen)', steunt('--proef', '1')],
+    ['de vinger niet laten scrollen (touch-action)', steunt('touch-action', 'none')]
+  ];
+  var mist = [];
+  eisen.forEach(function (e) {
+    rij(e[0], e[1] ? 'ja' : 'NEE', e[1]);
+    if (!e[1]) mist.push(e[0]);
+  });
+  rij('aanraakpunten', String(navigator.maxTouchPoints || 0));
+  rij('schermmaat', window.innerWidth + ' bij ' + window.innerHeight +
+      ' (scherpte ' + (window.devicePixelRatio || 1) + ')');
+  rij('deze browser noemt zich', navigator.userAgent);
+  rij('oordeel', mist.length ? 'deze browser mist: ' + mist.join(', ')
+                             : 'deze browser kan alles wat het bord vraagt', !mist.length);
+
   kop('de opslag van dit apparaat');
   var sleutels = [];
   try {

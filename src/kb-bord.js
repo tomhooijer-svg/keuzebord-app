@@ -90,6 +90,12 @@ function maakPicto(leerling, opties){
     var deel = KB.timerDeel(opties.plaatsing, opties.hoek);
     var vrij = KB.vergrendeldTot(opties.plaatsing, opties.hoek) === 0;
     if (KB.instelling('timerAan')) {
+      /* Net gekozen: dit kind mag het nog rechtzetten. Dat hoort te zien
+         te zijn, anders is het een regel die alleen in de code bestaat.
+         Alleen als er een slot is om van gespaard te worden: staat de
+         tijdvergrendeling uit, dan mag iedereen altijd al wisselen en zou
+         een ring om een enkel kind niets betekenen. */
+      if (KB.afkoelRest(opties.plaatsing) > 0) wrap.classList.add('afkoelt');
       rond.appendChild(maakRing(deel));
       if (vrij) wrap.classList.add('vrij');
       else wrap.classList.add('op-slot');
@@ -146,6 +152,10 @@ function toonBord(){
   scherm = 'bord';
   document.querySelectorAll('.scherm').forEach(function (s) { s.classList.remove('aan'); });
   $('scherm-bord').classList.add('aan');
+  /* Stond het bord al over zijn sluitingstijd heen toen het digibord
+     aanging -- na een weekend bijvoorbeeld -- dan hoort hij meteen
+     afgesloten te staan en niet pas na de eerste tik van de klok. */
+  if (KB.moetSluiten()) KB.sluitBord();
   tekenBord();
   toonAanUit();
 }
@@ -608,6 +618,9 @@ function maakSleepbaar(picto, leerling, vanHoekId){
 function leg(leerling, hoekId){
   var k = KB.klas(), b = KB.bord(k);
   var hoek = KB.hoekVan(hoekId, k);
+  /* Het scherm laat er al niets doorheen, maar wie via een andere weg
+     binnenkomt hoort hetzelfde antwoord te krijgen. */
+  if (KB.bordGesloten(k)) { meld('Het bord is afgesloten voor vandaag'); return; }
 
   // Staat er vandaag een groepje ingepland in de werkplaats, dan zijn de
   // plekken van hen. Een ander kind mag alleen bij wat overblijft.
@@ -1011,6 +1024,7 @@ function zetBordAan(aan){
 
 function toonAanUit(){
   var aan = bordStaatAan();
+  var dicht = KB.bordGesloten();
   var knop = $('knop-aanuit');
   if (knop) {
     knop.classList.toggle('uit', !aan);
@@ -1018,9 +1032,41 @@ function toonAanUit(){
     if (tekst) tekst.textContent = aan ? 'Bord aan' : 'Bord uit';
   }
   var scherm = $('scherm-bord');
-  if (scherm) scherm.classList.toggle('gepauzeerd', !aan);
+  if (scherm) {
+    scherm.classList.toggle('gepauzeerd', !aan && !dicht);
+    scherm.classList.toggle('afgesloten', dicht);
+  }
   var vlak = $('pauzevlak');
-  if (vlak) vlak.classList.toggle('aan', !aan && scherm && scherm.classList.contains('aan'));
+  if (vlak) vlak.classList.toggle('aan',
+    (dicht || !aan) && scherm && scherm.classList.contains('aan'));
+
+  /* Eén kaartje voor twee toestanden. "Uit" is tussendoor -- alles blijft
+     staan. "Afgesloten" is het einde van de keuzemomenten, en dat mag je
+     zien: het bord is leeg en er staat een knop om hem weer te openen. */
+  var kop = $('pauzekop'), sub = $('pauzesub'), open = $('knop-openen');
+  if (kop) kop.textContent = dicht ? 'Het bord is klaar voor vandaag' : 'Het bord staat uit';
+  if (sub) sub.textContent = dicht
+    ? 'Morgen staat hij weer open. Eerder mag ook: tik op Bord openen.'
+    : 'De leerkracht zet hem zo weer aan.';
+  if (open) open.hidden = !dicht;
+}
+
+/* ── de dag afsluiten ─────────────────────────────────────
+   Leegmaken hoort bij een nieuw dagdeel; afsluiten bij het einde van de
+   keuzemomenten. Wat er stond gaat het logboek in -- de statistiek van de
+   week hoort te kloppen, ook als het bord op een vast tijdstip dichtgaat
+   terwijl de leerkracht al in de kring zit. */
+function sluitDeDag(vanzelf){
+  var aantal = KB.sluitBord();
+  tekenBord(); toonAanUit();
+  meld(vanzelf ? 'Het bord is afgesloten voor vandaag'
+               : (aantal ? 'Afgesloten — ' + aantal + ' kinderen opgeruimd' : 'Bord afgesloten'));
+}
+
+function openDeDag(){
+  KB.openBord();
+  tekenBord(); toonAanUit();
+  meld('Het bord staat weer open');
 }
 
 /* ── menu ────────────────────────────────────────────────── */
@@ -1036,6 +1082,10 @@ function toonAanUit(){
   });
   var menu = $('knop-menu');
   if (menu) menu.addEventListener('click', function () { vraagPin(toonMenu); });
+  /* Het bord weer openen is iets van de leerkracht, net als het aan- en
+     uitzetten: er zit dezelfde code op. */
+  var openen = $('knop-openen');
+  if (openen) openen.addEventListener('click', function () { vraagPin(openDeDag); });
 })();
 
 function toonMenu(){
@@ -1049,6 +1099,10 @@ function toonMenu(){
 
     [[bordStaatAan() ? 'Bord uitzetten' : 'Bord aanzetten', function () {
         zetBordAan(!bordStaatAan()); sluitBlad();
+      }],
+     [KB.bordGesloten() ? 'Bord weer openen' : 'Dag afsluiten', function () {
+        if (KB.bordGesloten()) openDeDag(); else sluitDeDag(false);
+        sluitBlad();
       }],
      ['Bord leegmaken', function () {
         var b = KB.bord(), k = KB.klas();
@@ -1106,6 +1160,11 @@ function tik(){
   var nu = new Date();
   var datum = DAGEN[nu.getDay()] + ' ' + nu.getDate() + ' ' + MAANDEN[nu.getMonth()];
   var tijd  = String(nu.getHours()).padStart(2, '0') + ':' + String(nu.getMinutes()).padStart(2, '0');
+  /* Elke seconde kijken of het bord zichzelf moet afsluiten. Dat is een
+     paar vergelijkingen, en het moet elke seconde: sluit een groep om
+     14:30 af, dan hoort dat om 14:30 te gebeuren en niet als er toevallig
+     weer iets getekend wordt. */
+  if (scherm === 'bord' && KB.moetSluiten()) sluitDeDag(true);
   if (datum === vorigeDatum && tijd === vorigeTijd) return;
   vorigeDatum = datum; vorigeTijd = tijd;
   zetTekst('bord-datum', datum);
@@ -1134,10 +1193,17 @@ function ververTimers(){
       boog.setAttribute('stroke-linecap', deel < 0.02 ? 'butt' : 'round');
       boog.setAttribute('stroke-dasharray',
         (omtrek * deel).toFixed(1) + ' ' + omtrek.toFixed(1));
+      /* De speling na het kiezen loopt ook af, en dan gaat het slot
+         alsnog op. Dat kon deze lus eerst niet: hij haalde het slot er
+         wel af maar zette het nooit terug, dus bleef een kind er los
+         uitzien terwijl het al vastzat. */
+      var koelt = KB.afkoelRest(p, k) > 0;
+      picto.classList.toggle('afkoelt', koelt);
       var wasVast = picto.classList.contains('op-slot');
-      if (wasVast && KB.vergrendeldTot(p, hoek) === 0) {
-        picto.classList.remove('op-slot');
-        picto.classList.add('vrij');
+      var vastNu = KB.instelling('timerAan', k) && KB.vergrendeldTot(p, hoek, k) > 0;
+      picto.classList.toggle('op-slot', vastNu);
+      picto.classList.toggle('vrij', !vastNu && KB.instelling('timerAan', k));
+      if (wasVast && !vastNu) {
         var l = KB.leerling(p.leerlingId, k);
         if (l) vrijgekomen.push(l.naam);
       }
@@ -1145,6 +1211,29 @@ function ververTimers(){
   });
   if (vrijgekomen.length) meld(vrijgekomen.join(' en ') + ' mag wisselen');
 }
+
+/* ── het scherm wakker houden ─────────────────────────────
+   Draait het bord op het digibord zelf -- de browser van het Prowise-scherm,
+   niet op de pc ernaast -- dan dimt het scherm na een paar minuten. Midden
+   in een keuzemoment is dat lastig: een kleuter tikt het weer aan en staat
+   dan ineens ergens anders. Browsers die het kennen kunnen we vragen het
+   scherm aan te houden; de rest merkt er niets van. De vraag moet opnieuw
+   worden gesteld zodra het scherm toch is weggeweest. */
+(function wakkerHouden(){
+  if (!navigator.wakeLock || !navigator.wakeLock.request) return;
+  var slot = null;
+  var vraag = function () {
+    if (slot || document.hidden) return;
+    navigator.wakeLock.request('screen').then(function (s) {
+      slot = s;
+      s.addEventListener('release', function () { slot = null; });
+    }).catch(function () { /* niet toegestaan; dan dimt het scherm gewoon */ });
+  };
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) vraag();
+  });
+  vraag();
+})();
 
 /* ── opstarten ───────────────────────────────────────────── */
 KB.laad();

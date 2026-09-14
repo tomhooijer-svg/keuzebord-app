@@ -193,6 +193,14 @@ input, select, textarea{ font: inherit; color: inherit; }
 .ring .voortgang{ stroke: var(--accent); transition: stroke-dasharray .9s linear, stroke .4s ease; }
 .picto.vrij .ring .voortgang{ stroke: var(--goed); }
 
+/* Net gekozen: de eerste seconden mag een kind het nog rechtzetten. Een
+   streepjesring, want een doorgetrokken ring betekent hier "dit staat
+   vast" en dit staat juist nog niet vast. */
+.picto.afkoelt .ring .baan{ stroke: var(--goed); opacity: .34;
+                            stroke-dasharray: 5 7; stroke-width: 4; }
+.picto.afkoelt .ring .voortgang{ stroke: var(--goed); }
+.picto.afkoelt .picto-rond{ box-shadow: 0 0 0 3px rgba(46,158,107,.35), 0 2px 8px rgba(20,28,44,.16); }
+
 /* ── kaart ─────────────────────────────────────────────── */
 .kaart{
   background: var(--vlak); border-radius: var(--rond-l);
