@@ -50,6 +50,23 @@
   --schaduw-3: 0 1px 2px rgba(20,28,44,.05), 0 14px 38px rgba(20,28,44,.09);
 
   --veer: cubic-bezier(.22,1,.36,1);
+
+  /* ── letterspatiëring per maat ──────────────────────────────────
+     Eén waarde voor alle maten is altijd ergens verkeerd. Grote letters
+     lijken te ver uit elkaar te staan als ze groeien, dus die trekken we
+     samen; kleine letters lopen juist dicht en worden leesbaarder met een
+     haartje ruimte ertussen. Dat laatste ontbrak hier: alles onder de
+     tien punt erfde de krappe spatiëring van de bodytekst, en dat zijn
+     precies de regels die een leerkracht van dichtbij zit te lezen --
+     de naam onder een kind, de uitleg onder een schakelaar.
+
+     De grote koppen in bord.html en beheer.html hebben hun eigen, met de
+     hand afgestemde waarden tussen -.024 en -.03em. Die kloppen al met
+     deze ladder; ze staan daar zodat ze bij hun maat blijven staan. */
+  --spoor-groot: -.028em;   /* 1,5rem en groter */
+  --spoor-kop:   -.021em;   /* koppen */
+  --spoor-tekst: -.006em;   /* bodytekst */
+  --spoor-klein:  .006em;   /* rond de .85rem en kleiner */
 }
 
 *{ box-sizing: border-box; }
@@ -64,14 +81,29 @@ body{
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
-  letter-spacing: -.006em;
+  letter-spacing: var(--spoor-tekst);
 }
 
 /* Koppen zetten we iets strakker en zwaarder — dat is wat een interface
    van Apple zo rustig doet ogen: weinig maten, duidelijk verschil. */
 h1, h2, h3, .titel, .groepnaam, .klas-titel, .hoek-naam{
-  letter-spacing: -.021em;
+  letter-spacing: var(--spoor-kop);
   text-wrap: balance;
+}
+
+/* Regelafstand loopt de andere kant op dan de maat: groot en strak,
+   klein en ruim. Een kop van 2,6rem met de regelafstand van bodytekst
+   valt in losse regels uiteen. De koppen die hun eigen afstand al zetten
+   -- de naam onder een kind bijvoorbeeld, waar de staart van een g niet
+   mag worden afgesneden -- raken we niet aan. */
+h1, h2, .titel, .klas-titel{ line-height: 1.06; }
+h3{ line-height: 1.2; }
+
+/* Kleine letters: een haartje ruimer, zodat ze niet aan elkaar plakken. */
+.picto-naam, .account-rol, .account-naam, .chip, .knop-klein,
+.minichip-bron, .opslaguitleg, .cijfer .l, .zij-kop .s, .wacht-merk,
+.beurt-label, .rij-sub, .hint, .daghint, .veldlabel{
+  letter-spacing: var(--spoor-klein);
 }
 
 /* Cijfers die per seconde veranderen mogen de bladzijde niet duwen. */
@@ -81,7 +113,13 @@ h1, h2, h3, .titel, .groepnaam, .klas-titel, .hoek-naam{
 }
 body.beheer{ background: var(--vlak-2); }
 
-button{ font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+/* touch-action: manipulation haalt de tikvertraging weg die een browser
+   anders inbouwt om op een mogelijke dubbeltik te wachten -- een derde
+   seconde waarin een knop dood aanvoelt. Er is hier nergens een
+   dubbeltik op een knop, dus is die wachttijd puur verlies. Het telt
+   dubbel op een digibord, waar alles met een vinger gaat. */
+button{ font: inherit; color: inherit; border: none; background: none; cursor: pointer;
+        touch-action: manipulation; }
 input, select, textarea{ font: inherit; color: inherit; }
 :focus-visible{ outline: 3px solid var(--accent); outline-offset: 2px; }
 
@@ -162,9 +200,15 @@ input, select, textarea{ font: inherit; color: inherit; }
 
 /* Wie nog moet kiezen ademt rustig mee, zodat het oog er vanzelf heen
    gaat. Wie liever geen beweging op het bord wil, krijgt hem niet. */
+/* Een trage, doorlopende golfbeweging over veel dingen tegelijk is
+   precies wat sommige mensen duizelig maakt -- en één cyclus per drie à
+   vijf seconden zit in die hoek. De bedoeling is "kijk hier", niet
+   "het scherm deint", dus is de uitslag klein: je ziet het in je
+   ooghoek en je kijkt er niet naar. Wie om minder beweging vraagt krijgt
+   hem helemaal niet. */
 @keyframes kb-ademen{
   0%, 100% { transform: scale(1);    }
-  50%      { transform: scale(1.035); }
+  50%      { transform: scale(1.022); }
 }
 .strook .picto:not(.op-slot) .picto-rond{
   animation: kb-ademen 3.4s ease-in-out infinite;
@@ -173,9 +217,6 @@ input, select, textarea{ font: inherit; color: inherit; }
 .strook .picto:active .picto-rond,
 .strook .picto.sleept .picto-rond{ animation: none; }
 
-@media (prefers-reduced-motion: reduce){
-  .picto-rond{ transition: none; animation: none !important; }
-}
 /* De naam onder een picto. Let op de regelhoogte: sluit die precies om de
    letters, dan valt de staart van een j of een g buiten het vakje en snijdt
    overflow:hidden hem er gewoon af. */
@@ -208,18 +249,30 @@ input, select, textarea{ font: inherit; color: inherit; }
 }
 
 /* ── overlay ───────────────────────────────────────────── */
+/* Het waas komt op met het vlak, niet erna: dan leest het als glas dat
+   voor je schuift in plaats van als een plaatje dat sterker wordt.
+   Daarom staan de vervaging en de doorzichtigheid in één overgang. */
 .overlay{
   position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 400;
-  background: rgba(20,28,44,.34); backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(20,28,44,.34);
+  backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
   display: flex; align-items: center; justify-content: center; padding: 24px;
-  opacity: 0; pointer-events: none; transition: opacity .22s ease;
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s ease, backdrop-filter .26s ease,
+              -webkit-backdrop-filter .26s ease;
 }
-.overlay.open{ opacity: 1; pointer-events: auto; }
+.overlay.open{
+  opacity: 1; pointer-events: auto;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+/* Een venster hoort te komen uit de knop waarop je drukte, niet uit het
+   midden van het scherm. Het bord zet daarom bij elke aanraking het punt
+   waar je drukte in --bron-x/y; zonder dat valt hij terug op het midden. */
 .blad{
   background: var(--vlak); border-radius: 30px; box-shadow: var(--schaduw-3);
   max-width: 560px; width: 100%; max-height: 88vh; overflow-y: auto;
   padding: 34px; transform: scale(.94) translateY(12px);
+  transform-origin: var(--bron-x, 50%) var(--bron-y, 50%);
   transition: transform .26s var(--veer);
 }
 .overlay.open .blad{ transform: none; }
@@ -234,8 +287,56 @@ input, select, textarea{ font: inherit; color: inherit; }
 }
 .melding.zichtbaar{ opacity: 1; transform: translate(-50%, 0); }
 
+/* ── wat de gebruiker van zijn apparaat vraagt ────────────────────────
+   Drie voorkeuren die los van elkaar aan kunnen staan. Ze betekenen niet
+   "doe niets meer", ze betekenen: doe het anders. */
+
+/* Minder beweging. Niet: geen terugkoppeling -- dan weet je niet meer of
+   je iets hebt aangeraakt. Wel: niets dat schuift, groeit of doorzwaait.
+   Wat overblijft is een korte kruisvervaging, en die helpt juist. Hier
+   stond één regel die alle overgangen op een honderdste seconde zette,
+   ook de vervagingen; die waren het kind met het badwater. */
 @media (prefers-reduced-motion: reduce){
-  *, *::before, *::after{ animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  *, *::before, *::after{
+    animation: none !important;
+    /* stroke-dasharray hoort erbij: dat is de ring die volloopt terwijl
+       een kind in een hoek zit. Die kruipt, hij schuift niet, en zonder
+       hem zou het rondje elke seconde verspringen. */
+    transition-property: opacity, background-color, color, border-color,
+                         box-shadow, stroke, stroke-dasharray,
+                         backdrop-filter !important;
+    transition-duration: .2s !important;
+  }
+  .picto:hover .picto-rond, .picto:active .picto-rond,
+  .picto.sleept .picto-rond, .knop:active, .bordknop:active,
+  .blad, .overlay.open .blad{ transform: none !important; }
+  .melding{ transform: translate(-50%, 0) !important; }
+}
+
+/* Minder doorzichtigheid. Glas wordt matglas: de achtergrond dekkend, de
+   vervaging eraf. De vorm blijft hetzelfde, dus het scherm verschuift
+   niet -- er is alleen niets meer doorheen te zien. */
+@media (prefers-reduced-transparency: reduce){
+  .overlay{
+    background: rgba(20,28,44,.72);
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  }
+  .melding{ background: #141c2c; }
+  .account-knop{ background: var(--vlak-2); }
+}
+
+/* Meer contrast. Vlakken worden vol, met een rand eromheen zodat je ziet
+   waar iets begint en ophoudt, en de grijzen worden donkerder -- die zijn
+   gekozen om rustig te zijn, en dat is hier niet wat gevraagd wordt. */
+@media (prefers-contrast: more){
+  :root{
+    --inkt-2: #2a3444;
+    --inkt-3: #4e5868;
+    --inkt-4: #6e7888;
+    --lijn:   #c4cad6;
+  }
+  .kaart, .blad, .account-menu{ border: 1px solid var(--lijn); }
+  .knop-stil{ background: transparent; border: 1px solid var(--inkt-3); }
 }
 
 /* ── wie is er ingelogd ───────────────────────────────────────────────

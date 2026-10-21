@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
+<title>Platformbeheer — Keuzebord</title>
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-1631c276">
+<style>
+body{ background: var(--vlak-2); }
+.knoprij{ display:flex; gap:10px; flex-wrap:wrap; }
+.knoprij-onder{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.hint{ font-size:.87rem; color:var(--inkt-3); line-height:1.55; max-width:66ch; }
+.paneel{ background:var(--vlak); border-radius:var(--rond-m); box-shadow:var(--schaduw-1);
+         padding:20px 22px; margin-top:22px; }
+.paneelkop{ font-size:.74rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+            color:var(--inkt-3); margin-bottom:10px; }
+.leegvak{ padding:30px; border:1.5px dashed var(--lijn); border-radius:var(--rond-m); text-align:center; }
+
+.scholen{ display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; }
+.schoolkaart{ background:var(--vlak); border-radius:var(--rond-m); box-shadow:var(--schaduw-1);
+              padding:18px 20px; display:flex; flex-direction:column; gap:14px;
+              border-top:4px solid var(--accent); }
+.schoolnaam{ font-size:1.15rem; font-weight:600; letter-spacing:-.015em; }
+/* De cijfers zijn het enige wat hier van een school te zien is. Geen
+   kinderen, geen borden -- zie docs/ROLLEN.md. */
+.cijfers{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px 16px; }
+.cijfer{ display:flex; flex-direction:column; gap:1px; }
+.cijfer b{ font-size:1.35rem; font-weight:620; letter-spacing:-.02em; color:var(--inkt);
+           font-variant-numeric:tabular-nums; }
+.cijfer span{ font-size:.73rem; color:var(--inkt-3); letter-spacing:.01em; }
+.stil{ font-size:.8rem; color:var(--inkt-3); margin-top:auto; padding-top:4px; }
+.deur{ font-size:.8rem; font-weight:550; color:var(--let-op); background:var(--let-op-zacht);
+       padding:6px 10px; border-radius:var(--rond-vol); align-self:flex-start; }
+
+.logrij{ display:flex; align-items:baseline; justify-content:space-between; gap:14px;
+         padding:9px 13px; border-radius:11px; background:var(--vlak-2); margin-bottom:7px; }
+.logwat{ font-size:.9rem; color:var(--inkt); }
+.logtijd{ font-size:.76rem; color:var(--inkt-3); white-space:nowrap;
+          font-variant-numeric:tabular-nums; }
+
+.veldrij{ margin:16px 0; }
+.veldlabel{ display:block; font-size:.83rem; font-weight:550; color:var(--inkt-2);
+            margin-bottom:7px; letter-spacing:-.008em; }
+.codevak{ margin:18px 0; padding:18px; border-radius:14px; text-align:center;
+          background:var(--accent-zacht); border:1.5px dashed var(--accent); }
+.codetekst{ font-size:2rem; font-weight:650; letter-spacing:.22em;
+            font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            color:var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <nav class="zijbalk">
+    <div class="zij-kop">
+      <div class="n">Keuzebord</div>
+      <div class="s">Platformbeheer</div>
+    </div>
+    <div class="zij-menu" id="zij-menu"></div>
+    <div class="zij-onder">
+      <a class="zij-link" href="inloggen.html" id="afmelden">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 l-7 7 7 7"></path></svg>
+        Afmelden
+      </a>
+    </div>
+  </nav>
+  <main class="inhoud" id="inhoud"></main>
+</div>
+
+<div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
+<div class="melding" id="melding"></div>
+
+<script src="src/kb-supabase.js?v=6september2026-1631c276"></script>
+<script src="src/kb-platform.js?v=6september2026-1631c276"></script>
+</body>
+</html>

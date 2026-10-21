@@ -48,10 +48,28 @@ function meld(tekst){
 }
 
 /* ── overlay ─────────────────────────────────────────────── */
+/* Waar drukte iemand het laatst? Een venster hoort op te komen uit de
+   knop waar je op drukte, niet uit het midden van het scherm: dan zie je
+   dat die twee bij elkaar horen. Op een digibord van zeventig inch is dat
+   geen detail -- een venster dat uit het niets in het midden verschijnt
+   heeft daar geen zichtbare herkomst. */
+var laatstGedrukt = null;
+document.addEventListener('pointerdown', function (e) {
+  laatstGedrukt = { x: e.clientX, y: e.clientY };
+}, true);
+
 function toonBlad(bouw){
   var blad = $('blad');
   blad.innerHTML = '';
   bouw(blad);
+  if (laatstGedrukt) {
+    var doos = blad.getBoundingClientRect();
+    blad.style.setProperty('--bron-x', (laatstGedrukt.x - doos.left) + 'px');
+    blad.style.setProperty('--bron-y', (laatstGedrukt.y - doos.top) + 'px');
+  } else {
+    blad.style.removeProperty('--bron-x');
+    blad.style.removeProperty('--bron-y');
+  }
   $('overlay').classList.add('open');
 }
 function sluitBlad(){ $('overlay').classList.remove('open'); }
@@ -516,11 +534,108 @@ function tekenStrook(k, b){
    pointerId. De luisteraars staan op het document en filteren op dat
    id, zodat een sleep blijft werken ook als het bord ondertussen
    opnieuw wordt getekend doordat een ander kind zijn keuze maakt. */
+/* ══════════════════════════════════════════════════════════════
+   VEREN
+   Een afgepaste animatie weet aan het begin al hoe lang hij duurt en
+   waar hij uitkomt, en kan daar niets meer aan veranderen. Een veer
+   weet dat niet: die kent alleen een doel en een snelheid, en rekent
+   per beeldje uit waar hij nu is. Dat heeft twee gevolgen die je op het
+   bord voelt.
+
+   Eén: hij begint bij de snelheid waarmee je losliet. Zwaai je een kind
+   naar de bouwhoek, dan vliegt het verder met de snelheid van je hand --
+   er zit geen naadje tussen slepen en vliegen.
+
+   Twee: hij is onderbreekbaar. Een nieuw doel betekent gewoon: reken
+   verder vanaf waar je nu bent. Een overgang met een vaste duur moet
+   eerst af, of springt.
+
+   Twee knoppen, geen drie. In plaats van massa, stijfheid en demping --
+   waar je niets aan ziet -- rekenen we met:
+
+     demping  1.0 = komt netjes tot stilstand, geen doorzwaai.
+              0.8 = schiet er iets voorbij en komt terug.
+     respons  hoe snel hij bij zijn doel is, in seconden. Dit is géén
+              duur: een veer heeft geen duur. Hij is een maat voor hoe
+              kort hij erover doet.
+
+   Doorzwaai alleen als het gebaar zelf vaart had. Een venster dat
+   openvalt en dan terugwipt voelt slap; een kind dat je weggooit en dat
+   even doorschiet voelt als iets dat je echt gooide.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Vraagt het apparaat om minder beweging, dan slaan we het rekenwerk over
+   en zetten we het ding meteen op zijn plek. */
+function wilStil(){
+  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  catch (e) { return false; }
+}
+
+/* Twee assen, twee veren. Eén veer over de afstand in het vlak gaat mis
+   zodra x en y verschillende snelheden hebben: dan lopen ze uit de pas en
+   krijg je een boog waar een rechte lijn hoorde. Dus rekent elke as voor
+   zich, in dezelfde beeldwisseling. */
+function veerXY(begin, doel, snelheid, opties, opElk, opKlaar){
+  var demping = opties.demping == null ? 1 : opties.demping;
+  var respons = opties.respons || 0.34;
+  var omega = 2 * Math.PI / respons;
+  var x = begin.x, y = begin.y, vx = snelheid.x || 0, vy = snelheid.y || 0;
+  var vorig = null, gestopt = false;
+
+  if (wilStil()) { opElk(doel.x, doel.y); if (opKlaar) opKlaar(); return { stop: function(){} }; }
+
+  function stap(nu){
+    if (gestopt) return;
+    /* De tijd tussen twee beeldjes, maar met een bovengrens. Komt het
+       bord net terug uit de sluimerstand, dan is die sprong een halve
+       seconde, en dan schiet een veer dwars door zijn doel heen. */
+    var dt = vorig == null ? 1 / 60 : Math.min((nu - vorig) / 1000, 1 / 30);
+    vorig = nu;
+    vx += (-omega * omega * (x - doel.x) - 2 * demping * omega * vx) * dt;
+    vy += (-omega * omega * (y - doel.y) - 2 * demping * omega * vy) * dt;
+    x += vx * dt; y += vy * dt;
+    var dicht = Math.abs(x - doel.x) < 1 && Math.abs(y - doel.y) < 1;
+    var traag = Math.abs(vx) < 30 && Math.abs(vy) < 30;
+    if (dicht && traag) { opElk(doel.x, doel.y); if (opKlaar) opKlaar(); return; }
+    opElk(x, y);
+    requestAnimationFrame(stap);
+  }
+  requestAnimationFrame(stap);
+  return { stop: function () { gestopt = true; } };
+}
+
+/* Waar komt dit tot stilstand als je het nu loslaat?
+
+   Dit is dezelfde som die een scherm maakt als je een lijst wegzwiept:
+   een snelheid die per beeldje een vast deel van zichzelf verliest. Niet
+   de natuurkundeformule uit het boek (v² gedeeld door tweemaal de
+   vertraging) -- die geeft een andere, kortere worp dan wat een telefoon
+   doet, en dus voelt het verkeerd.
+
+   Waar het voor dient: niet kijken waar de vinger ophield, maar waar het
+   gebaar heen wilde. Een kleuter die zijn plaatje richting de bouwhoek
+   zwaait en halverwege lost, hoort in de bouwhoek te belanden. Een klein
+   gebaar, een grote uitkomst. */
+function projecteer(snelheid, vertraging){
+  vertraging = vertraging || 0.998;
+  return (snelheid / 1000) * vertraging / (1 - vertraging);
+}
+
 var lopendeSlepen = 0;
 var slependeKinderen = {};      // leerlingId -> true, om dubbel pakken te weren
 window.KB_SLEEP_STATUS = function () {
   return { lopend: lopendeSlepen, kinderen: Object.keys(slependeKinderen) };
 };
+
+/* Kinderen die op dit moment door de lucht gaan: losgelaten, nog niet
+   geland. Pak je er een midden in de vlucht weer op, dan halen we hem uit
+   de lucht in plaats van hem eerst te laten aankomen. */
+var vluchten = {};
+
+function hoekOnder(x, y){
+  var onder = document.elementFromPoint(x, y);
+  return (onder && onder.closest) ? onder.closest('.hoek') : null;
+}
 
 function maakSleepbaar(picto, leerling, vanHoekId){
   picto.addEventListener('pointerdown', function (start) {
@@ -540,6 +655,10 @@ function maakSleepbaar(picto, leerling, vanHoekId){
       }
     }
 
+    /* Was dit kind nog onderweg naar een hoek, dan pak je het nu uit de
+       lucht. Niets afwachten: je hand is er, dus hoort het daar te zijn. */
+    if (vluchten[leerling.id]) { vluchten[leerling.id].afbreken(); }
+
     start.preventDefault();
     var pid = start.pointerId;
     lopendeSlepen++;
@@ -548,65 +667,151 @@ function maakSleepbaar(picto, leerling, vanHoekId){
     // Alleen de bol meenemen, niet de naam eronder: dat leest als een
     // kaartje dat je optilt in plaats van als een stukje tekst.
     var bron = picto.querySelector('.picto-rond');
-    var maat = bron ? bron.getBoundingClientRect().width : 60;
+    var doosBron = bron ? bron.getBoundingClientRect() : null;
+    var maat = doosBron ? doosBron.width : 60;
+
+    /* Waar pakte je hem beet? Niet "in het midden" -- dáár pakte je hem
+       niet. Een bol die naar je vinger toe springt op het moment dat je
+       hem aanraakt, verraadt meteen dat het geen echt ding is. */
+    var pakX = doosBron ? (start.clientX - doosBron.left) : maat / 2;
+    var pakY = doosBron ? (start.clientY - doosBron.top)  : maat / 2;
+    pakX = begrens(pakX, 0, maat); pakY = begrens(pakY, 0, maat);
+
     var geest = document.createElement('div');
     geest.className = 'sleep-geest';
     var bol = bron.cloneNode(true);
     var ring = bol.querySelector('.ring');
     if (ring) ring.remove();                 // de timer hoort bij de hoek, niet bij je hand
     bol.style.width = bol.style.height = maat + 'px';
-    geest.appendChild(bol);
-    geest.style.left = start.clientX + 'px';
-    geest.style.top  = start.clientY + 'px';
+    var houder = document.createElement('div');
+    houder.className = 'sleep-bol';
+    houder.style.setProperty('--pak-x', pakX + 'px');
+    houder.style.setProperty('--pak-y', pakY + 'px');
+    houder.appendChild(bol);
+    geest.appendChild(houder);
+
+    var nx = start.clientX, ny = start.clientY;
+    var zet = function (x, y) {
+      nx = x; ny = y;
+      geest.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+    };
+    zet(nx, ny);
     document.body.appendChild(geest);
     // eerst op ware grootte tekenen, dan optillen — anders slaat de
     // browser de overgang over
     requestAnimationFrame(function () { geest.classList.add('opgetild'); });
     picto.classList.add('sleept');
 
+    /* Deze aanwijzer blijft bij ons, ook als de vinger de bol verlaat of
+       van het scherm af glijdt. Zonder dit stopte een sleep die buiten
+       het venster eindigde halverwege. */
+    try { picto.setPointerCapture(pid); } catch (e) {}
+
+    /* Een kort geheugen van waar de vinger was. Alleen het laatste punt
+       is niet genoeg: aan één punt zie je geen snelheid, en de snelheid
+       van het laatste beeldje alleen is te schokkerig om op te rekenen. */
+    var spoor = [{ x: start.clientX, y: start.clientY, t: performance.now() }];
     var laatsteDoel = null;
+
     function beweeg(e){
       if (e.pointerId !== pid) return;
-      geest.style.left = e.clientX + 'px';
-      geest.style.top  = e.clientY + 'px';
-      geest.style.display = 'none';
-      var onder = document.elementFromPoint(e.clientX, e.clientY);
-      geest.style.display = '';
-      var kaart = onder && onder.closest ? onder.closest('.hoek') : null;
+      zet(e.clientX, e.clientY);
+      spoor.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      if (spoor.length > 6) spoor.shift();
+      geest.style.visibility = 'hidden';
+      var kaart = hoekOnder(e.clientX, e.clientY);
+      geest.style.visibility = '';
       if (kaart !== laatsteDoel) {
         if (laatsteDoel) laatsteDoel.classList.remove('doelwit');
         if (kaart) kaart.classList.add('doelwit');
         laatsteDoel = kaart;
       }
     }
+
+    /* De snelheid waarmee je losliet, in pixels per seconde. We rekenen
+       over het oudste punt dat nog jong genoeg is: lang genoeg terug om
+       rustig te zijn, kort genoeg om nog over nú te gaan. Hield de vinger
+       even stil voor het loslaten, dan is er geen vaart -- en dan hoort er
+       ook niets te vliegen. */
+    function snelheidNu(){
+      var nu = performance.now(), laatste = spoor[spoor.length - 1];
+      var eerste = null;
+      for (var i = 0; i < spoor.length; i++) {
+        if (nu - spoor[i].t <= 120) { eerste = spoor[i]; break; }
+      }
+      if (!eerste || !laatste || eerste === laatste) return { x: 0, y: 0 };
+      var dt = (laatste.t - eerste.t) / 1000;
+      if (dt <= 0) return { x: 0, y: 0 };
+      var cap = function (v) { return begrens(v, -3000, 3000); };
+      return { x: cap((laatste.x - eerste.x) / dt), y: cap((laatste.y - eerste.y) / dt) };
+    }
+
     function los(e){
       if (e.pointerId !== pid) return;
       document.removeEventListener('pointermove', beweeg);
       document.removeEventListener('pointerup', los);
       document.removeEventListener('pointercancel', los);
+      try { picto.releasePointerCapture(pid); } catch (er) {}
       lopendeSlepen = Math.max(0, lopendeSlepen - 1);
       delete slependeKinderen[leerling.id];
       picto.classList.remove('sleept');
       if (laatsteDoel) laatsteDoel.classList.remove('doelwit');
 
-      var onder = document.elementFromPoint(e.clientX, e.clientY);
-      var kaart = onder && onder.closest ? onder.closest('.hoek') : null;
+      var v = snelheidNu();
+      var vaart = Math.sqrt(v.x * v.x + v.y * v.y);
+      geest.style.visibility = 'hidden';
+      var kaart = hoekOnder(e.clientX, e.clientY);
+      geest.style.visibility = '';
+
+      /* Liet je los boven een hoek, dan is dat je keuze: je zag waar je
+         hem neerzette. Was het een zwaai die net naast of net voor een
+         hoek eindigde, dan kijken we waar die zwaai heen ging. Zo haalt
+         een klein gebaar een hoek die verder weg staat, zonder dat een
+         rustige, bewuste keuze ooit wordt overruled. */
+      var gegooid = false;
+      if (!kaart && vaart > 420) {
+        geest.style.visibility = 'hidden';
+        var raak = hoekOnder(e.clientX + projecteer(v.x), e.clientY + projecteer(v.y));
+        geest.style.visibility = '';
+        if (raak) { kaart = raak; gegooid = true; }
+      }
+
+      var ruimOp = function () {
+        delete vluchten[leerling.id];
+        if (geest.parentNode) geest.remove();
+      };
+      var vlucht = null;
+      vluchten[leerling.id] = { afbreken: function () {
+        if (vlucht) vlucht.stop();
+        ruimOp();
+      } };
 
       if (kaart) {
-        // even naar het midden van de hoek toe zakken voordat het bord
-        // opnieuw tekent: dat leest als "hij is er"
         var doos = kaart.getBoundingClientRect();
         geest.classList.remove('opgetild');
         geest.classList.add('landt');
-        geest.style.left = (doos.left + doos.width / 2) + 'px';
-        geest.style.top  = (doos.top + doos.height / 2) + 'px';
-        setTimeout(function () {
-          geest.remove();
-          leg(leerling, kaart.dataset.hoekId);
-        }, 170);
+        var hoekId = kaart.dataset.hoekId;
+        /* Doorzwaai alleen als er vaart achter zat. Een kind dat je
+           neerzet hoort te blijven liggen waar je het neerzet; een kind
+           dat je gooit mag even doorschieten. */
+        vlucht = veerXY({ x: nx, y: ny },
+                        { x: doos.left + doos.width / 2, y: doos.top + doos.height / 2 },
+                        v, { demping: gegooid ? 0.82 : 1, respons: gegooid ? 0.34 : 0.28 },
+                        zet,
+                        function () { ruimOp(); leg(leerling, hoekId); });
       } else {
-        geest.classList.add('valt-terug');
-        setTimeout(function () { geest.remove(); tekenBord(); }, 150);
+        /* Nergens neergezet. Dan gaat hij terug waar hij vandaan kwam --
+           langs dezelfde weg, want iets dat de ene kant op verdwijnt
+           verwachten we ook van die kant terug. Hij loste eerst gewoon
+           op in de lucht, en dan weet je niet of je iets verkeerd deed of
+           dat het kind weg is. */
+        geest.classList.remove('opgetild');
+        var terug = doosBron
+          ? { x: doosBron.left + pakX, y: doosBron.top + pakY }
+          : { x: start.clientX, y: start.clientY };
+        vlucht = veerXY({ x: nx, y: ny }, terug, v,
+                        { demping: 1, respons: 0.26 }, zet,
+                        function () { ruimOp(); tekenBord(); });
       }
     }
     document.addEventListener('pointermove', beweeg);

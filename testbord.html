@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord — testbord</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-f4f75a8f">
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-1631c276">
 <style>
 /* het testbord gebruikt exact dezelfde stijl als het echte bord */
 .uitleg{ font-size:13px; color:var(--inkt-3); margin:-6px 0 18px; }
@@ -137,26 +137,52 @@ body.bord{
 .rij-plek.ikzelf .picto-rond{ width: 84px; height: 84px; font-size: 2rem; }
 .rij-ring{ padding: 5px; border-radius: 50%; background: rgba(59,111,240,.14); }
 
-/* Het picto dat je optilt: alleen de bol, iets groter, met een schaduw
-   die meegroeit. Dat leest als oppakken in plaats van als slepen. */
+/* ── het kind dat je in je hand hebt ─────────────────────────────────
+   Twee lagen, met opzet.
+
+   De buitenste laag is de plek: die zet het bord elke beeldwisseling zelf
+   neer, precies waar de vinger is. Daar staat dus géén overgang op. Er
+   stond hier eerst `transition: left .16s, top .16s`, en dat was een
+   bewuste verzachting die precies het verkeerde deed: het plaatje liep
+   een zesde seconde achter je vinger aan. Dat voelt als stroop, en het is
+   het verschil tussen "ik sleep dit" en "ik stuur iets aan dat daarna
+   volgt". Bovendien schoven we `left` en `top` op, en dat zijn maten waar
+   de browser de bladspiegel voor opnieuw moet uitrekenen -- zestig keer
+   per seconde, voor elk kind dat sleept. Nu is het `transform`, en dat
+   gaat buiten de bladspiegel om.
+
+   De binnenste laag is hoe het kind eruitziet terwijl je het vasthoudt:
+   opgetild, iets groter, een graadje gedraaid. Dat is een toestand en
+   geen gebaar -- je vinger bestuurt het niet -- dus mag dat gewoon een
+   overgang zijn.
+
+   --pak-x en --pak-y zijn de plek waar je het kind beetpakte, binnen de
+   bol. Daarmee blijft het punt waar je het oppakte onder je vinger
+   liggen, in plaats van dat de bol naar je vinger toe springt. En de
+   groei gaat om dat punt heen, zodat het kind onder je vinger uit
+   opkomt. */
 .sleep-geest{
-  position: fixed; z-index: 500; pointer-events: none;
-  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none;
+  will-change: transform;
+}
+.sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)));
+  transform-origin: var(--pak-x, 50%) var(--pak-y, 50%);
   filter: drop-shadow(0 2px 6px rgba(20,28,44,.18));
-  transition: transform .18s var(--veer), filter .18s ease, left .16s ease-out, top .16s ease-out;
+  transition: transform .2s var(--veer), filter .2s ease, opacity .18s ease;
 }
-.sleep-geest.opgetild{
-  transform: translate(-50%, -50%) scale(1.22) rotate(-4deg);
+.sleep-geest.opgetild .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)))
+             scale(1.22) rotate(-4deg);
   filter: drop-shadow(0 16px 26px rgba(20,28,44,.3));
-  transition: transform .18s var(--veer), filter .18s ease;
 }
-.sleep-geest.landt{
-  transform: translate(-50%, -50%) scale(.9) rotate(0deg);
+.sleep-geest.landt .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)))
+             scale(.92) rotate(0deg);
   filter: drop-shadow(0 3px 8px rgba(20,28,44,.16));
-  opacity: .7;
 }
-.sleep-geest.valt-terug{
-  transform: translate(-50%, -50%) scale(.8);
+.sleep-geest.valt-terug .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%))) scale(.8);
   opacity: 0;
 }
 .picto.sleept .picto-rond{ transition: transform .2s var(--veer); transform: scale(.9); }
@@ -273,8 +299,8 @@ body.bord{
   <button id="m-klein">Kleiner</button>
 </aside>
 
-<script src="src/kb-app.js?v=6september2026-f4f75a8f"></script>
-<script src="src/kb-data.js?v=6september2026-f4f75a8f"></script>
+<script src="src/kb-app.js?v=6september2026-1631c276"></script>
+<script src="src/kb-data.js?v=6september2026-1631c276"></script>
 <script>
 /* Het testbord draait op eigen gegevens, los van je echte groepen. */
 (function () {
@@ -325,7 +351,7 @@ body.bord{
   });
 })();
 </script>
-<script src="src/kb-bord.js?v=6september2026-f4f75a8f"></script>
+<script src="src/kb-bord.js?v=6september2026-1631c276"></script>
 <script>
 /* ── het meetpaneel ──────────────────────────────────────── */
 (function () {

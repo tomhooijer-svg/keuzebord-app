@@ -30,7 +30,7 @@ create table if not exists public.profielen (
   naam        text not null default '',
   email       text not null default '',
   rol         text not null default 'leerkracht'
-                check (rol in ('leerkracht','schoolbeheerder')),
+                check (rol in ('leerkracht','schoolbeheerder','platformbeheerder')),
   aangemaakt  timestamptz not null default now()
 );
 
@@ -355,6 +355,31 @@ alter table public.taak_toewijzing add column if not exists notitie text not nul
 -- hoeken en doelen dezelfde taal en zie je of je aanbod in balans is.
 alter table public.hoeken add column if not exists leerlijnen text[] not null default '{}';
 
+-- ── de hoeken-databank ────────────────────────────────────────────────
+/* Een hoek zonder school is van de databank: die ziet elke school, en
+   alleen de platformbeheerder kan hem aanpassen. Hetzelfde patroon als
+   de landelijke doelenlijst hierboven. Een school kopieert eruit naar
+   haar eigen groep; die kopie is daarna van haar.
+
+   categorie   waar hij in de databank onder staat (bijv. 'Winter')
+   uit_databank  uit welke databankhoek deze kopie komt. Daarmee weet je
+                 hoe vaak een hoek gebruikt wordt zonder dat je ergens
+                 apart hoeft te tellen. */
+alter table public.hoeken alter column school_id drop not null;
+alter table public.media  alter column school_id drop not null;
+alter table public.hoeken add column if not exists categorie text not null default '';
+alter table public.hoeken add column if not exists uit_databank uuid
+  references public.hoeken(id) on delete set null;
+create index if not exists hoeken_databank on public.hoeken (categorie)
+  where school_id is null;
+create index if not exists hoeken_herkomst on public.hoeken (uit_databank)
+  where uit_databank is not null;
+
+-- ── de platformbeheerder erbij (zie docs/ROLLEN.md) ───────────────────
+alter table public.profielen drop constraint if exists profielen_rol_check;
+alter table public.profielen add  constraint profielen_rol_check
+  check (rol in ('leerkracht','schoolbeheerder','platformbeheerder'));
+
 -- ── thema's, zoals je ze bij thematisch onderzoekend leren uitwerkt ────
 alter table public.themas add column if not exists vraag        text not null default '';
 alter table public.themas add column if not exists start_tekst  text not null default '';
@@ -417,6 +442,213 @@ exception when others then
 end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
+--  De school in elke rij
+-- ═══════════════════════════════════════════════════════════════════════
+/* Tot nu toe hing de scheiding tussen scholen aan een ketting: een
+   plaatsing hoort bij een bord, een bord bij een groep, een groep bij een
+   school. Dat werkt, maar je kunt het niet in één oogopslag nalopen, en
+   één verkeerd geschreven regel zet de gegevens van twee scholen bij
+   elkaar.
+
+   Daarom staat de school nu in elke rij, en de groep erbij. Dat is
+   dubbelop en dat is de bedoeling: de rechtenregel wordt overal dezelfde
+   korte vergelijking, en een rij waarvan de school niet klopt wordt
+   onzichtbaar in plaats van zichtbaar voor de verkeerde.
+
+   De app stuurt deze kolommen niet mee. Een trekker vult ze bij het
+   opslaan vanuit de ouderrij, zodat de app zich niet kan vergissen en
+   ook niet kan liegen. Zie docs/DATAMODEL.md. */
+
+-- ── de kolommen ───────────────────────────────────────────────────────
+do $$
+declare t text;
+begin
+  -- deze hebben groep_id al; alleen de school komt erbij
+  foreach t in array array['leerlingen','borden','groep_doelen','taken',
+                           'weekplannen','observaties','gebeurtenissen'] loop
+    execute format('alter table public.%I add column if not exists school_id uuid
+                    references public.scholen(id) on delete cascade', t);
+  end loop;
+
+  -- deze hebben geen van beide: ze hangen aan een bord, thema, taak of weekplan
+  foreach t in array array['bord_hoeken','plaatsingen','wachtrij','thema_hoeken',
+                           'thema_doelen','taak_doelen','week_doelen',
+                           'weekplan_taken','taak_toewijzing'] loop
+    execute format('alter table public.%I add column if not exists school_id uuid
+                    references public.scholen(id) on delete cascade', t);
+    execute format('alter table public.%I add column if not exists groep_id uuid
+                    references public.groepen(id) on delete cascade', t);
+  end loop;
+end $$;
+
+-- ── de trekker die ze vult ────────────────────────────────────────────
+/* Eén functie voor alle tabellen. Welke ouder erbij hoort staat bij de
+   trekker zelf: de tabel en de kolom waarin het id van de ouder staat.
+   Een groep is zijn eigen groep, vandaar de uitzondering. */
+create or replace function public.vul_school_en_groep()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare oudertabel text := TG_ARGV[0];
+        ouderkolom text := TG_ARGV[1];
+        ouder_id   uuid;
+        s uuid;
+        g uuid;
+begin
+  execute format('select ($1).%I', ouderkolom) into ouder_id using new;
+  if ouder_id is null then return new; end if;
+
+  if oudertabel = 'groepen' then
+    select k.school_id, k.id into s, g from public.groepen k where k.id = ouder_id;
+  else
+    execute format('select school_id, groep_id from public.%I where id = $1', oudertabel)
+      into s, g using ouder_id;
+  end if;
+
+  new.school_id := s;
+  /* Niet elke tabel heeft een groep: een thema van de hele school hangt
+     aan geen enkele groep. to_jsonb kijkt of de kolom bestaat zonder dat
+     we hier per tabel een lijstje hoeven bij te houden. */
+  if (to_jsonb(new) ? 'groep_id') and oudertabel <> 'groepen' then
+    new.groep_id := g;
+  end if;
+  return new;
+end $$;
+
+do $$
+declare paren text[][] := array[
+    ['leerlingen','groepen','groep_id'],
+    ['borden','groepen','groep_id'],
+    ['groep_doelen','groepen','groep_id'],
+    ['taken','groepen','groep_id'],
+    ['weekplannen','groepen','groep_id'],
+    ['observaties','groepen','groep_id'],
+    ['gebeurtenissen','groepen','groep_id'],
+    ['bord_hoeken','borden','bord_id'],
+    ['plaatsingen','borden','bord_id'],
+    ['wachtrij','borden','bord_id'],
+    ['thema_hoeken','themas','thema_id'],
+    ['thema_doelen','themas','thema_id'],
+    ['taak_doelen','taken','taak_id'],
+    ['week_doelen','weekplannen','weekplan_id'],
+    ['weekplan_taken','weekplannen','weekplan_id'],
+    ['taak_toewijzing','weekplan_taken','weekplan_taak_id']];
+  i int;
+begin
+  for i in 1 .. array_length(paren, 1) loop
+    execute format('drop trigger if exists school_erbij on public.%I', paren[i][1]);
+    execute format('create trigger school_erbij before insert or update on public.%I
+                    for each row execute function public.vul_school_en_groep(%L, %L)',
+                   paren[i][1], paren[i][2], paren[i][3]);
+  end loop;
+end $$;
+
+-- ── vullen wat er al stond ────────────────────────────────────────────
+/* In dezelfde volgorde als de ketting liep: eerst wat aan een groep
+   hangt, dan wat aan een bord, thema, taak of weekplan hangt, en als
+   laatste de toewijzingen. Dit mag zo vaak draaien als je wilt. */
+do $$
+declare paren text[][] := array[
+    ['leerlingen','groepen','groep_id'],
+    ['borden','groepen','groep_id'],
+    ['groep_doelen','groepen','groep_id'],
+    ['taken','groepen','groep_id'],
+    ['weekplannen','groepen','groep_id'],
+    ['observaties','groepen','groep_id'],
+    ['gebeurtenissen','groepen','groep_id'],
+    ['bord_hoeken','borden','bord_id'],
+    ['plaatsingen','borden','bord_id'],
+    ['wachtrij','borden','bord_id'],
+    ['thema_hoeken','themas','thema_id'],
+    ['thema_doelen','themas','thema_id'],
+    ['taak_doelen','taken','taak_id'],
+    ['week_doelen','weekplannen','weekplan_id'],
+    ['weekplan_taken','weekplannen','weekplan_id'],
+    ['taak_toewijzing','weekplan_taken','weekplan_taak_id']];
+  i int; tabel text; ouder text; kolom text; open_nog int;
+begin
+  for i in 1 .. array_length(paren, 1) loop
+    tabel := paren[i][1]; ouder := paren[i][2]; kolom := paren[i][3];
+    if ouder = 'groepen' then
+      execute format('update public.%I t set school_id = k.school_id
+                        from public.groepen k
+                       where k.id = t.%I and t.school_id is distinct from k.school_id',
+                     tabel, kolom);
+    else
+      execute format('update public.%I t set school_id = o.school_id, groep_id = o.groep_id
+                        from public.%I o
+                       where o.id = t.%I
+                         and (t.school_id is distinct from o.school_id
+                              or t.groep_id is distinct from o.groep_id)',
+                     tabel, ouder, kolom);
+    end if;
+    execute format('select count(*) from public.%I where school_id is null', tabel)
+      into open_nog;
+    if open_nog > 0 then
+      raise notice 'LET OP: % rijen in % hebben nog geen school', open_nog, tabel;
+    end if;
+  end loop;
+end $$;
+
+-- ── en ze verplicht maken ─────────────────────────────────────────────
+/* Pas hierna, en per tabel apart: blijft er ergens een rij zonder school
+   staan, dan hoort dat één tabel tegen te houden en niet het hele
+   bestand. De melding hierboven zegt welke. */
+do $$
+declare t text;
+begin
+  foreach t in array array['leerlingen','borden','groep_doelen','taken','weekplannen',
+                           'observaties','gebeurtenissen','bord_hoeken','plaatsingen',
+                           'wachtrij','thema_hoeken','thema_doelen','taak_doelen',
+                           'week_doelen','weekplan_taken','taak_toewijzing'] loop
+    begin
+      execute format('alter table public.%I alter column school_id set not null', t);
+    exception when others then
+      raise notice 'school_id in % nog niet verplicht gemaakt: %', t, sqlerrm;
+    end;
+  end loop;
+end $$;
+
+create index if not exists leerlingen_per_school     on public.leerlingen (school_id);
+create index if not exists plaatsingen_per_school    on public.plaatsingen (school_id);
+create index if not exists gebeurtenissen_per_school on public.gebeurtenissen (school_id);
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Ondersteuning en het handelingenlogboek
+-- ═══════════════════════════════════════════════════════════════════════
+
+/* De platformbeheerder komt niet bij de kinderen, de borden of de
+   statistieken van een school. Belt een school met een probleem, dan zet
+   de schoolbeheerder de deur zelf open -- tijdelijk, zichtbaar en met een
+   reden erbij. Zie docs/ROLLEN.md voor het waarom. */
+create table if not exists public.ondersteuning (
+  id          uuid primary key default gen_random_uuid(),
+  school_id   uuid not null references public.scholen(id) on delete cascade,
+  -- wie van de school het heeft aangezet
+  door        uuid references public.profielen(id) on delete set null,
+  reden       text not null default '',
+  gestart     timestamptz not null default now(),
+  tot         timestamptz not null,
+  ingetrokken timestamptz
+);
+create index if not exists ondersteuning_per_school
+  on public.ondersteuning (school_id, tot desc);
+
+/* Wie heeft wat gedaan. Alleen bijschrijven: er staat hieronder geen
+   enkele regel om een rij te wijzigen of te verwijderen, ook niet voor de
+   platformbeheerder. Een logboek dat de beheerder kan bijwerken is geen
+   logboek. */
+create table if not exists public.handelingen (
+  id         bigserial primary key,
+  wie        uuid references public.profielen(id) on delete set null,
+  school_id  uuid references public.scholen(id) on delete set null,
+  wat        text not null,
+  waarover   text not null default '',
+  gegevens   jsonb not null default '{}'::jsonb,
+  tijd       timestamptz not null default now()
+);
+create index if not exists handelingen_per_school
+  on public.handelingen (school_id, tijd desc);
+
+-- ═══════════════════════════════════════════════════════════════════════
 --  Wie mag wat
 -- ═══════════════════════════════════════════════════════════════════════
 --  Deze drie functies beantwoorden telkens dezelfde vraag: van welke
@@ -454,15 +686,49 @@ returns boolean language sql stable security definer set search_path = public as
                   where k.id = g and k.school_id = public.mijn_school());
 $$;
 
+create or replace function public.ben_platformbeheerder()
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select rol = 'platformbeheerder' from public.profielen
+                   where id = auth.uid()), false);
+$$;
+
+/* Heeft deze school op dit moment de deur opengezet voor ondersteuning?
+
+   Let op de volgorde: eerst moet je platformbeheerder zijn, en dan pas
+   telt of de school je binnenlaat. De rol alleen is dus nooit genoeg om
+   een kind te zien -- daar is altijd een school voor nodig die er zelf
+   ja tegen heeft gezegd. */
+create or replace function public.ondersteuning_actief(school uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.ben_platformbeheerder() and exists (
+    select 1 from public.ondersteuning o
+     where o.school_id = school
+       and o.ingetrokken is null
+       and now() >= o.gestart and now() < o.tot
+  );
+$$;
+
+/* Is deze rij van mijn school -- of van een school die op dit moment de
+   deur voor mij heeft opengezet? Dit is de halve rechtenregel die onder
+   elke inhoudstabel staat. De andere helft is mag_bij_groep(). */
+create or replace function public.van_mijn_school(s uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select s is not null
+     and (s = public.mijn_school() or public.ondersteuning_actief(s));
+$$;
+
 -- Een schoolbeheerder mag bij elke groep van haar eigen school. Een
--- leerkracht alleen bij de groepen waar ze aan gekoppeld is.
+-- leerkracht alleen bij de groepen waar ze aan gekoppeld is. En een
+-- platformbeheerder alleen zolang de school de deur openzet -- daarom
+-- staat ben_platformbeheerder() hier met opzet niet.
 create or replace function public.mag_bij_groep(g uuid)
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from public.groepen k
     where k.id = g
-      and k.school_id = public.mijn_school()
-      and (public.ben_schoolbeheerder() or public.zit_in_groep(g))
+      and ((k.school_id = public.mijn_school()
+            and (public.ben_schoolbeheerder() or public.zit_in_groep(g)))
+           or public.ondersteuning_actief(k.school_id))
   );
 $$;
 
@@ -475,7 +741,8 @@ begin
     'scholen','profielen','uitnodigingen','groepen','groep_leden','groep_verzoeken','leerlingen',
     'media','hoeken','themas','thema_hoeken','thema_doelen','borden','bord_hoeken','groep_doelen',
     'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
-    'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen']
+    'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen',
+    'ondersteuning','handelingen']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('alter table public.%I force row level security', t);
@@ -497,18 +764,24 @@ end $$;
 -- ── school en profiel ──────────────────────────────────────────────────
 
 create policy "eigen school lezen" on public.scholen
-  for select using (id = public.mijn_school());
+  for select using (id = public.mijn_school() or public.ben_platformbeheerder());
 create policy "beheerder past school aan" on public.scholen
   for update using (id = public.mijn_school() and public.ben_schoolbeheerder())
   with check (id = public.mijn_school() and public.ben_schoolbeheerder());
 
 create policy "collega's zien" on public.profielen
-  for select using (school_id = public.mijn_school() or id = auth.uid());
+  for select using (school_id = public.mijn_school() or id = auth.uid()
+                    or public.ben_platformbeheerder());
 create policy "eigen naam aanpassen" on public.profielen
   for update using (id = auth.uid()) with check (id = auth.uid());
 create policy "beheerder past collega aan" on public.profielen
   for update using (school_id = public.mijn_school() and public.ben_schoolbeheerder())
   with check (school_id = public.mijn_school());
+-- Accountbeheer is de taak van de platformbeheerder; de inhoud van een
+-- school is dat niet. Dit gaat over namen en rollen, niet over kinderen.
+create policy "platformbeheerder past account aan" on public.profielen
+  for update using (public.ben_platformbeheerder())
+  with check (public.ben_platformbeheerder());
 
 -- Welke rijen je mag aanraken staat hierboven; welke kolommen je mag
 -- veranderen staat hieronder. Dat kan niet in een regel: een controleregel
@@ -530,6 +803,12 @@ begin
     if new.id = auth.uid() then
       raise exception 'Je kunt je eigen rol of school niet aanpassen.';
     end if;
+    -- De platformbeheerder beheert accounts: hij mag iemand aan een
+    -- school hangen of tot schoolbeheerder maken. Zijn eigen rol en
+    -- school kan hij niet aanpassen -- dat vangt de regel hierboven.
+    if public.ben_platformbeheerder() then
+      return new;
+    end if;
     if not (public.ben_schoolbeheerder()
             and old.school_id is not distinct from public.mijn_school()
             and new.school_id is not distinct from public.mijn_school()) then
@@ -544,11 +823,14 @@ create trigger profiel_op_slot before update on public.profielen
   for each row execute function public.profiel_bewaken();
 
 create policy "beheerder ziet uitnodigingen" on public.uitnodigingen
-  for select using (school_id = public.mijn_school() and public.ben_schoolbeheerder());
+  for select using ((school_id = public.mijn_school() and public.ben_schoolbeheerder())
+         or public.ben_platformbeheerder());
 create policy "beheerder nodigt uit" on public.uitnodigingen
-  for insert with check (school_id = public.mijn_school() and public.ben_schoolbeheerder());
+  for insert with check ((school_id = public.mijn_school() and public.ben_schoolbeheerder())
+         or public.ben_platformbeheerder());
 create policy "beheerder trekt uitnodiging in" on public.uitnodigingen
-  for delete using (school_id = public.mijn_school() and public.ben_schoolbeheerder());
+  for delete using ((school_id = public.mijn_school() and public.ben_schoolbeheerder())
+         or public.ben_platformbeheerder());
 
 -- ── groepen ────────────────────────────────────────────────────────────
 
@@ -558,8 +840,9 @@ create policy "beheerder trekt uitnodiging in" on public.uitnodigingen
 -- een verse groep over zijn eigen leesregel. Dit kijkt naar de kolommen
 -- van de rij zelf en heeft dat probleem niet.
 create policy "eigen groepen lezen" on public.groepen
-  for select using (school_id = public.mijn_school()
-                    and (public.ben_schoolbeheerder() or public.zit_in_groep(id)));
+  for select using ((school_id = public.mijn_school()
+                     and (public.ben_schoolbeheerder() or public.zit_in_groep(id)))
+                    or public.ben_platformbeheerder());
 create policy "beheerder maakt groepen" on public.groepen
   for insert with check (school_id = public.mijn_school() and public.ben_schoolbeheerder());
 create policy "groep aanpassen" on public.groepen
@@ -590,34 +873,40 @@ create policy "eigen verzoek intrekken" on public.groep_verzoeken
   for delete using (profiel_id = auth.uid() and behandeld is null);
 
 -- ── alles wat bij één groep hoort ──────────────────────────────────────
--- Voor deze tabellen is de regel telkens hetzelfde: je mag erbij als je
--- bij de groep mag. Alleen de weg naar die groep verschilt per tabel, dus
--- die schrijven we één keer op en laten we hieronder rondgaan.
+/* Voor deze tabellen is de regel overal dezelfde korte vergelijking: is
+   dit van mijn school, en mag ik bij die groep. Allebei de kolommen staan
+   in de rij zelf, dus er hoeft geen enkele andere tabel aan te pas te
+   komen.
+
+   Hier stond eerder een ketting per tabel: een plaatsing opzoeken bij een
+   bord, het bord bij een groep, de groep bij een school. Dat werkte, maar
+   elke tabel had zijn eigen regel en dus zijn eigen kans op een fout.
+   Wijkt er nu een regel af van de andere, dan zie je dat meteen.
+
+   Dat van_mijn_school() en mag_bij_groep() elkaar overlappen is met opzet:
+   klopt de school in de rij niet met de groep, dan valt de rij buiten
+   allebei en is hij onzichtbaar. Dat is de goede kant om fout te gaan. */
 
 do $$
 declare
-  regels text[][] := array[
-    ['leerlingen',      'public.mag_bij_groep(groep_id)'],
-    ['groep_doelen',    'public.mag_bij_groep(groep_id)'],
-    ['borden',          'public.mag_bij_groep(groep_id)'],
-    ['taken',           'public.mag_bij_groep(groep_id)'],
-    ['weekplannen',     'public.mag_bij_groep(groep_id)'],
-    ['observaties',     'public.mag_bij_groep(groep_id)'],
-    ['gebeurtenissen',  'public.mag_bij_groep(groep_id)'],
-    ['bord_hoeken',     'exists (select 1 from public.borden b where b.id = bord_id and public.mag_bij_groep(b.groep_id))'],
-    ['plaatsingen',     'exists (select 1 from public.borden b where b.id = bord_id and public.mag_bij_groep(b.groep_id))'],
-    ['wachtrij',        'exists (select 1 from public.borden b where b.id = bord_id and public.mag_bij_groep(b.groep_id))'],
-    ['thema_hoeken',    'exists (select 1 from public.themas t where t.id = thema_id and (t.groep_id is null and t.school_id = public.mijn_school() or public.mag_bij_groep(t.groep_id)))'],
-    ['thema_doelen',    'exists (select 1 from public.themas t where t.id = thema_id and (t.groep_id is null and t.school_id = public.mijn_school() or public.mag_bij_groep(t.groep_id)))'],
-    ['taak_doelen',     'exists (select 1 from public.taken t where t.id = taak_id and public.mag_bij_groep(t.groep_id))'],
-    ['week_doelen',     'exists (select 1 from public.weekplannen w where w.id = weekplan_id and public.mag_bij_groep(w.groep_id))'],
-    ['weekplan_taken',  'exists (select 1 from public.weekplannen w where w.id = weekplan_id and public.mag_bij_groep(w.groep_id))'],
-    ['taak_toewijzing', 'exists (select 1 from public.weekplan_taken wt join public.weekplannen w on w.id = wt.weekplan_id where wt.id = weekplan_taak_id and public.mag_bij_groep(w.groep_id))']
-  ];
+  vanGroep  text := 'public.van_mijn_school(school_id) and public.mag_bij_groep(groep_id)';
+  -- een thema kan van de hele school zijn; dan hangt het aan geen groep
+  vanSchool text := 'public.van_mijn_school(school_id) and (groep_id is null or public.mag_bij_groep(groep_id))';
+  regels text[][];
   i int;
   tabel text;
   voorwaarde text;
 begin
+  regels := array[
+    ['leerlingen',      vanGroep],  ['groep_doelen',   vanGroep],
+    ['borden',          vanGroep],  ['taken',          vanGroep],
+    ['weekplannen',     vanGroep],  ['observaties',    vanGroep],
+    ['gebeurtenissen',  vanGroep],  ['bord_hoeken',    vanGroep],
+    ['plaatsingen',     vanGroep],  ['wachtrij',       vanGroep],
+    ['taak_doelen',     vanGroep],  ['week_doelen',    vanGroep],
+    ['weekplan_taken',  vanGroep],  ['taak_toewijzing',vanGroep],
+    ['thema_hoeken',    vanSchool], ['thema_doelen',   vanSchool]
+  ];
   for i in 1 .. array_length(regels, 1) loop
     tabel      := regels[i][1];
     voorwaarde := regels[i][2];
@@ -629,10 +918,15 @@ begin
 end $$;
 
 -- ── de gedeelde bibliotheek ────────────────────────────────────────────
--- Staat groep_id leeg, dan is het van de hele school: iedereen op school
--- mag het zien en gebruiken. Weghalen of aanpassen mag alleen de
--- schoolbeheerder, zodat niemand per ongeluk de sinterklaashoek van een
--- collega wist.
+/* Drie lagen, van breed naar smal:
+
+   school_id leeg   de databank. Elke school ziet hem, alleen de
+                    platformbeheerder onderhoudt hem.
+   groep_id leeg    van deze hele school. Iedereen op school mag hem zien
+                    en gebruiken; weghalen of aanpassen doet de
+                    schoolbeheerder, zodat niemand per ongeluk de
+                    sinterklaashoek van een collega wist.
+   allebei gevuld   van één groep. */
 
 do $$
 declare
@@ -641,24 +935,35 @@ begin
   foreach tabel in array array['media','hoeken','themas'] loop
     execute format($f$
       create policy "lezen" on public.%I for select
-        using (school_id = public.mijn_school()
-               and (groep_id is null or public.mag_bij_groep(groep_id)))$f$, tabel);
+        using (school_id is null
+               or (public.van_mijn_school(school_id)
+                   and (groep_id is null or public.mag_bij_groep(groep_id))))$f$, tabel);
     execute format($f$
       create policy "toevoegen" on public.%I for insert
-        with check (school_id = public.mijn_school()
-                    and (case when groep_id is null then public.ben_schoolbeheerder()
-                              else public.mag_bij_groep(groep_id) end))$f$, tabel);
+        with check (case
+          when school_id is null then public.ben_platformbeheerder()
+          when groep_id  is null then public.van_mijn_school(school_id)
+                                      and public.ben_schoolbeheerder()
+          else public.van_mijn_school(school_id)
+               and public.mag_bij_groep(groep_id) end)$f$, tabel);
     execute format($f$
       create policy "wijzigen" on public.%I for update
-        using (school_id = public.mijn_school()
-               and (case when groep_id is null then public.ben_schoolbeheerder()
-                         else public.mag_bij_groep(groep_id) end))
-        with check (school_id = public.mijn_school())$f$, tabel);
+        using (case
+          when school_id is null then public.ben_platformbeheerder()
+          when groep_id  is null then public.van_mijn_school(school_id)
+                                      and public.ben_schoolbeheerder()
+          else public.van_mijn_school(school_id)
+               and public.mag_bij_groep(groep_id) end)
+        with check (school_id is null and public.ben_platformbeheerder()
+                    or public.van_mijn_school(school_id))$f$, tabel);
     execute format($f$
       create policy "verwijderen" on public.%I for delete
-        using (school_id = public.mijn_school()
-               and (case when groep_id is null then public.ben_schoolbeheerder()
-                         else public.mag_bij_groep(groep_id) end))$f$, tabel);
+        using (case
+          when school_id is null then public.ben_platformbeheerder()
+          when groep_id  is null then public.van_mijn_school(school_id)
+                                      and public.ben_schoolbeheerder()
+          else public.van_mijn_school(school_id)
+               and public.mag_bij_groep(groep_id) end)$f$, tabel);
   end loop;
 end $$;
 
@@ -668,7 +973,7 @@ end $$;
 -- dat alleen van die school.
 
 create policy "doelen lezen" on public.doelen
-  for select using (school_id is null or school_id = public.mijn_school());
+  for select using (school_id is null or public.van_mijn_school(school_id));
 create policy "eigen doel toevoegen" on public.doelen
   for insert with check (school_id = public.mijn_school());
 create policy "eigen doel wijzigen" on public.doelen
@@ -676,6 +981,32 @@ create policy "eigen doel wijzigen" on public.doelen
   with check (school_id = public.mijn_school());
 create policy "eigen doel verwijderen" on public.doelen
   for delete using (school_id = public.mijn_school());
+
+-- ── ondersteuning en het logboek ──────────────────────────────────────
+
+/* De school ziet wie er bij haar heeft meegekeken en wanneer. De
+   platformbeheerder ziet alleen de rijen die over hem gaan -- of beter:
+   hij ziet ze allemaal, want anders kan hij niet nakijken of hij ergens
+   nog binnen mag. Aanzetten doet alleen de schoolbeheerder. */
+create policy "ondersteuning lezen" on public.ondersteuning
+  for select using (school_id = public.mijn_school()
+                    or public.ben_platformbeheerder());
+create policy "beheerder zet ondersteuning aan" on public.ondersteuning
+  for insert with check (school_id = public.mijn_school()
+                         and public.ben_schoolbeheerder());
+create policy "beheerder trekt ondersteuning in" on public.ondersteuning
+  for update using (school_id = public.mijn_school()
+                    and public.ben_schoolbeheerder())
+  with check (school_id = public.mijn_school());
+
+/* Alleen bijschrijven. Hieronder staat met opzet geen regel voor update
+   of delete: zonder regel mag het niet, en omdat de tabel 'force row
+   level security' heeft geldt dat ook voor de eigenaar. */
+create policy "logboek lezen" on public.handelingen
+  for select using (school_id = public.mijn_school()
+                    or public.ben_platformbeheerder());
+create policy "logboek bijschrijven" on public.handelingen
+  for insert with check (wie = auth.uid());
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Nieuwe accounts
@@ -875,6 +1206,211 @@ grant usage, select on all sequences in schema public to authenticated;
 --  school, en daarbinnen in een map per groep. De regels hieronder lezen
 --  die mapnamen en beslissen daarop.
 
+-- ═══════════════════════════════════════════════════════════════════════
+--  Het werk van de platformbeheerder
+-- ═══════════════════════════════════════════════════════════════════════
+--  Scholen aanmaken, accounts regelen, cijfers opvragen. Geen inhoud.
+
+/* Een platformbeheerder maak je niet in de app -- er is er één, en die
+   benoem je met de hand. De trekker op profielen laat dat niet zomaar
+   toe, ook de eigenaar van de database niet, dus het slot moet binnen
+   dezelfde transactie open:
+
+     begin;
+     select set_config('kb.systeem','aan',true);
+     update public.profielen set rol = 'platformbeheerder', school_id = null
+      where lower(email) = 'jij@voorbeeld.nl';
+     commit;
+
+   Let op school_id = null: een platformbeheerder hoort bij geen enkele
+   school, en daarom levert mijn_school() niets op en ziet hij van de
+   inhoud niets. Dat is geen bijwerking maar de bedoeling. */
+
+/* Iets in het logboek zetten. Security definer, zodat een functie die
+   zelf al namens iemand werkt niet alsnog op de rechtenregel van de
+   logboektabel stukloopt. */
+create or replace function public.noteer(wat text, school uuid,
+                                         waarover text default '',
+                                         gegevens jsonb default '{}'::jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.handelingen (wie, school_id, wat, waarover, gegevens)
+  values (auth.uid(), school, wat, waarover, gegevens);
+end $$;
+
+/* Een school aanmaken en er meteen een schoolbeheerder bij uitnodigen.
+
+   Twee dingen in één stap, met opzet: een school zonder beheerder is een
+   school waar niemand bij kan, en dan staat er een lege school in de
+   lijst waarvan niemand meer weet waarom. */
+create or replace function public.school_aanmaken(schoolnaam text,
+                                                  beheerder_email text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare nieuwe uuid;
+        toegang text;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder maakt een school aan.';
+  end if;
+  if coalesce(trim(schoolnaam), '') = '' then
+    raise exception 'Een school heeft een naam nodig.';
+  end if;
+  if beheerder_email !~ '^[^@[:space:]]+@[^@[:space:]]+[.][^@[:space:]]+$' then
+    raise exception 'Dat is geen e-mailadres.';
+  end if;
+
+  insert into public.scholen (naam) values (trim(schoolnaam)) returning id into nieuwe;
+
+  toegang := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8));
+  insert into public.uitnodigingen (school_id, email, rol, code)
+  values (nieuwe, lower(trim(beheerder_email)), 'schoolbeheerder', toegang);
+
+  perform public.noteer('school aangemaakt', nieuwe, trim(schoolnaam),
+                        jsonb_build_object('beheerder', lower(trim(beheerder_email))));
+  return jsonb_build_object('school_id', nieuwe, 'code', toegang);
+end $$;
+
+/* De school zet de deur open voor ondersteuning. Alleen de
+   schoolbeheerder, alleen voor de eigen school, en nooit langer dan een
+   dag -- een deur die open blijft staan is geen deur. */
+create or replace function public.ondersteuning_toestaan(reden text,
+                                                         uren int default 4)
+returns timestamptz language plpgsql security definer set search_path = public as $$
+declare school uuid := public.mijn_school();
+        einde  timestamptz;
+begin
+  if not public.ben_schoolbeheerder() or school is null then
+    raise exception 'Alleen de schoolbeheerder van deze school zet dit aan.';
+  end if;
+  if uren < 1 or uren > 24 then
+    raise exception 'Kies tussen 1 en 24 uur.';
+  end if;
+  einde := now() + make_interval(hours => uren);
+
+  update public.ondersteuning set ingetrokken = now()
+   where school_id = school and ingetrokken is null and now() < tot;
+  insert into public.ondersteuning (school_id, door, reden, tot)
+  values (school, auth.uid(), coalesce(reden, ''), einde);
+
+  perform public.noteer('ondersteuning aangezet', school, coalesce(reden, ''),
+                        jsonb_build_object('tot', einde));
+  return einde;
+end $$;
+
+create or replace function public.ondersteuning_intrekken()
+returns int language plpgsql security definer set search_path = public as $$
+declare school uuid := public.mijn_school();
+        aantal int;
+begin
+  if not public.ben_schoolbeheerder() or school is null then
+    raise exception 'Alleen de schoolbeheerder van deze school zet dit uit.';
+  end if;
+  update public.ondersteuning set ingetrokken = now()
+   where school_id = school and ingetrokken is null and now() < tot;
+  get diagnostics aantal = row_count;
+  if aantal > 0 then
+    perform public.noteer('ondersteuning ingetrokken', school);
+  end if;
+  return aantal;
+end $$;
+
+/* Wat er in de databank staat en hoe vaak het gebruikt wordt.
+
+   Het aantal kopieën volgt uit uit_databank, dus er wordt nergens apart
+   geteld. De omvang komt uit de mediatabel; dat is wat een hoek in de
+   opslag kost, en daar betaal je voor. */
+create or replace function public.databankcijfers()
+returns table (id uuid, naam text, categorie text, max_kinderen int,
+               foto_pad text, bytes bigint, scholen int, groepen int)
+language sql stable security definer set search_path = public as $$
+  select h.id, h.naam, h.categorie, h.max_kinderen, h.foto_pad,
+         coalesce((select m.bytes from public.media m where m.pad = h.foto_pad), 0)::bigint,
+         (select count(distinct k.school_id)::int from public.hoeken k
+           where k.uit_databank = h.id),
+         (select count(*)::int from public.hoeken k where k.uit_databank = h.id)
+    from public.hoeken h
+   where h.school_id is null
+     and public.ben_platformbeheerder()
+   order by h.categorie, h.naam;
+$$;
+
+/* Een voorbeeldschool: een hele school met verzonnen kinderen, om aan
+   iemand te laten zien hoe het werkt.
+
+   Dit is de enige functie waarmee de platformbeheerder inhoud maakt, en
+   dat kan alleen omdat hij hier onder de rechtenregels door gaat. Dat is
+   te verdedigen omdat er niets wordt gelezen -- er wordt alleen een
+   nieuwe school gevuld met namen die niet bestaan. Zet hier nooit een
+   bestaande school in. */
+create or replace function public.voorbeeldschool_aanmaken(schoolnaam text default 'Voorbeeldschool')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare nieuwe   uuid;
+        groep    uuid;
+        bord     uuid;
+        hoek     uuid;
+        codes    text[] := array['1A','1B','2A'];
+        kinderen text[] := array['Bram','Isa','Kees','Yara','Otis','Loua','Sam','Fenne',
+                                 'Joep','Nora','Timo','Wies','Levi','Roos','Cas','Maud'];
+        hoeken   text[] := array['Bouwhoek','Huishoek','Zandtafel','Knutselhoek','Leeshoek'];
+        plekken  int[]  := array[4,3,4,4,3];
+        i int; j int; k int;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder maakt een voorbeeldschool aan.';
+  end if;
+
+  insert into public.scholen (naam) values (trim(schoolnaam)) returning id into nieuwe;
+
+  for i in 1 .. array_length(codes, 1) loop
+    insert into public.groepen (school_id, naam, volgorde)
+    values (nieuwe, 'Groep ' || codes[i], i) returning id into groep;
+
+    insert into public.borden (groep_id, naam, actief)
+    values (groep, 'Keuzebord', true) returning id into bord;
+
+    for j in 1 .. array_length(hoeken, 1) loop
+      insert into public.hoeken (school_id, groep_id, naam, max_kinderen)
+      values (nieuwe, groep, hoeken[j], plekken[j]) returning id into hoek;
+      insert into public.bord_hoeken (bord_id, hoek_id, volgorde) values (bord, hoek, j);
+    end loop;
+
+    -- vijf kinderen per groep, steeds de volgende uit de lijst
+    for k in 1 .. 5 loop
+      insert into public.leerlingen (groep_id, naam, volgorde)
+      values (groep, kinderen[((i - 1) * 5 + k - 1) % array_length(kinderen, 1) + 1], k);
+    end loop;
+  end loop;
+
+  perform public.noteer('voorbeeldschool aangemaakt', nieuwe, trim(schoolnaam));
+  return jsonb_build_object('school_id', nieuwe, 'naam', trim(schoolnaam));
+end $$;
+
+/* Getallen per school, en verder niets.
+
+   Dit is de enige plek die langs de rechtenregels heen kijkt, en daarom
+   staat het hier zo nadrukkelijk: er komen nooit rijen uit, alleen
+   aantallen. Factureren en zien of iets vastloopt kan daarmee; een kind
+   terugvinden niet. */
+create or replace function public.schoolcijfers()
+returns table (school_id uuid, naam text, leerkrachten int, groepen int,
+               leerlingen int, hoeken int, gebeurtenissen int,
+               laatst_gebruikt timestamptz)
+language sql stable security definer set search_path = public as $$
+  select s.id, s.naam,
+         (select count(*)::int from public.profielen  p where p.school_id = s.id),
+         (select count(*)::int from public.groepen    g where g.school_id = s.id),
+         (select count(*)::int from public.leerlingen l
+            join public.groepen g on g.id = l.groep_id where g.school_id = s.id),
+         (select count(*)::int from public.hoeken     h where h.school_id = s.id),
+         (select count(*)::int from public.gebeurtenissen e
+            join public.groepen g on g.id = e.groep_id where g.school_id = s.id),
+         (select max(e.tijd) from public.gebeurtenissen e
+            join public.groepen g on g.id = e.groep_id where g.school_id = s.id)
+    from public.scholen s
+   where public.ben_platformbeheerder()
+   order by s.naam;
+$$;
+
 insert into storage.buckets (id, name, public)
 values ('kb-media', 'kb-media', false)
 on conflict (id) do nothing;
@@ -884,18 +1420,29 @@ drop policy if exists "kb media toevoegen"  on storage.objects;
 drop policy if exists "kb media vervangen"  on storage.objects;
 drop policy if exists "kb media verwijderen" on storage.objects;
 
+/* De bestanden liggen in mappen: de eerste map is het id van de school.
+   Op één map na -- 'basis' is de databank, die elke school mag lezen en
+   die alleen de platformbeheerder vult. Een school-id is een uuid, dus
+   het woord 'basis' kan nooit per ongeluk de map van een school zijn. */
 create policy "kb media lezen" on storage.objects for select
   using (bucket_id = 'kb-media'
-         and (storage.foldername(name))[1] = public.mijn_school()::text);
+         and ((storage.foldername(name))[1] = 'basis'
+              or (storage.foldername(name))[1] = public.mijn_school()::text));
 
 create policy "kb media toevoegen" on storage.objects for insert
   with check (bucket_id = 'kb-media'
-              and (storage.foldername(name))[1] = public.mijn_school()::text);
+              and (case when (storage.foldername(name))[1] = 'basis'
+                        then public.ben_platformbeheerder()
+                        else (storage.foldername(name))[1] = public.mijn_school()::text end));
 
 create policy "kb media vervangen" on storage.objects for update
   using (bucket_id = 'kb-media'
-         and (storage.foldername(name))[1] = public.mijn_school()::text);
+         and (case when (storage.foldername(name))[1] = 'basis'
+                   then public.ben_platformbeheerder()
+                   else (storage.foldername(name))[1] = public.mijn_school()::text end));
 
 create policy "kb media verwijderen" on storage.objects for delete
   using (bucket_id = 'kb-media'
-         and (storage.foldername(name))[1] = public.mijn_school()::text);
+         and (case when (storage.foldername(name))[1] = 'basis'
+                   then public.ben_platformbeheerder()
+                   else (storage.foldername(name))[1] = public.mijn_school()::text end));

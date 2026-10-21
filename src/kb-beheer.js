@@ -52,6 +52,19 @@ function toonBlad(bouw, breed){
   bladStapel.push({ bouw: bouw, breed: breed });
   tekenBlad();
 }
+/* De cursor in het eerste veld zetten, maar alleen als er nog niemand
+   zelf ergens op heeft geklikt. Het wachten is voor de animatie van het
+   blad; wie binnen die tijd al begint te typen zou anders zijn eerste
+   tekens in het verkeerde vak zien belanden. Dat is zeldzaam voor een
+   mens en gegarandeerd voor een proef, en het is allebei fout. */
+function zetCursor(veld, blad){
+  setTimeout(function () {
+    var nu = document.activeElement;
+    if (nu && nu !== document.body && blad && blad.contains(nu)) return;
+    veld.focus();
+  }, 60);
+}
+
 function sluitBlad(){ bladStapel.pop(); tekenBlad(); }
 
 function vraagBevestiging(titel, uitleg, knoptekst, doen){
@@ -871,7 +884,7 @@ function plakLijst(){
     }));
     rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
     blad.appendChild(rij);
-    setTimeout(function () { vak.focus(); }, 60);
+    zetCursor(vak, blad);
   });
 }
 
@@ -1132,7 +1145,7 @@ function bewerkLeerling(l){
       });
     }));
     blad.appendChild(rij);
-    setTimeout(function () { invoer.focus(); }, 60);
+    zetCursor(invoer, blad);
   });
 }
 
@@ -1262,6 +1275,7 @@ panelen.hoeken = function (v){
   var k = KB.klas(), b = KB.bord(k);
   v.appendChild(kopregel('Hoeken', 'De plekken waaruit kinderen kiezen',
     [knop('Hoek toevoegen', 'primair', function () { bewerkHoek(null); }),
+     opServer() ? knop('Uit de databank', 'stil', toonDatabank) : null,
      KB.werkplaatsHoek(k) ? null : knop('Werkplaats aanmaken', 'stil', function () {
        KB.zorgVoorWerkplaats(k); bewaarOfKlaag(); teken(); meld('Werkplaats toegevoegd');
      })].filter(Boolean)));
@@ -1318,6 +1332,116 @@ panelen.hoeken = function (v){
   if ((b.hoekLibIds || []).length > 1) v.appendChild(volgordePaneel(k, b));
   if ((k.hoekLib || []).length) v.appendChild(balansPaneel(k, b));
 };
+
+/* ── kiezen uit de databank ───────────────────────────────
+   De databank is de verzameling kant-en-klare hoeken die bij het product
+   zit. Je kiest er een, en dan komt er een kopie in jouw groep te staan:
+   naam, plekken en foto worden overgenomen en zijn daarna van jou.
+
+   Een kopie en geen verwijzing, met opzet. Anders zou het bord in de
+   klas veranderen doordat iemand anders de databank bijwerkt, en dat is
+   het laatste wat je wilt terwijl de kleuters ernaar kijken. */
+
+function toonDatabank(){
+  var k = KB.klas(), b = KB.bord(k);
+  toonBlad(function (blad) {
+    var t = el('div', null, 'Uit de databank');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    var vak = el('div');
+    vak.appendChild(el('p', 'hint', 'Even ophalen\u2026'));
+    blad.appendChild(vak);
+
+    SB.lees('hoeken', { kies:'id,naam,categorie,max_kinderen,foto_pad',
+                        waar:{ school_id:'is.null' }, volgorde:'naam' })
+      .then(function (lijst) {
+        leeg(vak);
+        if (!lijst || !lijst.length) {
+          vak.appendChild(el('p', 'hint', 'De databank is nog leeg.'));
+          return;
+        }
+        /* Wat je al hebt gekopieerd zetten we erbij, zodat je niet per
+           ongeluk twee bouwhoeken in je groep krijgt. */
+        var alHier = {};
+        (k.hoekLib || []).forEach(function (h) { if (h.uitDatabank) alHier[h.uitDatabank] = true; });
+
+        var perCategorie = {};
+        lijst.forEach(function (h) {
+          var c = h.categorie || 'Altijd';
+          (perCategorie[c] = perCategorie[c] || []).push(h);
+        });
+        Object.keys(perCategorie).sort().forEach(function (c) {
+          vak.appendChild(el('div', 'restvak-kop', c));
+          perCategorie[c].forEach(function (h) {
+            var rij = el('div', 'rij');
+            var naam = el('div');
+            naam.appendChild(el('div', 'rij-naam', h.naam));
+            naam.appendChild(el('div', 'rij-sub', h.max_kinderen + ' plekken'));
+            rij.appendChild(naam);
+            var acties = el('div', 'rij-acties');
+            if (alHier[h.id]) {
+              acties.appendChild(el('span', 'merkje', 'al in je groep'));
+            } else {
+              acties.appendChild(knop('Kopieer', 'stil', function () {
+                kopieerUitDatabank(h, k, b);
+              }));
+            }
+            rij.appendChild(acties);
+            vak.appendChild(rij);
+          });
+        });
+      }, function (e) {
+        leeg(vak);
+        vak.appendChild(el('p', 'hint', 'De databank is nu niet bereikbaar: ' +
+                                        ((e && e.message) || 'geen verbinding')));
+      });
+
+    var rij = el('div', 'knoprij');
+    rij.style.marginTop = '18px';
+    rij.appendChild(knop('Klaar', 'primair', sluitBlad));
+    blad.appendChild(rij);
+  });
+}
+
+/* De foto halen we op en zetten we als eigen foto in deze groep. Daarmee
+   belandt hij bij de volgende synchronisatie in de map van deze school,
+   en is de kopie los van de databank. */
+function fotoUitDatabank(pad){
+  if (!pad) return Promise.resolve(null);
+  return SB.bestandLink(pad, 300)
+    .then(function (link) { return fetch(link); })
+    .then(function (a) { return a.ok ? a.blob() : Promise.reject(new Error('foto niet opgehaald')); })
+    .then(function (blob) {
+      return KB.verklein(blob, KB.FOTO_MAAT.hoek, KB.FOTO_KWALITEIT.hoek)
+        .catch(function () {
+          return new Promise(function (res, rej) {
+            var l = new FileReader();
+            l.onload = function () { res(l.result); };
+            l.onerror = rej;
+            l.readAsDataURL(blob);
+          });
+        });
+    });
+}
+
+function kopieerUitDatabank(h, k, b){
+  meld('Bezig met kopi\u00ebren\u2026');
+  fotoUitDatabank(h.foto_pad).catch(function () { return null; }).then(function (data) {
+    var fotoId = null;
+    if (data) {
+      fotoId = 'f' + KB.uid();
+      k.fotoLib.push({ id:fotoId, naam:h.naam, data:data, categorie:'hoekfoto' });
+    }
+    var id = 'hl' + KB.uid();
+    k.hoekLib.push({ id:id, naam:h.naam, maxKinderen:h.max_kinderen || 4,
+                     timerMinuten:0, fotoId:fotoId, kleur:null,
+                     werkplaats:false, leerlijnen:[], uitDatabank:h.id });
+    b.hoekLibIds.push(id);
+    b.plaatsingen[id] = [];
+    bewaarOfKlaag(); sluitBlad(); teken();
+    meld(data ? h.naam + ' staat in je groep' : h.naam + ' staat erin, zonder foto');
+  });
+}
 
 /* ── waar staat welke hoek ────────────────────────────────
    Het bord vult van linksboven naar rechts en dan de volgende rij, in de
@@ -2152,7 +2276,7 @@ function downloadBackup(){
     }));
     rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
     blad.appendChild(rij);
-    setTimeout(function () { invoer.focus(); }, 60);
+    zetCursor(invoer, blad);
   });
 }
 
@@ -2186,7 +2310,7 @@ function vraagWachtwoord(){
       }));
       rij.appendChild(knop('Annuleren', 'stil', function () { sluitBlad(); res(''); }));
       blad.appendChild(rij);
-      setTimeout(function () { invoer.focus(); }, 60);
+      zetCursor(invoer, blad);
     });
   });
 }
@@ -2320,6 +2444,7 @@ global.BH = {
   zetAccountknop: zetAccountknop,
   $:$, el:el, leeg:leeg, meld:meld, bewaarOfKlaag:bewaarOfKlaag,
   toonBlad:toonBlad, sluitBlad:sluitBlad, vraagBevestiging:vraagBevestiging, bladTitel:bladTitel,
+  zetCursor:zetCursor,
   paneel:paneel, knop:knop, schakelaar:schakelaar, teller:teller,
   pictoBol:pictoBol, kindKaart:kindKaart, kopregel:kopregel, leegBericht:leegBericht,
   bestandKnop:bestandKnop,

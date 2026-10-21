@@ -14,17 +14,22 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-f4f75a8f">
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-1631c276">
 <style>
 /* ── het bord ─────────────────────────────────────────── */
-/* Een zachte, warme ondergrond met een vleugje kleur in de hoeken —
-   vrolijk zonder dat het onrustig wordt achter de picto's. */
+/* Een zachte, warme ondergrond. Warm met opzet: het beheer staat op een
+   koele, en daaraan zie je in een oogopslag in welke van de twee je zit.
+
+   Hij was vrolijker dan dit -- drie gekleurde vegen in de hoeken. Dat
+   werkte toen de kaarten zelf ook gekleurd waren, maar nu de kaarten wit
+   zijn is elke kleur op het scherm een mededeling, en dan mag een
+   ondergrond geen mededeling doen. Wat overblijft is warmte zonder
+   onderwerp: je ziet dat het er is, je kijkt er niet naar. */
 body.bord{
   background:
-    radial-gradient(1100px 620px at 8% -12%,  #ffeede 0%, transparent 62%),
-    radial-gradient(1000px 560px at 96% 4%,   #e2f0fb 0%, transparent 58%),
-    radial-gradient(900px 640px at 42% 110%,  #eaf6ec 0%, transparent 60%),
-    #fbf8f4;
+    radial-gradient(1200px 700px at 12% -14%, #fdf2e6 0%, transparent 64%),
+    radial-gradient(1000px 600px at 94% 6%,   #f1f4fa 0%, transparent 58%),
+    #faf7f3;
   background-attachment: fixed;
 }
 .scherm{ display: none; height: 100vh; flex-direction: column; }
@@ -46,7 +51,15 @@ body.bord{
   display: flex; align-items: center; justify-content: space-between; gap: 20px;
   background: rgba(255,255,255,.72);
   border-radius: 999px;
-  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 24px rgba(20,28,44,.06);
+  /* De inzet bovenin is licht dat op de rand van het glas valt. Zonder
+     dat ligt een doorzichtig vlak plat op de achtergrond; mét die lijn
+     krijgt het een bovenkant en dus dikte.
+
+     En de schaduw hoort bij de maat van het vlak: dit is het grootste
+     zwevende ding op het scherm, dus staat hij verder van de ondergrond
+     af dan het kleine wachtmerkje in een hoek. */
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8),
+              0 1px 2px rgba(20,28,44,.05), 0 10px 30px rgba(20,28,44,.08);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
@@ -60,7 +73,7 @@ body.bord{
   background: var(--inkt-4); flex: none;
 }
 .datum{
-  font-size: 1.02rem; font-weight: 450; color: var(--inkt-2);
+  font-size: 1.02rem; font-weight: 500; color: var(--inkt-2);
   letter-spacing: -.01em; line-height: 1; white-space: nowrap;
 }
 .balk-rechts{ display: flex; align-items: center; gap: 14px; flex: none; }
@@ -153,13 +166,31 @@ body.bord{
 }
 
 /* ── hoekkaart ────────────────────────────────────────── */
+/* De kaart is wit. Daarvoor had elke hoek zijn eigen gekleurde vlak, en
+   met zes hoeken naast elkaar waren dat zes gekleurde vlakken die alle
+   zes om aandacht vroegen -- terwijl het enige dat op dit bord aandacht
+   verdient de kinderen zijn. Nu dragen de kinderen de kleur, en zegt de
+   kaart alleen nog wáár ze zitten.
+
+   De kleur van de hoek is er nog, maar op drie plekken waar hij iets
+   betekent: de streep bovenaan (welke hoek is dit), het pictogram, en de
+   open plekken (hier kan nog iemand bij). Nergens anders. */
 .hoek{
   display: flex; flex-direction: column; min-height: 0; cursor: pointer;
   position: relative; overflow: hidden;
-  background: var(--hoekzacht, #fff);
+  background: #fff;
   border-radius: var(--kaartrond, 22px);
-  box-shadow: 0 1px 2px rgba(20,28,44,.05), 0 8px 22px var(--hoekschaduw, rgba(20,28,44,.06));
+  box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 18px rgba(20,28,44,.07);
   transition: transform .2s var(--veer), box-shadow .2s ease;
+}
+/* De streep bovenaan: zo breed als de kaart, in de kleur van de hoek.
+   Dit is het enige dat de hoeken uit elkaar houdt op afstand, dus hij
+   mag stevig zijn -- maar hij ligt bovenaan en niet in het beeldvlak,
+   zodat hij de kinderen niet beconcurreert. */
+.hoek:not(.fotohoek)::before{
+  content: ''; position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  height: max(4px, calc(var(--kaartrond, 22px) * .22));
+  background: var(--hoekkleur, var(--accent));
 }
 .hoek:active{ transform: scale(.988); }
 .hoek.doelwit{
@@ -174,6 +205,15 @@ body.bord{
   background: var(--hoektint, #f2f4f7);
   display: flex; align-items: center; justify-content: center;
   background-size: cover; background-position: center;
+}
+/* Zonder foto is dit vak alleen de drager van het pictogram; dan hoeft
+   er geen vlak omheen. En dan mag het ook lager: het vak was bijna de
+   halve kaart hoog omdat het een gekleurd vlak was dat iets moest
+   voorstellen. Een pictogram in de lucht heeft die hoogte niet nodig, en
+   de ruimte die vrijkomt gaat naar de kinderen eronder. */
+.hoek:not(.fotohoek) .hoek-beeld{
+  background: transparent;
+  height: calc(var(--beeldhoogte, 100px) * .78);
 }
 .hoek-beeld svg{ width: var(--icoongrootte, 56px); height: var(--icoongrootte, 56px); }
 
@@ -217,11 +257,19 @@ body.bord{
   flex-grow: 1; min-height: 0; justify-content: flex-start;
 }
 .hoek-kop{ display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+/* De naam van de hoek staat in gewone inkt. Hij stond in de kleur van de
+   hoek, en dan leest een rij hoeken als een rij etiketten die allemaal
+   roepen. De kleur staat nu in de streep erboven; de naam hoeft hem niet
+   nog eens te herhalen. */
 .hoek-naam{
-  font-size: var(--naamgrootte, 20px); font-weight: 600; letter-spacing: -.02em;
-  color: var(--hoektekst, var(--inkt));
+  font-size: var(--naamgrootte, 20px); font-weight: 620; letter-spacing: -.02em;
+  color: var(--inkt);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.hoek:not(.fotohoek) .hoek-telling .bezet{ color: var(--inkt-2); }
+/* Ook de naam van een kind in een hoek: het kind draagt zijn eigen kleur
+   in het rondje, en dat is genoeg. */
+.hoek:not(.fotohoek) .plek.bezet .picto-naam{ color: var(--inkt-2); }
 .hoek-telling{
   font-size: var(--tellinggrootte, 17px); font-weight: 600; flex: none;
   font-variant-numeric: tabular-nums; letter-spacing: -.02em;
@@ -245,7 +293,7 @@ body.bord{
 }
 .plek.vrij{
   border: 2px dashed var(--hoekkleur, rgba(20,28,44,.2));
-  opacity: .35; box-sizing: border-box;
+  opacity: .3; box-sizing: border-box;
 }
 .plek.gereserveerd{
   border: 2px dashed var(--hoekkleur); box-sizing: border-box; padding: 2px;
@@ -330,14 +378,25 @@ body.bord{
 }
 .wacht-merk.beurt{ color: var(--hoekkleur); }
 
+/* De strook was doorzichtig maar geen materiaal: de achtergrond schemerde
+   er scherp doorheen, en dan is het geen glas maar een vlek. Met dezelfde
+   vervaging als de balk hoort hij bij de rest, en de kinderen die erop
+   staan komen ervan los. */
 .strook{
   flex: none; margin: 16px 26px 20px; padding: 14px 22px;
   display: flex; align-items: center; gap: 26px; min-height: 0;
   background: rgba(255,255,255,.72); border-radius: var(--rond-l);
-  box-shadow: 0 1px 2px rgba(20,28,44,.04), 0 6px 20px rgba(20,28,44,.05);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8),
+              0 1px 2px rgba(20,28,44,.04), 0 8px 26px rgba(20,28,44,.07);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
-.strook-kop{ font-size: .96rem; font-weight: 550; color: var(--inkt-3); white-space: nowrap;
-             flex: none; letter-spacing: -.012em; }
+/* Op een doorzichtig vlak is het lichtste grijs te licht: daarachter
+   schuift een achtergrond langs die soms donker en soms licht is. Dus een
+   tint donkerder en een haartje zwaarder -- dan blijft het staan, wat er
+   ook achter gebeurt. */
+.strook-kop{ font-size: .96rem; font-weight: 600; color: var(--inkt-2); white-space: nowrap;
+             flex: none; }
 /* De ruimte boven is er voor de gloed die om een kind verschijnt als je
    erover gaat: die steekt elf pixels boven de bol uit (drie van het
    optillen, twee van het vergroten, zes van de ring).
@@ -416,24 +475,52 @@ body.bord{
 
 /* Het picto dat je optilt: alleen de bol, iets groter, met een schaduw
    die meegroeit. Dat leest als oppakken in plaats van als slepen. */
+/* ── het kind dat je in je hand hebt ─────────────────────────────────
+   Twee lagen, met opzet.
+
+   De buitenste laag is de plek: die zet het bord elke beeldwisseling zelf
+   neer, precies waar de vinger is. Daar staat dus géén overgang op. Er
+   stond hier eerst `transition: left .16s, top .16s`, en dat was een
+   bewuste verzachting die precies het verkeerde deed: het plaatje liep
+   een zesde seconde achter je vinger aan. Dat voelt als stroop, en het is
+   het verschil tussen "ik sleep dit" en "ik stuur iets aan dat daarna
+   volgt". Bovendien schoven we `left` en `top` op, en dat zijn maten waar
+   de browser de bladspiegel voor opnieuw moet uitrekenen -- zestig keer
+   per seconde, voor elk kind dat sleept. Nu is het `transform`, en dat
+   gaat buiten de bladspiegel om.
+
+   De binnenste laag is hoe het kind eruitziet terwijl je het vasthoudt:
+   opgetild, iets groter, een graadje gedraaid. Dat is een toestand en
+   geen gebaar -- je vinger bestuurt het niet -- dus mag dat gewoon een
+   overgang zijn.
+
+   --pak-x en --pak-y zijn de plek waar je het kind beetpakte, binnen de
+   bol. Daarmee blijft het punt waar je het oppakte onder je vinger
+   liggen, in plaats van dat de bol naar je vinger toe springt. En de
+   groei gaat om dat punt heen, zodat het kind onder je vinger uit
+   opkomt. */
 .sleep-geest{
-  position: fixed; z-index: 500; pointer-events: none;
-  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none;
+  will-change: transform;
+}
+.sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)));
+  transform-origin: var(--pak-x, 50%) var(--pak-y, 50%);
   filter: drop-shadow(0 2px 6px rgba(20,28,44,.18));
-  transition: transform .18s var(--veer), filter .18s ease, left .16s ease-out, top .16s ease-out;
+  transition: transform .2s var(--veer), filter .2s ease, opacity .18s ease;
 }
-.sleep-geest.opgetild{
-  transform: translate(-50%, -50%) scale(1.22) rotate(-4deg);
+.sleep-geest.opgetild .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)))
+             scale(1.22) rotate(-4deg);
   filter: drop-shadow(0 16px 26px rgba(20,28,44,.3));
-  transition: transform .18s var(--veer), filter .18s ease;
 }
-.sleep-geest.landt{
-  transform: translate(-50%, -50%) scale(.9) rotate(0deg);
+.sleep-geest.landt .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%)))
+             scale(.92) rotate(0deg);
   filter: drop-shadow(0 3px 8px rgba(20,28,44,.16));
-  opacity: .7;
 }
-.sleep-geest.valt-terug{
-  transform: translate(-50%, -50%) scale(.8);
+.sleep-geest.valt-terug .sleep-bol{
+  transform: translate(calc(-1 * var(--pak-x, 50%)), calc(-1 * var(--pak-y, 50%))) scale(.8);
   opacity: 0;
 }
 .picto.sleept .picto-rond{ transition: transform .2s var(--veer); transform: scale(.9); }
@@ -446,6 +533,28 @@ body.bord{
 }
 .gereserveerd .picto-rond{ opacity: .45; box-shadow: none; }
 .beurt-label{ background: rgba(59,111,240,.12); color: var(--accent); }
+
+/* Minder doorzichtigheid: het glas op het bord wordt matglas. De vorm
+   verandert niet, dus er verschuift niets -- alleen is er niets meer
+   doorheen te zien, en dat is precies wat er gevraagd wordt. */
+@media (prefers-reduced-transparency: reduce){
+  .balk, .strook, .nogniets, .wacht-merk, .pauzekaart{
+    background: var(--vlak) !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  }
+  .pauzevlak{ background: rgba(251,248,244,.92); }
+}
+
+/* Meer contrast: volle vlakken met een rand, zodat je van achter in de
+   klas ziet waar de balk ophoudt en het bord begint. */
+@media (prefers-contrast: more){
+  .balk, .strook, .nogniets, .pauzekaart{
+    background: #fff !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    border: 1px solid var(--inkt-3);
+  }
+  .hoek{ border: 1px solid var(--inkt-3); }
+}
 
 @media (max-width: 760px){
   .balk{ height: 52px; margin: 10px 12px 0; padding: 0 6px 0 16px; }
@@ -512,12 +621,12 @@ body.bord{
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
-<script src="src/kb-app.js?v=6september2026-f4f75a8f"></script>
-<script src="src/kb-data.js?v=6september2026-f4f75a8f"></script>
-<script src="src/kb-supabase.js?v=6september2026-f4f75a8f"></script>
-<script src="src/kb-media.js?v=6september2026-f4f75a8f"></script>
-<script src="src/kb-sync.js?v=6september2026-f4f75a8f"></script>
-<script src="src/kb-verbinding.js?v=6september2026-f4f75a8f"></script>
-<script src="src/kb-bord.js?v=6september2026-f4f75a8f"></script>
+<script src="src/kb-app.js?v=6september2026-1631c276"></script>
+<script src="src/kb-data.js?v=6september2026-1631c276"></script>
+<script src="src/kb-supabase.js?v=6september2026-1631c276"></script>
+<script src="src/kb-media.js?v=6september2026-1631c276"></script>
+<script src="src/kb-sync.js?v=6september2026-1631c276"></script>
+<script src="src/kb-verbinding.js?v=6september2026-1631c276"></script>
+<script src="src/kb-bord.js?v=6september2026-1631c276"></script>
 </body>
 </html>

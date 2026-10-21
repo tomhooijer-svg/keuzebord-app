@@ -12,7 +12,7 @@ window.KB_APP = {
      bordmenu en bij Groep, zodat je twee uitgaven van dezelfde dag uit
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
-  bouw: 'f4f75a8f',
+  bouw: '1631c276',
   /* Heeft deze uitgave het bord zelf? Planbord niet -- daar wijst een
      knop "Bord openen" naar de andere app, met de groep mee. */
   heeftBord: true,
