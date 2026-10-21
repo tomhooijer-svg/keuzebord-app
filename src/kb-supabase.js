@@ -15,6 +15,12 @@
 (function (global) {
 'use strict';
 
+/* In de demo bestaat deze laag niet. Niet uitgeschakeld maar afwezig:
+   zo kan geen enkele regel hieronder per ongeluk toch iets naar een
+   echte school sturen, en vallen alle `window.SB &&`-controles
+   elders vanzelf de goede kant op. */
+if (global.KB_DEMO) return;
+
 var ADRES   = 'https://zlmunykkhooscnxbfvvg.supabase.co';
 var SLEUTEL = 'sb_publishable_1UK6888YPTYuQ1P7h58XTQ_wKUhKKTP';
 var EMMER   = 'kb-media';

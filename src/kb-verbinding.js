@@ -15,6 +15,12 @@
 (function (global) {
 'use strict';
 
+/* In de demo bestaat deze laag niet. Niet uitgeschakeld maar afwezig:
+   zo kan geen enkele regel hieronder per ongeluk toch iets naar een
+   echte school sturen, en vallen alle `window.KBV &&`-controles
+   elders vanzelf de goede kant op. */
+if (global.KB_DEMO) return;
+
 var WACHT_NA_OPSLAAN = 1500;    // even wachten: tien wijzigingen = één keer sturen
 var HAAL_ELKE        = 30000;   // hoe vaak we kijken of een ander iets deed
 

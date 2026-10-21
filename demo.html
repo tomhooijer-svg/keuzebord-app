@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
+<title>Keuzebord — even proberen</title>
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-2af2d430">
+<style>
+body{ background:var(--vlak-2); margin:0; min-height:100vh;
+      display:flex; align-items:center; justify-content:center; padding:24px; }
+.kaart{ background:var(--vlak); border-radius:var(--rond-m); box-shadow:var(--schaduw-1);
+        padding:34px 36px; max-width:620px; }
+h1{ font-size:1.72rem; font-weight:600; letter-spacing:-.03em; margin:0 0 10px; }
+p{ color:var(--inkt-2); line-height:1.6; margin:0 0 14px; max-width:58ch; }
+.klein{ font-size:.87rem; color:var(--inkt-3); }
+.knoprij{ display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
+ul{ color:var(--inkt-2); line-height:1.6; padding-left:20px; margin:0 0 14px; }
+</style>
+</head>
+<body>
+
+<div class="kaart">
+  <h1>Even proberen</h1>
+  <p>Dit is een keuzebord voor kleuters. Kinderen slepen hun eigen plaatje
+     naar een hoek; een hoek heeft een aantal plekken, en als die vol zijn
+     kun je in de rij. De leerkracht ziet achteraf waar een kind speelt,
+     hoe lang en met wie.</p>
+  <p>Je kunt hier alles aanraken:</p>
+  <ul>
+    <li>sleep een kind naar een hoek — en naar een hoek die al vol is</li>
+    <li>ga naar het beheer en voeg een kind of een hoek toe</li>
+    <li>zet bij Functies een timer of de wachtrij aan</li>
+  </ul>
+  <p class="klein">De kinderen hier zijn verzonnen. Alles wat je doet blijft
+     in deze browser en gaat nergens heen — er is geen account en geen
+     server aan deze kant. Sluit je het tabblad en kom je terug, dan staat
+     het er nog; met <em>Opnieuw beginnen</em> is het weer schoon.</p>
+
+  <div class="knoprij">
+    <button class="knop knop-primair" id="start">Naar het bord</button>
+    <button class="knop knop-stil" id="beheer">Naar het beheer</button>
+    <a class="knop knop-stil" href="inloggen.html">Ik heb een account</a>
+  </div>
+</div>
+
+<script>
+/* De demo is een schakelaar in de opslag van deze browser. bord.html en
+   beheer.html lezen hem voordat er ook maar iets wordt geladen, en zetten
+   dan de serverlaag uit en een eigen opslagsleutel aan. */
+function demoAan(waarheen){
+  try { localStorage.setItem('kb_demo', 'aan'); } catch (e) {}
+  location.href = waarheen;
+}
+document.getElementById('start').addEventListener('click', function () { demoAan('bord.html'); });
+document.getElementById('beheer').addEventListener('click', function () { demoAan('beheer.html'); });
+</script>
+</body>
+</html>

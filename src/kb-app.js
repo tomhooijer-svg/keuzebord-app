@@ -12,11 +12,12 @@ window.KB_APP = {
      bordmenu en bij Groep, zodat je twee uitgaven van dezelfde dag uit
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
-  bouw: '1631c276',
+  bouw: '2af2d430',
   /* Heeft deze uitgave het bord zelf? Planbord niet -- daar wijst een
      knop "Bord openen" naar de andere app, met de groep mee. */
   heeftBord: true,
-  panelen: ['statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'],
+  panelen: ['vandaag','statistiek','leerlingen','pictos','hoeken','uiterlijk','groep','functies'],
+  planbord: false,
   /* Waar beide uitgaven staan. Volledige adressen, met de mapnaam er los
      bij als terugval voor een testserver of een ander domein. Dit is de
      enige plek waar die adressen staan. */

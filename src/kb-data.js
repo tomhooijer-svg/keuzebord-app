@@ -9,9 +9,15 @@
 (function (global) {
 'use strict';
 
-var SLEUTEL      = 'kb_v5';
-var DOELEN_KEY   = 'kb_doelen';
-var FK_DB        = 'kb_fotokluis', FK_STORE = 'fotos', FK_KEY = 'alles';
+/* De demo bewaart alles onder eigen sleutels. Zonder dat zou een bezoek
+   aan de demo de groep van een leerkracht overschrijven die in dezelfde
+   browser is ingelogd -- en dat is precies wat je bij een demo nooit wilt
+   laten gebeuren. */
+var DEMO         = !!global.KB_DEMO;
+var SLEUTEL      = DEMO ? 'kb_demo_v5'      : 'kb_v5';
+var DOELEN_KEY   = DEMO ? 'kb_demo_doelen'  : 'kb_doelen';
+var FK_DB        = DEMO ? 'kb_demo_fotokluis' : 'kb_fotokluis';
+var FK_STORE = 'fotos', FK_KEY = 'alles';
 
 var KIND_KLEUREN = ['#3b6ff0','#d94f4f','#2e9e6b','#c8820a','#7c5cbf','#b8436d','#c06428','#1a9aad'];
 
@@ -28,6 +34,7 @@ function standaardInstellingen(){
            werkmomentenAan:false, werkmomenten:standaardWerkmomenten(),
            bordLegen:'dag', dagdeelUur:12,
            afkoelAan:true, afkoelSeconden:20,
+           herhaalAan:false, herhaalMax:3,
            sluitenSoort:'nooit', sluitenTijd:'14:30', sluitenNaMinuten:45,
            pinAan:false, pincode:'1234', kolommen:3 };
 }
@@ -391,7 +398,7 @@ function opslagKrap(){
 
 /* Welke groep dit apparaat beheert. Een leerkracht ziet alleen die groep;
    het schoolbeheer kan hem omzetten. */
-var BEHEER_KLAS = 'kb_beheer_klas';
+var BEHEER_KLAS = DEMO ? 'kb_demo_beheer_klas' : 'kb_beheer_klas';
 function beheerKlasId(){
   try {
     var id = localStorage.getItem(BEHEER_KLAS);
@@ -507,6 +514,18 @@ function plaats(leerlingId, hoekId){
   }
   if (isVol(hoek, b)) return { ok:false, reden:'vol', hoek:hoek };
 
+  /* Een kind dat deze week al vaak in deze hoek zat, kiest eerst eens
+     wat anders. Dit staat standaard uit: het is een pedagogische keuze
+     en niet aan de software. Staat het aan, dan telt alleen deze week --
+     maandag begint iedereen weer blanco. */
+  if (instelling('herhaalAan', k)) {
+    var max = Math.max(1, instelling('herhaalMax', k) || 3);
+    var al = kerenDezeWeek(leerlingId, hoekId, k);
+    if (al >= max) {
+      return { ok:false, reden:'te-vaak', hoek:hoek, aantal:al, grens:max };
+    }
+  }
+
   Object.keys(b.plaatsingen).forEach(function (hid) {
     b.plaatsingen[hid] = (b.plaatsingen[hid] || []).filter(function (p) {
       return p.leerlingId !== leerlingId;
@@ -601,6 +620,23 @@ function schuifWachtrijDoor(hoekId){
   uitWachtrij(eerste.leerlingId, k);
   bewaar();
   return eerste.leerlingId;   // het scherm mag dit vieren
+}
+
+/* Hoe vaak koos dit kind deze hoek sinds maandag. Uit het logboek, want
+   dat is de enige plek waar het echt staat -- het bord zelf weet alleen
+   hoe het nú is. */
+function kerenDezeWeek(leerlingId, hoekId, k){
+  k = k || klas();
+  var ma = new Date();
+  ma.setHours(0, 0, 0, 0);
+  ma.setDate(ma.getDate() - ((ma.getDay() + 6) % 7));
+  var vanaf = ma.getTime();
+  var n = 0;
+  (k.gebeurtenissen || []).forEach(function (e) {
+    if (e.soort === 'gekozen' && e.leerlingId === leerlingId &&
+        e.hoekId === hoekId && e.tijd >= vanaf) n++;
+  });
+  return n;
 }
 
 /* ── logboek (basis voor statistieken later) ─────────────── */
@@ -2004,6 +2040,7 @@ global.KB = {
   get G(){ return G; },
   laad: laad, bewaar: bewaar, opBewaard: opBewaard, opslagKrap: opslagKrap, leegKlas: leegKlas, standaardInstellingen: standaardInstellingen,
   klas: klas, bord: bord, bordHoeken: bordHoeken, foto: foto, leerling: leerling,
+  kerenDezeWeek: kerenDezeWeek,
   hoekVan: hoekVan, instelling: instelling,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,
   VERSIE: VERSIE, bordAdres: bordAdres, appAdres: appAdres,

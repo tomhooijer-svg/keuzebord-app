@@ -258,7 +258,11 @@ function tekenMenu(){
   /* De weg naar de andere app. De groep gaat mee, zodat je daar niet
      opnieuw hoeft te zoeken waar je was. Allebei de apps staan onder
      hetzelfde adres, dus je blijft ingelogd. */
-  var ander = anderApp();
+  /* Alleen als het planbord bij deze uitgave hoort. In het keuzebord als
+     product bestaat het planbord niet, en een menu-item dat verwijst naar
+     een app die je niet hebt gekocht is het meest zichtbare planbord dat
+     er is. */
+  var ander = metPlanbord() ? anderApp() : null;
   if (ander) {
     menu.appendChild(el('div', 'zij-scheiding'));
     var over = el('a', 'zij-knop zij-over');
@@ -329,7 +333,91 @@ function teken(){
    klaar, is iedereen aan de beurt geweest, wat valt op.
    ══════════════════════════════════════════════════════════ */
 
+/* Zonder planbord is "Vandaag" iets anders: dan gaat het niet over de
+   week die klaarstaat, maar over het bord zoals het nu is. Dat is het
+   scherm dat een juf 's ochtends opent -- wie staat waar, wie moet nog
+   kiezen, en staat het bord open. */
+function vandaagBord(v){
+  var k = KB.klas(), b = KB.bord(k);
+  var naarBord = el('a', 'knop knop-primair knop-klein', 'Bord openen');
+  naarBord.href = KB.bordAdres();
+  v.appendChild(kopregel('Vandaag',
+    k.naam + ' \u00b7 ' + KB.DAGEN_LANG[KB.dagVanVandaag()], naarBord));
+
+  var hoeken = KB.bordHoeken(b, k).filter(Boolean);
+  var gekozen = {};
+  Object.keys(b.plaatsingen || {}).forEach(function (hid) {
+    (b.plaatsingen[hid] || []).forEach(function (pl) { gekozen[pl.leerlingId] = hid; });
+  });
+  var kinderen = (k.leerlingen || []).filter(function (l) { return l.lid !== false; });
+  var nogNiet = kinderen.filter(function (l) { return !gekozen[l.id]; });
+
+  /* De stand van de dag bovenaan, want dat is waar je als eerste naar
+     kijkt: staat het bord aan, en hoeveel kinderen hebben al gekozen. */
+  var stand = paneel();
+  var dicht = KB.bordGesloten(k);
+  var kop = el('div', 'rij');
+  var tekst = el('div');
+  tekst.appendChild(el('div', 'rij-naam', dicht ? 'Het bord is afgesloten' : 'Het bord is open'));
+  tekst.appendChild(el('div', 'rij-sub', hoeken.length
+    ? (kinderen.length - nogNiet.length) + ' van de ' + kinderen.length + ' kinderen hebben gekozen'
+    : 'Er staat nog geen hoek op het bord'));
+  kop.appendChild(tekst);
+  var acties = el('div', 'rij-acties');
+  acties.appendChild(knop(dicht ? 'Bord openen' : 'Dag afsluiten',
+                          dicht ? 'primair' : 'stil', function () {
+    if (dicht) KB.openBord(k); else KB.sluitBord(k);
+    bewaarOfKlaag(); teken();
+    meld(dicht ? 'Het bord staat weer open' : 'De dag is afgesloten');
+  }));
+  kop.appendChild(acties);
+  stand.appendChild(kop);
+  v.appendChild(stand);
+
+  if (!hoeken.length) {
+    var leegvak = paneel();
+    leegvak.appendChild(leegBericht('Zet eerst een paar hoeken op het bord.',
+      knop('Naar de hoeken', 'primair', function () { ga('hoeken'); })));
+    v.appendChild(leegvak);
+    return;
+  }
+
+  var p = paneel('Wie staat waar');
+  hoeken.forEach(function (h) {
+    var erin = (b.plaatsingen[h.id] || []);
+    var rij = el('div', 'rij');
+    var stip = el('span', 'stip');
+    stip.style.background = KB.hoekKleur(h, (k.hoekLib || []).indexOf(h));
+    rij.appendChild(stip);
+    var naam = el('div');
+    naam.appendChild(el('div', 'rij-naam', h.naam));
+    naam.appendChild(el('div', 'rij-sub', erin.length
+      ? erin.map(function (pl) {
+          var l = KB.leerling(pl.leerlingId, k);
+          return l ? l.naam : '?';
+        }).join(', ')
+      : 'nog niemand'));
+    rij.appendChild(naam);
+    var tel = el('div', 'rij-acties');
+    tel.appendChild(el('span', 'rij-sub', erin.length + '/' + (h.maxKinderen || 4)));
+    rij.appendChild(tel);
+    p.appendChild(rij);
+  });
+  v.appendChild(p);
+
+  var q = paneel('Moet nog kiezen \u00b7 ' + nogNiet.length);
+  if (!nogNiet.length) {
+    q.appendChild(el('p', 'hint', 'Iedereen heeft gekozen.'));
+  } else {
+    var bollen = el('div', 'kindrij');
+    nogNiet.forEach(function (l) { bollen.appendChild(kindKaart(l, 54)); });
+    q.appendChild(bollen);
+  }
+  v.appendChild(q);
+}
+
 panelen.vandaag = function (v){
+  if (!metPlanbord()) return vandaagBord(v);
   var k = KB.klas();
   var dag = KB.dagVanVandaag(), ws = KB.weekSleutel();
   var w = KB.weekAls(ws, k) || { centraleDoelIds:[], taken:[] };
@@ -1276,9 +1364,9 @@ panelen.hoeken = function (v){
   v.appendChild(kopregel('Hoeken', 'De plekken waaruit kinderen kiezen',
     [knop('Hoek toevoegen', 'primair', function () { bewerkHoek(null); }),
      opServer() ? knop('Uit de databank', 'stil', toonDatabank) : null,
-     KB.werkplaatsHoek(k) ? null : knop('Werkplaats aanmaken', 'stil', function () {
+     (metPlanbord() && !KB.werkplaatsHoek(k)) ? knop('Werkplaats aanmaken', 'stil', function () {
        KB.zorgVoorWerkplaats(k); bewaarOfKlaag(); teken(); meld('Werkplaats toegevoegd');
-     })].filter(Boolean)));
+     }) : null].filter(Boolean)));
 
   var p = paneel();
   if (!(k.hoekLib || []).length) {
@@ -1931,6 +2019,12 @@ panelen.uiterlijk = function (v){
 /* ══════════════════════════════════════════════════════════
    FUNCTIES
    ══════════════════════════════════════════════════════════ */
+/* Hoort het planbord bij deze uitgave? Zo niet, dan vallen de functies
+   weg die hun gegevens uit het weekplan halen. */
+function metPlanbord(){
+  return !(window.KB_APP && KB_APP.planbord === false);
+}
+
 var FUNCTIES_BORD = [
   ['timerAan',    'Tijdvergrendeling', 'Een kind blijft even in de gekozen hoek. De ring op het picto loopt vol. Moet een kind er toch eerder uit: tik op het bord twee keer op zijn foto \u2014 daarna vraagt het bord om de code.'],
   ['wachtrijAan', 'Wachtrij bij volle hoek', 'Kinderen melden zich aan en schuiven door zodra er plek is.'],
@@ -1942,6 +2036,12 @@ var FUNCTIES_BEHEER = [
   ['pinAan',        'Code op het bord', 'Vraagt vier cijfers voor je bij de instellingen van het bord komt. Zo maakt een kind niet per ongeluk het bord leeg.'],
   ['signaleringAan','Signalering', 'Waarschuwt als een kind aan het eind van de week nog niet aan de beurt is geweest.']
 ];
+
+/* Deze drie halen hun gegevens uit het weekplan: wie er in de werkplaats
+   hoort, in welke ronde, en wie nog niet aan de beurt is geweest. Zonder
+   planbord staat daar niets, en dan belooft de schakelaar iets wat niet
+   gebeurt. */
+var PLANBORD_FUNCTIES = ['werkplaatsAan', 'werkmomentenAan', 'signaleringAan'];
 
 /* Hoe vaak er op een dag in de werkplaats wordt gewerkt. Standaard twee
    keer op maandag, dinsdag en donderdag, en één keer op de halve dagen --
@@ -2044,7 +2144,9 @@ panelen.functies = function (v){
   var rooster = el('div', 'rooster2');
 
   var bord = paneel('Op het bord');
-  FUNCTIES_BORD.forEach(function (f) { bord.appendChild(functieRij(k, f[0], f[1], f[2])); });
+  FUNCTIES_BORD.filter(function (f) {
+    return metPlanbord() || PLANBORD_FUNCTIES.indexOf(f[0]) < 0;
+  }).forEach(function (f) { bord.appendChild(functieRij(k, f[0], f[1], f[2])); });
   var legen = el('div');
   legen.style.cssText = 'padding:14px 2px 4px;border-top:1px solid var(--vlak-2);margin-top:6px';
   legen.appendChild(el('div', 'rij-naam', 'Wanneer loopt het bord leeg?'));
@@ -2090,6 +2192,25 @@ panelen.functies = function (v){
     koelTeller.style.marginTop = '8px';
     koel.appendChild(koelTeller);
     bord.appendChild(koel);
+  }
+
+  /* Steeds dezelfde hoek. Staat standaard uit: of een kleuter zeven keer
+     in de bouwhoek mag is een pedagogische keuze en niet iets wat de
+     software hoort te vinden. Wie hem aanzet krijgt een rustig schermpje
+     voor het kind, geen foutmelding. */
+  bord.appendChild(functieRij(k, 'herhaalAan', 'Niet steeds dezelfde hoek',
+    'Een kind dat deze week al vaak in een hoek zat, kiest eerst eens wat anders. ' +
+    'Maandag begint iedereen weer blanco.'));
+  if (KB.instelling('herhaalAan', k)) {
+    var herh = el('div');
+    herh.style.cssText = 'padding:4px 2px 12px';
+    herh.appendChild(el('div', 'rij-sub', 'Hoe vaak mag dezelfde hoek per week?'));
+    var herhTeller = teller(KB.instelling('herhaalMax', k) || 3, 1, 10, function (n) {
+      k.settings.herhaalMax = n; bewaarOfKlaag();
+    });
+    herhTeller.style.marginTop = '8px';
+    herh.appendChild(herhTeller);
+    bord.appendChild(herh);
   }
 
   /* Het einde van de keuzemomenten. Twee manieren, want de ene groep werkt
@@ -2159,12 +2280,14 @@ panelen.functies = function (v){
   rooster.appendChild(bord);
 
   var beheer = paneel('In het beheer');
-  FUNCTIES_BEHEER.forEach(function (f) { beheer.appendChild(functieRij(k, f[0], f[1], f[2])); });
+  FUNCTIES_BEHEER.filter(function (f) {
+    return metPlanbord() || PLANBORD_FUNCTIES.indexOf(f[0]) < 0;
+  }).forEach(function (f) { beheer.appendChild(functieRij(k, f[0], f[1], f[2])); });
   rooster.appendChild(beheer);
 
   v.appendChild(rooster);
 
-  v.appendChild(werkmomentenPaneel(k));
+  if (metPlanbord()) v.appendChild(werkmomentenPaneel(k));
   v.appendChild(pincodePaneel(k));
   v.appendChild(backupPaneel());
 
@@ -2513,8 +2636,11 @@ global.BH = {
       .then(function (uit) {
         tekenMenu(); teken();
         /* Lukte de server niet, dan zeggen we dat -- en werk je verder op
-           wat er lokaal staat. Dat gaat de volgende ronde alsnog mee. */
-        if (uit && (uit.fout || uit.lokaal) && !uit.zonderSchool) {
+           wat er lokaal staat. Dat gaat de volgende ronde alsnog mee.
+
+           In de demo niet: daar ís geen server, en dan leest "geen
+           verbinding" als een storing terwijl alles werkt zoals bedoeld. */
+        if (uit && (uit.fout || uit.lokaal) && !uit.zonderSchool && !window.KB_DEMO) {
           meld('Geen verbinding met de server \u2014 je werkt op wat er op dit apparaat staat');
         }
       });

@@ -854,6 +854,10 @@ function leg(leerling, hoekId){
     tekenBord();
     return;
   }
+  if (uitkomst.reden === 'te-vaak') {
+    toonAlVaak(leerling, uitkomst.hoek, uitkomst.aantal);
+    return;
+  }
   if (uitkomst.reden === 'vergrendeld') {
     var h = KB.hoekVan(KB.plaatsingVan(leerling.id).hoekId);
     toonNogEven(leerling, h, uitkomst.restMs);
@@ -912,6 +916,40 @@ function leerkrachtIngreep(leerling, hoek, naAfloop){
 
       blad.appendChild(lijst);
     });
+  });
+}
+
+/* ── "je was er deze week al vaak" ────────────────────────
+   Geen foutmelding en geen rood: een kleuter heeft niets verkeerd
+   gedaan. Hij ziet zijn eigen plaatje, hoort hoe vaak hij er al was, en
+   kiest wat anders. De leerkracht kan deze regel per groep uitzetten --
+   standaard staat hij uit. */
+function toonAlVaak(leerling, hoek, aantal){
+  toonBlad(function (blad) {
+    var kop = el('div', 'detail-kop');
+    var picto = maakPicto(leerling, { zonderNaam: true });
+    picto.querySelector('.picto-rond').style.width = '84px';
+    picto.querySelector('.picto-rond').style.height = '84px';
+    picto.querySelector('.picto-rond').style.fontSize = '2rem';
+    kop.appendChild(picto);
+    var tekst = el('div');
+    tekst.appendChild(el('div', null, leerling.naam)).style.cssText =
+      'font-size:1.5rem;font-weight:600;letter-spacing:-.02em;margin-bottom:4px';
+    tekst.appendChild(el('div', null,
+      'Je was deze week al ' + (aantal === 1 ? 'een keer' : aantal + ' keer') +
+      ' in de ' + hoek.naam.toLowerCase() + '.')).style.cssText =
+      'font-size:1.05rem;color:var(--inkt-2)';
+    kop.appendChild(tekst);
+    blad.appendChild(kop);
+
+    var uitleg = el('div');
+    uitleg.style.cssText = 'font-size:1.15rem;color:var(--inkt);line-height:1.5;margin-bottom:24px';
+    uitleg.textContent = 'Kies vandaag eens iets anders.';
+    blad.appendChild(uitleg);
+
+    var ok = el('button', 'knop knop-primair knop-groot', 'Goed');
+    ok.addEventListener('click', sluitBlad);
+    blad.appendChild(ok);
   });
 }
 
