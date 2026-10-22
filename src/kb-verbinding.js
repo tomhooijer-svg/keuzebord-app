@@ -21,6 +21,22 @@
    elders vanzelf de goede kant op. */
 if (global.KB_DEMO) return;
 
+/* Zonder account werkt dit niet. Er was een modus waarin je zonder in te
+   loggen kon werken; dan stond alles in één browser op één apparaat, en
+   was het weg zodra je op een andere computer ging zitten. Dat is een
+   restant uit de tijd dat er nog geen database was.
+
+   Let op het verschil met offline. Wie is ingelogd en geen netwerk heeft,
+   werkt gewoon door -- de sessie staat in deze browser, het bord draait
+   verder en het gaat later alsnog naar de server. Alleen wie nooit heeft
+   ingelogd komt hier niet binnen. */
+(function () {
+  var hier = (location.pathname || '').split('/').pop() || '';
+  if (/^(inloggen|demo|handleiding|404|diagnose)\.html$/.test(hier)) return;
+  if (global.SB && SB.ingelogd && SB.ingelogd()) return;
+  location.replace('inloggen.html');
+})();
+
 var WACHT_NA_OPSLAAN = 1500;    // even wachten: tien wijzigingen = één keer sturen
 var HAAL_ELKE        = 30000;   // hoe vaak we kijken of een ander iets deed
 

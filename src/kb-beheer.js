@@ -2077,7 +2077,16 @@ panelen.uiterlijk = function (v){
 /* Hoort het planbord bij deze uitgave? Zo niet, dan vallen de functies
    weg die hun gegevens uit het weekplan halen. */
 function metPlanbord(){
-  return !(window.KB_APP && KB_APP.planbord === false);
+  /* Twee sloten, en allebei moeten ze open. Het buitenste zit in de
+     uitgave: het keuzebord als product levert de planbordschermen
+     helemaal niet mee. Het binnenste zit bij de school: ook in een
+     uitgave die ze wél heeft, doet een school pas mee als die module
+     voor haar aanstaat. Zo kan er later een pakket van gemaakt worden
+     zonder een tweede versie van de code. */
+  if (window.KB_APP && KB_APP.planbord === false) return false;
+  var school = (window.KBV && KBV.wie && KBV.wie() && KBV.wie().school) || null;
+  if (school && school.modules && school.modules.planbord === false) return false;
+  return true;
 }
 
 var FUNCTIES_BORD = [

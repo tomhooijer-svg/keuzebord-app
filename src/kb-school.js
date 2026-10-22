@@ -294,7 +294,10 @@ function tekenMenu(){
     svg.appendChild(pad);
     b.appendChild(svg);
     b.appendChild(el('span', null, o.naam));
-    b.addEventListener('click', function () { huidig = o.id; tekenMenu(); teken(); });
+    b.addEventListener('click', function () {
+      huidig = o.id; tekenMenu(); teken();
+      if (o.id === 'school') haalDeur().then(teken, function () {});
+    });
     vak.appendChild(b);
   });
 
@@ -519,6 +522,10 @@ function tekenSchool(v){
     'groep het bij het opstarten laat zien, zodat er \u2019s ochtends niemand hoeft te kiezen.'));
   v.appendChild(uitleg);
 
+  if (metServer()) v.appendChild(ondersteuningPaneel());
+  if (metServer()) v.appendChild(uitdraaiPaneel());
+  if (metServer()) v.appendChild(logboekPaneel());
+
   var opnieuw = el('div', 'paneel');
   opnieuw.appendChild(el('div', 'paneelkop', 'Opnieuw beginnen'));
   opnieuw.appendChild(el('p', 'hint',
@@ -547,6 +554,193 @@ function tekenSchool(v){
   }));
   opnieuw.appendChild(rij);
   v.appendChild(opnieuw);
+}
+
+/* ── hulp van de leverancier ──────────────────────────────────────────
+   Wie dit product levert komt niet bij de kinderen, de borden of de
+   statistieken van deze school. Moet er toch iemand meekijken, dan zet
+   de schoolbeheerder die deur zelf open -- hier, niet daar. Hij loopt
+   vanzelf af, en alles wat er gebeurt komt in het logboek hieronder.
+
+   Zie docs/ROLLEN.md voor waarom dit zo is en niet andersom. */
+
+var deurNu = null;        // de open deur van deze school, als die er is
+var logboekNu = null;     // de laatste regels uit het logboek
+
+function haalDeur(){
+  if (!metServer()) return Promise.resolve();
+  return Promise.all([
+    SB.lees('ondersteuning', { kies:'*', volgorde:'tot.desc', hoeveel:20 }),
+    SB.lees('handelingen',   { kies:'*', volgorde:'tijd.desc', hoeveel:25 })
+  ]).then(function (uit) {
+    var nu = Date.now();
+    deurNu = (uit[0] || []).filter(function (d) {
+      return !d.ingetrokken && new Date(d.tot).getTime() > nu;
+    })[0] || null;
+    logboekNu = uit[1] || [];
+  }, function () { deurNu = null; logboekNu = null; });
+}
+
+function tijdstip(t){
+  if (!t) return '—';
+  var d = new Date(t);
+  return d.toLocaleDateString('nl-NL', { day:'numeric', month:'short' }) + ' ' +
+         d.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+}
+
+function ondersteuningPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'Hulp van de leverancier'));
+
+  if (!KBV.wie() || KBV.wie().profiel.rol !== 'schoolbeheerder') {
+    p.appendChild(el('p', 'hint',
+      'Alleen de schoolbeheerder kan dit aanzetten.'));
+    return p;
+  }
+
+  if (deurNu) {
+    var open = el('div', 'rij');
+    var tekst = el('div');
+    tekst.appendChild(el('div', 'rij-naam', 'Er kan nu worden meegekeken'));
+    tekst.appendChild(el('div', 'rij-sub',
+      'Tot ' + tijdstip(deurNu.tot) +
+      (deurNu.reden ? ' \u00b7 ' + deurNu.reden : '') +
+      '. Alles wat er gebeurt komt hieronder in het logboek te staan.'));
+    open.appendChild(tekst);
+    var acties = el('div', 'rij-acties');
+    acties.appendChild(knop('Nu dichtdoen', 'gevaar', function () {
+      SB.roep('ondersteuning_intrekken', {}).then(function () {
+        return haalDeur().then(function () { teken(); meld('De deur is dicht'); });
+      }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+    }));
+    open.appendChild(acties);
+    p.appendChild(open);
+    return p;
+  }
+
+  p.appendChild(el('p', 'hint',
+    'Wie dit product levert kan niet bij jullie kinderen, borden of statistieken. ' +
+    'Is er een probleem waar iemand naar moet kijken, dan zet jij de deur hier ' +
+    'tijdelijk open. Hij gaat vanzelf weer dicht, en elke handeling komt in het ' +
+    'logboek dat je hieronder ziet.'));
+  var rij = el('div', 'knoprij-onder');
+  rij.appendChild(knop('Deur openzetten', 'stil', toonDeurBlad));
+  p.appendChild(rij);
+  return p;
+}
+
+function toonDeurBlad(){
+  var concept = { reden:'', uren:4 };
+  toonBlad(function (blad) {
+    var t = el('div', null, 'Meekijken toestaan');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'Zolang de deur openstaat kan de leverancier bij de groepen van deze school: ' +
+      'de kinderen, de borden en de statistieken. Zet hem niet langer open dan nodig.'));
+
+    var r1 = el('div', 'veldrij');
+    r1.appendChild(el('label', 'veldlabel', 'Waar gaat het over?'));
+    var reden = el('input', 'invoer');
+    reden.type = 'text';
+    reden.placeholder = 'Het bord van 1A loopt vast bij het afsluiten';
+    reden.addEventListener('input', function () { concept.reden = reden.value; });
+    r1.appendChild(reden);
+    blad.appendChild(r1);
+
+    var r2 = el('div', 'veldrij');
+    r2.appendChild(el('label', 'veldlabel', 'Hoe lang'));
+    var chips = el('div', 'knoprij');
+    [[1, 'Een uur'], [4, 'Vier uur'], [8, 'Een werkdag']].forEach(function (paar) {
+      var c = el('button', 'chip' + (concept.uren === paar[0] ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () {
+        concept.uren = paar[0];
+        Array.prototype.forEach.call(chips.children, function (x) { x.classList.remove('aan'); });
+        c.classList.add('aan');
+      });
+      chips.appendChild(c);
+    });
+    r2.appendChild(chips);
+    blad.appendChild(r2);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    rij.appendChild(knop('Deur openzetten', 'primair', function () {
+      var r = (concept.reden || '').trim();
+      if (!r) { meld('Schrijf er even bij waar het over gaat'); return; }
+      SB.roep('ondersteuning_toestaan', { reden: r, uren: concept.uren })
+        .then(function () {
+          sluitBlad();
+          return haalDeur().then(function () { teken(); meld('De deur staat open'); });
+        }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+    }));
+    blad.appendChild(rij);
+    setTimeout(function () {
+      if (!blad.contains(document.activeElement)) reden.focus();
+    }, 60);
+  });
+}
+
+/* ── alles meekrijgen ────────────────────────────────────────────────
+   Van de school, dus de school haalt hem zelf op. De leverancier kan er
+   niet bij en hoeft er ook niet bij: het is niet zijn bestand. */
+function uitdraaiPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'Alles uitdraaien'));
+  if (!KBV.wie() || KBV.wie().profiel.rol !== 'schoolbeheerder') {
+    p.appendChild(el('p', 'hint', 'Alleen de schoolbeheerder kan dit.'));
+    return p;
+  }
+  p.appendChild(el('p', 'hint',
+    'Eén bestand met alles van deze school: de groepen, de kinderen, de hoeken, ' +
+    'de borden, wat er op het bord is gebeurd en het logboek. Handig als je ' +
+    'ergens anders naartoe gaat, of als iemand vraagt wat jullie bewaren.'));
+  p.appendChild(el('p', 'hint',
+    'Er staan voornamen van kinderen in. Bewaar het bestand zoals je een ' +
+    'klassenlijst bewaart.'));
+  var rij = el('div', 'knoprij-onder');
+  rij.appendChild(knop('Uitdraaien', 'stil', function () {
+    meld('Bezig met uitdraaien\u2026');
+    SB.roep('school_export', {}).then(function (pak) {
+      var tekst = JSON.stringify(pak, null, 1);
+      var naam = 'keuzebord-' +
+        ((pak && pak.school && pak.school.naam) || 'school')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') +
+        '-' + new Date().toISOString().slice(0, 10) + '.json';
+      var blob = new Blob([tekst], { type:'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = naam;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      meld('Klaar \u00b7 ' + Math.round(tekst.length / 1024) + ' kB');
+      haalDeur().then(teken, function () {});
+    }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+  }));
+  p.appendChild(rij);
+  return p;
+}
+
+function logboekPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'Logboek'));
+  if (!logboekNu || !logboekNu.length) {
+    p.appendChild(el('p', 'hint',
+      'Hier komt te staan wie er wanneer bij jullie gegevens is geweest. ' +
+      'Nog niets gebeurd.'));
+    return p;
+  }
+  logboekNu.forEach(function (r) {
+    var rij = el('div', 'ledenrij');
+    var links = el('div');
+    links.appendChild(el('div', 'ledennaam', r.wat + (r.waarover ? ' \u2014 ' + r.waarover : '')));
+    links.appendChild(el('div', 'ledenmail', tijdstip(r.tijd)));
+    rij.appendChild(links);
+    p.appendChild(rij);
+  });
+  p.appendChild(el('p', 'hint',
+    'Deze regels kan niemand wijzigen of wissen, ook de leverancier niet.'));
+  return p;
 }
 
 function groepKaart(k, beheerd){
@@ -937,6 +1131,7 @@ KB.laad();
 KB.doelenZorg()
   .then(function () { return window.KBV ? KBV.zodraKlaar() : Promise.resolve({ lokaal:true }); })
   .then(haalMensen)
+  .then(function () { return haalDeur(); })
   .then(function () { return KB.fkLees(); })
   .then(function (m) { if (m) KB.fkPasToe(m); })
   .catch(function () {})

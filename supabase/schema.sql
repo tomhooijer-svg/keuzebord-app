@@ -375,6 +375,12 @@ create index if not exists hoeken_databank on public.hoeken (categorie)
 create index if not exists hoeken_herkomst on public.hoeken (uit_databank)
   where uit_databank is not null;
 
+/* Welke onderdelen deze school heeft. Leeg betekent: alleen het
+   keuzebord, en dat is wat een school koopt. Hier kan later een duurder
+   pakket bij, bijvoorbeeld {"planbord": true}, zonder dat er een tweede
+   versie van de code hoeft te bestaan. */
+alter table public.scholen add column if not exists modules jsonb not null default '{}'::jsonb;
+
 -- ── de platformbeheerder erbij (zie docs/ROLLEN.md) ───────────────────
 alter table public.profielen drop constraint if exists profielen_rol_check;
 alter table public.profielen add  constraint profielen_rol_check
@@ -766,8 +772,30 @@ end $$;
 create policy "eigen school lezen" on public.scholen
   for select using (id = public.mijn_school() or public.ben_platformbeheerder());
 create policy "beheerder past school aan" on public.scholen
-  for update using (id = public.mijn_school() and public.ben_schoolbeheerder())
-  with check (id = public.mijn_school() and public.ben_schoolbeheerder());
+  for update using ((id = public.mijn_school() and public.ben_schoolbeheerder())
+                    or public.ben_platformbeheerder())
+  with check ((id = public.mijn_school() and public.ben_schoolbeheerder())
+              or public.ben_platformbeheerder());
+
+/* Welke rijen je mag aanraken staat hierboven; welke kolom je mag
+   veranderen hieronder. Een schoolbeheerder mag de naam van haar school
+   aanpassen, maar niet welke onderdelen ze heeft -- dat is wat ze koopt,
+   en dat regelt de leverancier. Net als bij profielen kan dat niet met
+   een rechtenregel: die ziet alleen de nieuwe waarde. Een trekker ziet
+   de oude. */
+create or replace function public.school_bewaken()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.modules is distinct from old.modules
+     and not public.ben_platformbeheerder() then
+    raise exception 'Welke onderdelen deze school heeft, regelt de leverancier.';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists school_op_slot on public.scholen;
+create trigger school_op_slot before update on public.scholen
+  for each row execute function public.school_bewaken();
 
 create policy "collega's zien" on public.profielen
   for select using (school_id = public.mijn_school() or id = auth.uid()
@@ -1234,6 +1262,19 @@ create or replace function public.noteer(wat text, school uuid,
                                          gegevens jsonb default '{}'::jsonb)
 returns void language plpgsql security definer set search_path = public as $$
 begin
+  if auth.uid() is null then
+    raise exception 'Je moet ingelogd zijn.';
+  end if;
+  /* Alleen schrijven over een school waar je iets te zoeken hebt. Zonder
+     deze regel kan iedereen die kan inloggen willekeurige regels in het
+     logboek van een willekeurige school zetten -- en een logboek dat
+     iedereen kan volschrijven is net zo waardeloos als een logboek dat
+     iedereen kan wissen. */
+  if school is not null
+     and not (school = public.mijn_school()
+              or public.ben_platformbeheerder()) then
+    raise exception 'Dat is niet jouw school.';
+  end if;
   insert into public.handelingen (wie, school_id, wat, waarover, gegevens)
   values (auth.uid(), school, wat, waarover, gegevens);
 end $$;
@@ -1333,6 +1374,90 @@ language sql stable security definer set search_path = public as $$
      and public.ben_platformbeheerder()
    order by h.categorie, h.naam;
 $$;
+
+/* ── weggaan ──────────────────────────────────────────────────────────
+   Een school die stopt moet twee dingen kunnen: haar gegevens meekrijgen,
+   en ze daarna echt kwijtraken. Allebei horen ze bij het product en niet
+   bij een mailtje aan de leverancier.
+
+   Let op wie wat mag. Uitdraaien doet de school zélf -- het zijn haar
+   gegevens, en de leverancier kan er niet bij. Verwijderen doet de
+   platformbeheerder, want dat is het opheffen van een school en dat is
+   beheerwerk; daar is geen inzage in de inhoud voor nodig. */
+
+create or replace function public.school_export()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare mijn uuid := public.mijn_school();
+begin
+  if not public.ben_schoolbeheerder() or mijn is null then
+    raise exception 'Alleen de schoolbeheerder van deze school kan dit uitdraaien.';
+  end if;
+  return jsonb_build_object(
+    'uitgedraaid_op', now(),
+    'school',     (select to_jsonb(s) from public.scholen s where s.id = mijn),
+    'mensen',     coalesce((select jsonb_agg(jsonb_build_object(
+                              'naam', p.naam, 'email', p.email, 'rol', p.rol))
+                            from public.profielen p where p.school_id = mijn), '[]'::jsonb),
+    'groepen',    coalesce((select jsonb_agg(to_jsonb(g)) from public.groepen g
+                            where g.school_id = mijn), '[]'::jsonb),
+    'leerlingen', coalesce((select jsonb_agg(to_jsonb(l)) from public.leerlingen l
+                            where l.school_id = mijn), '[]'::jsonb),
+    'hoeken',     coalesce((select jsonb_agg(to_jsonb(h)) from public.hoeken h
+                            where h.school_id = mijn), '[]'::jsonb),
+    'borden',     coalesce((select jsonb_agg(to_jsonb(b)) from public.borden b
+                            where b.school_id = mijn), '[]'::jsonb),
+    'bord_hoeken',coalesce((select jsonb_agg(to_jsonb(x)) from public.bord_hoeken x
+                            where x.school_id = mijn), '[]'::jsonb),
+    'plaatsingen',coalesce((select jsonb_agg(to_jsonb(x)) from public.plaatsingen x
+                            where x.school_id = mijn), '[]'::jsonb),
+    'media',      coalesce((select jsonb_agg(to_jsonb(m)) from public.media m
+                            where m.school_id = mijn), '[]'::jsonb),
+    'gebeurtenissen', coalesce((select jsonb_agg(to_jsonb(e)) from public.gebeurtenissen e
+                            where e.school_id = mijn), '[]'::jsonb),
+    'handelingen',coalesce((select jsonb_agg(to_jsonb(h)) from public.handelingen h
+                            where h.school_id = mijn), '[]'::jsonb)
+  );
+end $$;
+
+/* Een school opheffen. Alles wat eraan hangt gaat mee -- dat doen de
+   sleutels zelf, want elke tabel hangt met 'on delete cascade' aan
+   scholen.
+
+   Twee dingen blijven staan, met opzet. Het logboek: handelingen hangt
+   met 'on delete set null' aan de school, dus de regels blijven bestaan
+   zonder school erbij. Anders zou het opheffen van een school ook het
+   bewijs wissen van wat er bij die school is gebeurd, en dat is precies
+   het verkeerde moment om dat kwijt te raken. En de inlogaccounts van de
+   leerkrachten: die horen bij een persoon, niet bij een school.
+
+   De naam moet worden overgetypt. Een school verwijderen is niet terug
+   te draaien, en een bevestigingsknop is te makkelijk aan te klikken. */
+create or replace function public.school_verwijderen(school uuid, naam_ter_controle text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare echte_naam text;
+        aantallen jsonb;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder kan een school verwijderen.';
+  end if;
+  select s.naam into echte_naam from public.scholen s where s.id = school;
+  if echte_naam is null then
+    raise exception 'Die school bestaat niet.';
+  end if;
+  if lower(trim(coalesce(naam_ter_controle, ''))) <> lower(trim(echte_naam)) then
+    raise exception 'De naam klopt niet. Typ de naam van de school precies over.';
+  end if;
+
+  select jsonb_build_object(
+    'groepen',    (select count(*) from public.groepen g where g.school_id = school),
+    'leerlingen', (select count(*) from public.leerlingen l where l.school_id = school),
+    'mensen',     (select count(*) from public.profielen p where p.school_id = school)
+  ) into aantallen;
+
+  perform public.noteer('school verwijderd', school, echte_naam, aantallen);
+  delete from public.scholen where id = school;
+  return jsonb_build_object('naam', echte_naam, 'weg', aantallen);
+end $$;
 
 /* Een voorbeeldschool: een hele school met verzonnen kinderen, om aan
    iemand te laten zien hoe het werkt.

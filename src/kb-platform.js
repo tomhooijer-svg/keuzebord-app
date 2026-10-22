@@ -89,18 +89,21 @@ var cijfers  = [];
 var deuren   = [];
 var logboek  = [];
 var databank = [];
+var scholenRij = [];     // de scholen zelf, voor de modules
 
 function haalAlles(){
   return Promise.all([
     SB.roep('schoolcijfers', {}),
+    SB.lees('scholen', { kies:'id,naam,modules' }),
     SB.roep('databankcijfers', {}),
     SB.lees('ondersteuning', { kies:'*', volgorde:'tot.desc', hoeveel:50 }),
     SB.lees('handelingen',   { kies:'*', volgorde:'tijd.desc', hoeveel:40 })
   ]).then(function (uit) {
     cijfers  = uit[0] || [];
-    databank = uit[1] || [];
-    deuren   = uit[2] || [];
-    logboek  = uit[3] || [];
+    scholenRij = uit[1] || [];
+    databank = uit[2] || [];
+    deuren   = uit[3] || [];
+    logboek  = uit[4] || [];
   });
 }
 
@@ -138,6 +141,9 @@ function tekenMenu(){
     b.appendChild(svg);
     b.appendChild(el('span', null, o.naam));
     b.addEventListener('click', function () {
+      /* Weg uit het meekijken is stoppen met meekijken. Een balk die
+         blijft staan terwijl je ergens anders kijkt, liegt. */
+      if (meekijkSchool) { meekijkSchool = null; meekijkGroep = null; meekijkBord = null; }
       huidig = o.id; tekenMenu(); teken();
       /* Opnieuw ophalen, want de cijfers veranderen buiten dit scherm om:
          een school kopieert een hoek, een beheerder zet de deur open. */
@@ -148,10 +154,39 @@ function tekenMenu(){
 }
 
 function teken(){
+  meekijkBalk();
   var v = leeg($('inhoud'));
-  if (huidig === 'logboek')  return tekenLogboek(v);
-  if (huidig === 'databank') return tekenDatabank(v);
+  if (huidig === 'meekijken') return tekenMeekijken(v);
+  if (huidig === 'logboek')   return tekenLogboek(v);
+  if (huidig === 'databank')  return tekenDatabank(v);
   return tekenScholen(v);
+}
+
+/* De balk die niet weg te klikken is. Dit is de belangrijkste regel van
+   het hele meekijken: zonder die balk denk je op een avond dat je in je
+   eigen bord zit, en dat is precies hoe iemand per ongeluk iets doet bij
+   een school die daar niet om heeft gevraagd. */
+function meekijkBalk(){
+  var oud = $('meekijkbalk');
+  if (!meekijkSchool || !meekijkGroep) {
+    if (oud) oud.remove();
+    document.body.classList.remove('metbalk');
+    return;
+  }
+  if (oud) oud.remove();
+  var bar = el('div', null);
+  bar.id = 'meekijkbalk';
+  var t = el('b', null, 'Je kijkt mee');
+  bar.appendChild(t);
+  bar.appendChild(el('span', null,
+    'bij ' + meekijkGroep.naam + ' van ' + meekijkSchool.naam));
+  var stop = document.createElement('button');
+  stop.type = 'button';
+  stop.textContent = 'Stoppen';
+  stop.addEventListener('click', stopMeekijken);
+  bar.appendChild(stop);
+  document.body.appendChild(bar);
+  document.body.classList.add('metbalk');
 }
 
 /* ── de hoeken-databank ───────────────────────────────────────────────
@@ -331,7 +366,7 @@ function tekenScholen(v){
     var deur = deurVan(c.school_id);
     if (deur) {
       kaart.appendChild(el('div', 'deur',
-        'Deur open tot ' + datum(deur.tot) + (deur.reden ? ' — ' + deur.reden : '')));
+        'Deur open tot ' + datum(deur.tot) + (deur.reden ? ' \u2014 ' + deur.reden : '')));
     }
 
     var vak = el('div', 'cijfers');
@@ -347,6 +382,35 @@ function tekenScholen(v){
     kaart.appendChild(el('div', 'stil', c.laatst_gebruikt
       ? 'Laatst gebruikt ' + datum(c.laatst_gebruikt)
       : 'Nog niet gebruikt'));
+    /* Meekijken kan alleen zolang de school de deur openzet. Staat hij
+       dicht, dan staat er geen grijze knop die niets doet -- dan staat
+       er niets, want er valt niets te kiezen. */
+    /* Welke onderdelen deze school heeft. Nu alleen het planbord; het
+       keuzebord zit er altijd in, dat is wat ze kopen. */
+    var rij0 = scholenRij.filter(function (s) { return s.id === c.school_id; })[0];
+    var mods = (rij0 && rij0.modules) || {};
+    var modrij = el('div', 'knoprij');
+    var aan = mods.planbord === true;
+    var mk2 = el('button', 'chip' + (aan ? ' aan' : ''), 'Planbord');
+    mk2.title = aan ? 'Deze school heeft het planbord' : 'Deze school heeft alleen het keuzebord';
+    mk2.addEventListener('click', function () {
+      var nieuw = Object.assign({}, mods, { planbord: !aan });
+      SB.wijzig('scholen', { modules: nieuw }, { id:'eq.' + c.school_id })
+        .then(function () {
+          return SB.roep('noteer', { wat: (!aan ? 'planbord aangezet' : 'planbord uitgezet'),
+                                     school: c.school_id, waarover: c.naam }).catch(function () {});
+        })
+        .then(function () { return haalAlles(); })
+        .then(function () { teken(); meld(!aan ? 'Planbord aan' : 'Planbord uit'); },
+              function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+    });
+    modrij.appendChild(mk2);
+    kaart.appendChild(modrij);
+
+    var acties = el('div', 'knoprij');
+    if (deur) acties.appendChild(knop('Meekijken', 'stil', function () { kiesGroep(c, deur); }));
+    acties.appendChild(knop('Opheffen', 'stil', function () { verwijderSchool(c); }));
+    kaart.appendChild(acties);
     rooster.appendChild(kaart);
   });
   v.appendChild(rooster);
@@ -383,6 +447,166 @@ function tekenLogboek(v){
     'Deze regels zijn door niemand te wijzigen of te wissen, ook niet door ' +
     'jou. Dat is het punt: een logboek dat de beheerder kan bijwerken is ' +
     'geen logboek. Een school ziet hier haar eigen regels terug.'));
+  v.appendChild(uitleg);
+}
+
+/* ── meekijken ────────────────────────────────────────────────────────
+   Alleen zolang de school de deur openzet, en alleen kijken: bedienen
+   komt later en vraagt eerst een antwoord op de botsing met een bord
+   dat offline doorwerkt. Zie DECISIONS.md.
+
+   Twee dingen zijn hier verplicht. Een balk die niet weg te klikken is,
+   want zonder dat denk je op een avond dat je in je eigen bord zit. En
+   een regel in het logboek, ook voor alleen maar kijken -- dat is wat
+   een school van je mag verwachten als ze vragen wie er in hun gegevens
+   heeft gekeken. */
+
+var meekijkSchool = null;   // { school_id, naam }
+var meekijkGroep  = null;   // { id, naam }
+var meekijkBord   = null;   // wat we van de server haalden
+
+function kiesGroep(school, deur){
+  SB.lees('groepen', { kies:'id,naam,volgorde', waar:{ school_id:'eq.' + school.school_id },
+                       volgorde:'volgorde' })
+    .then(function (groepen) {
+      toonBlad(function (blad) {
+        var t = el('div', null, 'Meekijken bij ' + school.naam);
+        t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+        blad.appendChild(t);
+        blad.appendChild(el('p', 'hint',
+          'De school heeft de deur opengezet tot ' + datum(deur.tot) +
+          (deur.reden ? ' \u2014 ' + deur.reden : '') +
+          '. Wat je opent komt in hun logboek te staan.'));
+
+        if (!groepen || !groepen.length) {
+          blad.appendChild(el('p', 'hint', 'Deze school heeft nog geen groepen.'));
+        } else {
+          groepen.forEach(function (g) {
+            var rij = el('div', 'logrij');
+            rij.appendChild(el('div', 'logwat', g.naam));
+            var acties = el('div', 'knoprij');
+            acties.appendChild(knop('Openen', 'stil', function () {
+              sluitBlad();
+              openMeekijken(school, g);
+            }));
+            rij.appendChild(acties);
+            blad.appendChild(rij);
+          });
+        }
+        var rij = el('div', 'knoprij-onder');
+        rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+        blad.appendChild(rij);
+      });
+    }, function (e) { meld('De groepen laden lukte niet: ' + (e && e.message)); });
+}
+
+function openMeekijken(school, groep){
+  meekijkSchool = school;
+  meekijkGroep = groep;
+  huidig = 'meekijken';
+  tekenMenu();
+  meld('Bezig met ophalen\u2026');
+
+  /* Eerst vastleggen dát je kijkt, en pas daarna kijken. Andersom zou
+     een mislukte ophaalronde een bezoek onzichtbaar maken. */
+  SB.roep('noteer', { wat:'meegekeken', school: school.school_id,
+                      waarover: groep.naam })
+    .catch(function () {})
+    .then(function () { return haalMeekijkBord(groep.id); })
+    .then(function () { teken(); }, function (e) {
+      meekijkBord = { fout: (e && e.message) || 'onbekend' };
+      teken();
+    });
+}
+
+function haalMeekijkBord(groepId){
+  return Promise.all([
+    SB.lees('borden',     { kies:'*', waar:{ groep_id:'eq.' + groepId }, volgorde:'volgorde' }),
+    SB.lees('hoeken',     { kies:'*', waar:{ groep_id:'eq.' + groepId }, volgorde:'volgorde' }),
+    SB.lees('leerlingen', { kies:'*', waar:{ groep_id:'eq.' + groepId }, volgorde:'volgorde' })
+  ]).then(function (uit) {
+    var borden = uit[0] || [];
+    var bord = borden.filter(function (b) { return b.actief; })[0] || borden[0];
+    if (!bord) { meekijkBord = { leeg:true }; return; }
+    return Promise.all([
+      SB.lees('bord_hoeken', { kies:'*', waar:{ bord_id:'eq.' + bord.id }, volgorde:'volgorde' }),
+      SB.lees('plaatsingen', { kies:'*', waar:{ bord_id:'eq.' + bord.id } })
+    ]).then(function (uit2) {
+      meekijkBord = { bord: bord, hoeken: uit[1], leerlingen: uit[2],
+                      opBord: uit2[0] || [], plaatsingen: uit2[1] || [] };
+    });
+  });
+}
+
+function stopMeekijken(){
+  meekijkSchool = null; meekijkGroep = null; meekijkBord = null;
+  huidig = 'scholen';
+  tekenMenu();
+  haalAlles().then(teken, teken);
+}
+
+function tekenMeekijken(v){
+  var school = meekijkSchool, groep = meekijkGroep;
+  if (!school || !groep) { huidig = 'scholen'; tekenMenu(); return teken(); }
+
+  v.appendChild(kopregel('Meekijken', groep.naam + ' van ' + school.naam,
+    knop('Stoppen', 'stil', stopMeekijken)));
+
+  if (!meekijkBord) {
+    var bezig = el('div', 'paneel');
+    bezig.appendChild(el('p', 'hint', 'Bezig met ophalen\u2026'));
+    v.appendChild(bezig);
+    return;
+  }
+  if (meekijkBord.fout) {
+    var fout = el('div', 'paneel');
+    fout.appendChild(el('p', 'hint',
+      'Dat lukte niet: ' + meekijkBord.fout + '. Staat de deur nog open?'));
+    v.appendChild(fout);
+    return;
+  }
+  if (meekijkBord.leeg || !meekijkBord.hoeken.length) {
+    var leegvak = el('div', 'leegvak');
+    leegvak.appendChild(el('p', 'hint', 'Deze groep heeft nog geen bord met hoeken.'));
+    v.appendChild(leegvak);
+    return;
+  }
+
+  var opNaam = {};
+  meekijkBord.leerlingen.forEach(function (l) { opNaam[l.id] = l.naam; });
+  var perHoek = {};
+  meekijkBord.plaatsingen.forEach(function (pl) {
+    (perHoek[pl.hoek_id] = perHoek[pl.hoek_id] || []).push(opNaam[pl.leerling_id] || '?');
+  });
+  var opBord = {};
+  meekijkBord.opBord.forEach(function (r, i) { opBord[r.hoek_id] = i; });
+
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'Wie staat waar'));
+  meekijkBord.hoeken
+    .filter(function (h) { return opBord[h.id] !== undefined; })
+    .sort(function (a, b) { return opBord[a.id] - opBord[b.id]; })
+    .forEach(function (h) {
+      var erin = perHoek[h.id] || [];
+      var rij = el('div', 'logrij');
+      var links = el('div');
+      links.appendChild(el('div', 'logwat', h.naam));
+      links.appendChild(el('div', 'rij-sub', erin.length ? erin.join(', ') : 'nog niemand'));
+      rij.appendChild(links);
+      rij.appendChild(el('div', 'logtijd', erin.length + '/' + (h.max_kinderen || 4)));
+      p.appendChild(rij);
+    });
+  v.appendChild(p);
+
+  var uitleg = el('div', 'paneel');
+  uitleg.appendChild(el('div', 'paneelkop', 'Je kijkt alleen'));
+  uitleg.appendChild(el('p', 'hint',
+    'Bedienen zit hier nog niet in. Dat vraagt eerst een antwoord op wat er ' +
+    'gebeurt als jij hier een kind verplaatst terwijl het bord in de klas ' +
+    'offline hetzelfde kind al heeft verplaatst \u2014 daar wint het digibord, ' +
+    'want daar staat het kind echt. Tot die tijd kijk je en bel je.'));
+  uitleg.appendChild(el('p', 'hint',
+    'Dat je deze groep hebt geopend staat in het logboek van de school.'));
   v.appendChild(uitleg);
 }
 
@@ -448,6 +672,56 @@ function toonCode(email, code){
     var rij = el('div', 'knoprij-onder');
     rij.appendChild(knop('Klaar', 'primair', sluitBlad));
     blad.appendChild(rij);
+  });
+}
+
+/* ── een school opheffen ─────────────────────────────────────────────
+   Niet terug te draaien, dus de naam moet worden overgetypt. Een
+   bevestigingsknop is te makkelijk aan te klikken, en dit is precies de
+   handeling waarvan je niet wilt dat iemand hem per ongeluk doet.
+
+   Het logboek blijft staan: dat hangt met 'set null' aan de school. Het
+   opheffen van een school hoort niet ook het bewijs te wissen van wat er
+   bij die school is gebeurd. */
+function verwijderSchool(c){
+  var getypt = '';
+  toonBlad(function (blad) {
+    var t = el('div', null, c.naam + ' opheffen');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'Alles van deze school gaat weg: ' + c.groepen +
+      (c.groepen === 1 ? ' groep, ' : ' groepen, ') + c.leerlingen +
+      (c.leerlingen === 1 ? ' kind, ' : ' kinderen, ') + c.leerkrachten +
+      (c.leerkrachten === 1 ? ' account' : ' accounts') +
+      ', en alles wat er op hun borden is gebeurd. Dit kan niet terug.'));
+    blad.appendChild(el('p', 'hint',
+      'Vraag ze eerst om bij "De school" op Uitdraaien te drukken \u2014 ' +
+      'daarna kunnen ze er zelf niet meer bij.'));
+
+    var r = el('div', 'veldrij');
+    r.appendChild(el('label', 'veldlabel', 'Typ de naam van de school over'));
+    var invoer = el('input', 'invoer');
+    invoer.type = 'text'; invoer.id = 'schoolnaamcontrole';
+    invoer.placeholder = c.naam;
+    invoer.addEventListener('input', function () { getypt = invoer.value; });
+    r.appendChild(invoer);
+    blad.appendChild(r);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    rij.appendChild(knop('Opheffen', 'gevaar', function () {
+      SB.roep('school_verwijderen', { school: c.school_id, naam_ter_controle: getypt })
+        .then(function (uit) {
+          sluitBlad();
+          return haalAlles().then(function () {
+            teken();
+            meld((uit && uit.naam ? uit.naam : 'De school') + ' is opgeheven');
+          });
+        }, function (e) { meld((e && e.message) || 'Dat lukte niet'); });
+    }));
+    blad.appendChild(rij);
+    zetCursor(invoer, blad);
   });
 }
 
