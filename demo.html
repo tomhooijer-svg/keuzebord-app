@@ -3,45 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Een digitaal keuzebord voor kleutergroepen. Probeer het hier uit, zonder account.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord — even proberen</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-2af2d430">
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-eb1e66a6">
 <style>
-body{ background:var(--vlak-2); margin:0; min-height:100vh;
-      display:flex; align-items:center; justify-content:center; padding:24px; }
+body{ background:var(--vlak-2); margin:0; }
+.blad-mid{ max-width:760px; margin:0 auto; padding:44px 24px 80px; }
+@media (max-width:720px){ .blad-mid{ padding:28px 16px 56px; } }
+
+h1{ font-size:2.2rem; font-weight:600; letter-spacing:-.035em; margin:0 0 10px; }
+.lead{ font-size:1.12rem; color:var(--inkt-2); line-height:1.6; margin:0 0 6px; max-width:54ch; }
+p{ color:var(--inkt-2); line-height:1.62; margin:0 0 12px; max-width:58ch; }
+.klein{ font-size:.88rem; color:var(--inkt-3); }
+
+.knoprij{ display:flex; gap:10px; flex-wrap:wrap; margin:26px 0 34px; }
+
 .kaart{ background:var(--vlak); border-radius:var(--rond-m); box-shadow:var(--schaduw-1);
-        padding:34px 36px; max-width:620px; }
-h1{ font-size:1.72rem; font-weight:600; letter-spacing:-.03em; margin:0 0 10px; }
-p{ color:var(--inkt-2); line-height:1.6; margin:0 0 14px; max-width:58ch; }
-.klein{ font-size:.87rem; color:var(--inkt-3); }
-.knoprij{ display:flex; gap:10px; flex-wrap:wrap; margin-top:24px; }
-ul{ color:var(--inkt-2); line-height:1.6; padding-left:20px; margin:0 0 14px; }
+        padding:24px 28px; margin-bottom:16px; }
+@media (max-width:720px){ .kaart{ padding:20px; } }
+.kaart h2{ font-size:1.18rem; font-weight:600; letter-spacing:-.02em; margin:0 0 12px; }
+
+/* Wat je kunt proberen: genummerd, want het is een volgorde */
+.proef{ counter-reset:stap; list-style:none; padding:0; margin:0; }
+.proef li{ counter-increment:stap; position:relative; padding:0 0 0 38px;
+           margin-bottom:14px; color:var(--inkt-2); line-height:1.55; }
+.proef li::before{ content:counter(stap); position:absolute; left:0; top:-1px;
+                   width:26px; height:26px; border-radius:50%;
+                   background:var(--accent-zacht); color:var(--accent);
+                   font-size:.84rem; font-weight:650;
+                   display:flex; align-items:center; justify-content:center; }
+
+/* De functies: kort, twee kolommen waar het past */
+.lijst{ display:grid; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); gap:16px 26px; }
+.lijst div{ min-width:0; }
+.lijst b{ display:block; font-size:.95rem; font-weight:620; color:var(--inkt);
+          letter-spacing:-.01em; margin-bottom:2px; }
+.lijst span{ font-size:.89rem; color:var(--inkt-3); line-height:1.5; }
 </style>
 </head>
 <body>
 
-<div class="kaart">
+<div class="blad-mid">
+
   <h1>Even proberen</h1>
-  <p>Dit is een keuzebord voor kleuters. Kinderen slepen hun eigen plaatje
-     naar een hoek; een hoek heeft een aantal plekken, en als die vol zijn
-     kun je in de rij. De leerkracht ziet achteraf waar een kind speelt,
+  <p class="lead">Een digitaal keuzebord voor kleuters. Kinderen slepen hun
+     eigen plaatje naar een hoek — en jij ziet achteraf waar een kind speelt,
      hoe lang en met wie.</p>
-  <p>Je kunt hier alles aanraken:</p>
-  <ul>
-    <li>sleep een kind naar een hoek — en naar een hoek die al vol is</li>
-    <li>ga naar het beheer en voeg een kind of een hoek toe</li>
-    <li>zet bij Functies een timer of de wachtrij aan</li>
-  </ul>
-  <p class="klein">De kinderen hier zijn verzonnen. Alles wat je doet blijft
-     in deze browser en gaat nergens heen — er is geen account en geen
-     server aan deze kant. Sluit je het tabblad en kom je terug, dan staat
-     het er nog; met <em>Opnieuw beginnen</em> is het weer schoon.</p>
+  <p class="klein">Geen account nodig. De kinderen hier zijn verzonnen, en
+     alles wat je doet blijft in deze browser.</p>
 
   <div class="knoprij">
     <button class="knop knop-primair" id="start">Naar het bord</button>
     <button class="knop knop-stil" id="beheer">Naar het beheer</button>
+  </div>
+
+  <div class="kaart">
+    <h2>Probeer dit even</h2>
+    <ol class="proef">
+      <li>Sleep een kind naar een hoek. Laat het halverwege los en kijk wat er gebeurt.</li>
+      <li>Vul de huishoek helemaal. Sleep er dan nóg een kind heen — dat kind komt in de rij.</li>
+      <li>Ga naar het beheer, open <b>Hoeken</b> en voeg er een hoek bij. Hij staat meteen op het bord.</li>
+      <li>Open <b>Uiterlijk</b> en zet het thema op Kerst. Terug naar het bord.</li>
+    </ol>
+  </div>
+
+  <div class="kaart">
+    <h2>Wat het verder kan</h2>
+    <div class="lijst">
+      <div><b>Eigen foto's</b><span>Een foto van je eigen bouwhoek herkent een kleuter meteen. Voor de kinderen kan ook: een foto, of een gekleurde cirkel met de letter.</span></div>
+      <div><b>Hoeken uit de databank</b><span>Een verzameling kant-en-klare hoeken met plaatjes. Je kiest er een en krijgt een kopie in je eigen groep.</span></div>
+      <div><b>Tijd in de hoek</b><span>Een kind blijft een afgesproken tijd waar het is. Op het plaatje loopt een ring vol, zodat het dat zelf ziet.</span></div>
+      <div><b>Wachtrij</b><span>Is een hoek vol, dan meld je je aan en schuif je door zodra er plek is.</span></div>
+      <div><b>Niet steeds dezelfde hoek</b><span>Wie deze week al vaak in de bouwhoek zat, kiest eerst eens wat anders. Je kunt het aan- en uitzetten.</span></div>
+      <div><b>Statistieken</b><span>Favoriete hoeken, wie met wie speelt, en per kind waar het speelt en hoe lang. Mee te nemen naar een oudergesprek.</span></div>
+      <div><b>Thema's</b><span>Negen stuks, van Herfst tot Carnaval. Alleen kleuren — geen versiering die een kleuter afleidt.</span></div>
+      <div><b>School en thuis</b><span>Dezelfde groep op het digibord en op je eigen laptop. Alles loopt vanzelf gelijk.</span></div>
+    </div>
+  </div>
+
+  <div class="kaart">
+    <h2>En als de wifi wegvalt?</h2>
+    <p>Dan gaat het bord gewoon door. De kinderen kiezen verder, en zodra de
+       verbinding terug is gaat alles alsnog naar de server. Een klas kan niet
+       wachten op het netwerk.</p>
+    <p class="klein">Van kinderen bewaart het systeem een voornaam, eventueel
+       een plaatje, en waar ze hebben gespeeld. Geen achternaam, geen
+       geboortedatum. Alles staat in de EU.</p>
+  </div>
+
+  <div class="knoprij">
+    <button class="knop knop-primair" id="start2">Naar het bord</button>
+    <a class="knop knop-stil" href="handleiding.html">De hele handleiding</a>
     <a class="knop knop-stil" href="inloggen.html">Ik heb een account</a>
   </div>
+
 </div>
 
 <script>
@@ -52,7 +108,9 @@ function demoAan(waarheen){
   try { localStorage.setItem('kb_demo', 'aan'); } catch (e) {}
   location.href = waarheen;
 }
-document.getElementById('start').addEventListener('click', function () { demoAan('bord.html'); });
+['start', 'start2'].forEach(function (id) {
+  document.getElementById(id).addEventListener('click', function () { demoAan('bord.html'); });
+});
 document.getElementById('beheer').addEventListener('click', function () { demoAan('beheer.html'); });
 </script>
 </body>

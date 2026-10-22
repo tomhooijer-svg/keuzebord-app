@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord — beheer</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-2af2d430">
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-eb1e66a6">
 <style>
 
 
@@ -439,6 +439,43 @@
              background:var(--vlak-2); color:var(--inkt-3);
              font-size:.78rem; font-weight:700; font-variant-numeric:tabular-nums; }
 
+
+/* ── het blad voor het oudergesprek ───────────────────────
+   Op het scherm een gewoon blad; op papier het enige wat er staat. */
+.printblad .printkop{ display:flex; align-items:center; justify-content:space-between;
+                      gap:18px; margin-bottom:18px; }
+.printnaam{ font-size:1.7rem; font-weight:600; letter-spacing:-.03em; }
+.printsub{ font-size:.92rem; color:var(--inkt-3); margin-top:2px; }
+.printtekst{ color:var(--inkt-2); line-height:1.6; margin:0 0 14px; max-width:60ch; }
+.printstuk{ margin:20px 0 0; }
+.printstuk h3{ font-size:.76rem; font-weight:600; letter-spacing:.06em;
+               text-transform:uppercase; color:var(--inkt-3); margin:0 0 10px; }
+.printlijst{ display:flex; flex-direction:column; gap:7px; }
+.printrij{ display:grid; grid-template-columns:minmax(90px,150px) 1fr auto;
+           align-items:center; gap:12px; }
+.printlabel{ font-size:.95rem; color:var(--inkt); }
+.printbalk{ height:9px; border-radius:99px; background:var(--vlak-2); overflow:hidden; }
+.printbalk span{ display:block; height:100%; border-radius:99px; background:var(--accent); }
+.printgetal{ font-size:.86rem; color:var(--inkt-3); white-space:nowrap;
+             font-variant-numeric:tabular-nums; }
+.printvoet{ margin-top:22px; padding-top:14px; border-top:1px solid var(--lijn);
+            font-size:.82rem; color:var(--inkt-3); line-height:1.5; max-width:62ch; }
+
+@media print{
+  /* Alles weg behalve het blad zelf. Geen zijbalk, geen knoppen, geen
+     meldingen -- een ouder krijgt een vel papier, geen schermafdruk. */
+  .app, .melding{ display:none !important; }
+  .overlay{ position:static !important; display:block !important;
+            background:none !important; backdrop-filter:none !important;
+            padding:0 !important; opacity:1 !important; }
+  .blad{ box-shadow:none !important; border-radius:0 !important;
+         max-width:none !important; width:auto !important;
+         max-height:none !important; transform:none !important;
+         animation:none !important; padding:0 !important; }
+  .nietprinten{ display:none !important; }
+  .printbalk span{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{ background:#fff !important; }
+}
 </style>
 </head>
 <body class="beheer">
@@ -478,20 +515,20 @@
 window.KB_DEMO = false;
 try { window.KB_DEMO = localStorage.getItem('kb_demo') === 'aan'; } catch (e) {}
 </script>
-<script src="src/kb-app.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-data.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-demo.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-supabase.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-media.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-sync.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-verbinding.js?v=6september2026-2af2d430"></script>
+<script src="src/kb-app.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-data.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-demo.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-supabase.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-media.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-sync.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-verbinding.js?v=6september2026-eb1e66a6"></script>
 <!-- het rekenwerk van de statistieken: Keuzebord toont het, Planbord
      gebruikt het voor het verslag -- allebei dus. -->
-<script src="src/kb-statistiek.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-beheer.js?v=6september2026-2af2d430"></script>
+<script src="src/kb-statistiek.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-beheer.js?v=6september2026-eb1e66a6"></script>
 <!-- schermen: het uitgeefscript laat hier per app staan wat erbij hoort -->
-<script src="src/kb-statistiekpaneel.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-docx.js?v=6september2026-2af2d430"></script>
+<script src="src/kb-statistiekpaneel.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-docx.js?v=6september2026-eb1e66a6"></script>
 <script>KB.laad(); KB.doelenZorg().then(BH.start);</script>
 </body>
 </html>

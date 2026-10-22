@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
+<title>Handleiding — Keuzebord</title>
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-eb1e66a6">
+<style>
+body{ background:var(--vlak-2); margin:0; }
+.blad-breed{ max-width:1080px; margin:0 auto; padding:40px 24px 90px;
+             display:grid; grid-template-columns:230px 1fr; gap:44px; align-items:start; }
+@media (max-width:900px){ .blad-breed{ grid-template-columns:1fr; gap:22px; padding:24px 16px 60px; } }
+
+.inhoudsopgave{ position:sticky; top:28px; background:var(--vlak);
+                border-radius:var(--rond-m); box-shadow:var(--schaduw-1); padding:18px 16px; }
+@media (max-width:900px){ .inhoudsopgave{ position:static; } }
+.inhoudsopgave h2{ font-size:.72rem; font-weight:600; letter-spacing:.06em;
+                   text-transform:uppercase; color:var(--inkt-3); margin:0 0 10px 8px; }
+.inhoudsopgave a{ display:block; padding:6px 8px; border-radius:8px; font-size:.88rem;
+                  color:var(--inkt-2); text-decoration:none; }
+.inhoudsopgave a:hover{ background:var(--vlak-2); color:var(--inkt); }
+
+.stuk{ background:var(--vlak); border-radius:var(--rond-m); box-shadow:var(--schaduw-1);
+       padding:28px 32px; margin-bottom:18px; scroll-margin-top:24px; }
+@media (max-width:900px){ .stuk{ padding:22px 20px; } }
+h1{ font-size:2rem; font-weight:600; letter-spacing:-.03em; margin:0 0 6px; }
+.onder{ color:var(--inkt-3); font-size:1.02rem; margin:0 0 26px; }
+h2{ font-size:1.32rem; font-weight:600; letter-spacing:-.022em; margin:0 0 14px; }
+h3{ font-size:1rem; font-weight:620; letter-spacing:-.012em; margin:22px 0 6px; }
+p, li{ color:var(--inkt-2); line-height:1.62; }
+p{ margin:0 0 12px; max-width:62ch; }
+ul, ol{ margin:0 0 12px; padding-left:22px; max-width:62ch; }
+li{ margin-bottom:5px; }
+strong{ color:var(--inkt); font-weight:620; }
+.let{ border-left:3px solid var(--accent); background:var(--accent-zacht);
+      padding:14px 16px; border-radius:0 10px 10px 0; margin:16px 0; }
+.let p{ margin:0; max-width:58ch; }
+table{ border-collapse:collapse; width:100%; margin:12px 0 16px; font-size:.93rem; }
+th, td{ text-align:left; padding:9px 12px; border-bottom:1px solid var(--lijn);
+        vertical-align:top; color:var(--inkt-2); }
+th{ font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--inkt-3); }
+.terug{ display:inline-flex; align-items:center; gap:8px; margin-bottom:18px;
+        font-size:.88rem; font-weight:600; color:var(--inkt-2); text-decoration:none; }
+</style>
+</head>
+<body>
+
+<div class="blad-breed">
+  <nav class="inhoudsopgave">
+    <h2>Inhoud</h2>
+    <a href="#begin">Beginnen</a>
+    <a href="#kinderen">De kinderen</a>
+    <a href="#hoeken">De hoeken</a>
+    <a href="#bord">Het bord in de klas</a>
+    <a href="#functies">Wat je kunt aanzetten</a>
+    <a href="#vandaag">Vandaag</a>
+    <a href="#statistieken">Statistieken</a>
+    <a href="#uiterlijk">Thema's en uiterlijk</a>
+    <a href="#apparaten">School en thuis</a>
+    <a href="#wifi">Als de wifi wegvalt</a>
+    <a href="#school">Voor de schoolbeheerder</a>
+    <a href="#privacy">Wat we van kinderen bewaren</a>
+    <a href="#vast">Als er iets vastloopt</a>
+  </nav>
+
+  <main>
+    <a class="terug" href="beheer.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 l-7 7 7 7"></path></svg>
+      Terug naar je groep
+    </a>
+
+    <div class="stuk">
+      <h1>Handleiding</h1>
+      <p class="onder">Het keuzebord voor kleutergroepen — van het eerste inloggen tot het oudergesprek in juni.</p>
+      <p>Kinderen slepen hun eigen plaatje naar een hoek. Een hoek heeft een
+         aantal plekken; is die vol, dan kun je in de rij. Jij ziet achteraf
+         waar een kind speelt, hoe lang en met wie.</p>
+      <p>Je hebt niets te installeren. Het bord is een website: je opent hem
+         op het digibord in de klas en op je eigen laptop, en alles loopt
+         vanzelf gelijk.</p>
+    </div>
+
+    <div class="stuk" id="begin">
+      <h2>Beginnen</h2>
+      <h3>Inloggen</h3>
+      <p>Je logt in met je e-mailadres en een wachtwoord. Heeft je school al
+         een omgeving, dan heb je van de schoolbeheerder een <strong>toegangscode</strong>
+         van acht tekens gekregen; die vul je één keer in en daarna hoor je
+         bij de goede school en groep.</p>
+      <p>Op het digibord log je <strong>één keer</strong> in. Daarna blijft dat scherm
+         ingelogd — de kinderen hoeven niets te typen en jij ook niet meer.</p>
+
+      <h3>Twee schermen</h3>
+      <table>
+        <tr><th>Waar</th><th>Waarvoor</th></tr>
+        <tr><td>Het bord</td><td>Wat de kinderen zien en aanraken. Dit zet je op het digibord.</td></tr>
+        <tr><td>Het beheer</td><td>Waar jij de groep inricht. Dit doe je op je laptop, of op het digibord achter de code.</td></tr>
+      </table>
+      <p>Vanuit het beheer kom je met <strong>Bord openen</strong> bij het bord; vanaf
+         het bord kom je via het menu rechtsboven terug.</p>
+    </div>
+
+    <div class="stuk" id="kinderen">
+      <h2>De kinderen</h2>
+      <p>Bij <strong>Leerlingen</strong> zet je de namen van je groep. Een voornaam is
+         genoeg — meer hoeft niet en meer vragen we ook niet.</p>
+      <p>Elk kind krijgt een gekleurde cirkel met de eerste letter. Dat werkt
+         prima en het is de veiligste stand. Wil je foto's, dan zet je die er
+         bij <strong>Picto's</strong> bij. Overleg dat eerst binnen je school: een foto
+         van een kind is een persoonsgegeven en daar horen afspraken bij.</p>
+      <div class="let">
+        <p>Een kind dat tijdelijk niet meedoet zet je op <em>niet actief</em> in
+           plaats van het te verwijderen. Dan verdwijnt het van het bord, maar
+           blijft wat het heeft gespeeld bewaard voor de statistieken.</p>
+      </div>
+    </div>
+
+    <div class="stuk" id="hoeken">
+      <h2>De hoeken</h2>
+      <p>Bij <strong>Hoeken</strong> maak je de plekken waaruit de kinderen kiezen. Per
+         hoek stel je in hoeveel kinderen er tegelijk mogen, en je kunt er een
+         foto bij zetten — een foto van je eigen lokaal werkt het best, want
+         die herkennen kleuters meteen.</p>
+
+      <h3>Uit de databank</h3>
+      <p>Met de knop <strong>Uit de databank</strong> kies je uit een verzameling
+         kant-en-klare hoeken die bij het product zit. Je krijgt er een
+         <strong>kopie</strong> van in je eigen groep: naam, plekken en foto zijn daarna
+         van jou. Wordt de databank later bijgewerkt, dan verandert er niets
+         aan jouw bord.</p>
+
+      <h3>Op het bord of niet</h3>
+      <p>Elke hoek heeft een schakelaar <em>Op het bord tonen</em>. Zo kun je een
+         hoek klaar hebben staan zonder dat hij er al is — handig voor een
+         hoek die pas volgende week opengaat.</p>
+      <p>De volgorde waarin de hoeken op het bord staan verander je onder
+         <em>Waar staat welke hoek</em>. Het bord vult van linksboven naar rechts.</p>
+    </div>
+
+    <div class="stuk" id="bord">
+      <h2>Het bord in de klas</h2>
+      <p>Een kind sleept zijn plaatje van de rij onderin naar een hoek. Dat is
+         alles. Laat het los naast een hoek, dan veert het plaatje terug naar
+         beneden.</p>
+
+      <h3>De knoppen rechtsboven</h3>
+      <table>
+        <tr><th>Knop</th><th>Wat hij doet</th></tr>
+        <tr><td>Bord aan / uit</td><td>Zet het kiezen aan of uit. Staat het uit, dan kunnen de kinderen niets verslepen.</td></tr>
+        <tr><td>Menu</td><td>Dag afsluiten, bord leegmaken, volledig scherm.</td></tr>
+      </table>
+
+      <h3>De dag afsluiten</h3>
+      <p><strong>Dag afsluiten</strong> haalt alle kinderen van het bord en schrijft op
+         wat er die dag is gekozen. Je kunt het bord daarna weer openen.</p>
+      <p>Bij <strong>Functies</strong> kun je instellen dat het bord dat zelf doet: op een
+         vast tijdstip, of een aantal minuten nadat het is opengegaan.</p>
+
+      <h3>De code</h3>
+      <p>Staat <em>Code op het bord</em> aan, dan vraagt het bord vier cijfers
+         voordat het de instellingen laat zien. Het bord aan- en uitzetten kan
+         wel gewoon — daar is geen code voor nodig.</p>
+    </div>
+
+    <div class="stuk" id="functies">
+      <h2>Wat je kunt aanzetten</h2>
+      <p>Bij <strong>Functies</strong> staat alles los aan en uit, per groep. Begin klein:
+         een nieuwe groep begint met alleen kiezen, en dat is vaak genoeg.</p>
+      <table>
+        <tr><th>Functie</th><th>Wat het doet</th></tr>
+        <tr><td>Tijdvergrendeling</td><td>Een kind blijft een afgesproken tijd in de gekozen hoek. Op het plaatje loopt een ring vol.</td></tr>
+        <tr><td>Even mogen verbeteren</td><td>De eerste seconden na een keuze mag een kind zichzelf nog rechtzetten. Staat standaard aan.</td></tr>
+        <tr><td>Wachtrij bij volle hoek</td><td>Een kind meldt zich aan en schuift door zodra er plek is.</td></tr>
+        <tr><td>Telling op het picto</td><td>Laat zien hoe vaak een kind deze week in die hoek was.</td></tr>
+        <tr><td>Niet steeds dezelfde hoek</td><td>Een kind dat deze week al vaak in een hoek zat, kiest eerst eens wat anders. Staat standaard uit.</td></tr>
+        <tr><td>Code op het bord</td><td>Vier cijfers voor de instellingen.</td></tr>
+      </table>
+      <div class="let">
+        <p>Moet een kind er toch eerder uit terwijl de tijd nog loopt? Tik op
+           het bord <strong>twee keer</strong> op zijn plaatje. Daarna vraagt het bord om de
+           code. Dat is met opzet een handeling die je moet weten — anders
+           vindt een kleuter hem zelf.</p>
+      </div>
+    </div>
+
+    <div class="stuk" id="vandaag">
+      <h2>Vandaag</h2>
+      <p>Het scherm waar je 's ochtends begint. Je ziet of het bord openstaat,
+         wie in welke hoek staat, en wie nog moet kiezen. Vanaf hier sluit je
+         ook de dag af.</p>
+    </div>
+
+    <div class="stuk" id="statistieken">
+      <h2>Statistieken</h2>
+      <p>Hier staat wat er met het bord is gebeurd:</p>
+      <ul>
+        <li><strong>Wat opvalt</strong> — kinderen die steeds hetzelfde kiezen, hoeken waar bijna niemand komt.</li>
+        <li><strong>Hoe vaak elke hoek wordt gekozen</strong></li>
+        <li><strong>Wie speelt met wie</strong> — wie elkaar vaak in dezelfde hoek tegenkomt, en wie nooit.</li>
+        <li><strong>Per kind</strong> — waar dit kind speelt en hoe lang. Dit is het stuk dat je meeneemt naar een oudergesprek.</li>
+      </ul>
+      <p>Het rekent met wat er op het bord is gebeurd. Hoe langer je het
+         gebruikt, hoe meer het zegt — na twee weken zie je al patronen.</p>
+    </div>
+
+    <div class="stuk" id="uiterlijk">
+      <h2>Thema's en uiterlijk</h2>
+      <p>Bij <strong>Uiterlijk</strong> kies je een <strong>thema</strong>: Herfst, Sinterklaas, Kerst,
+         Winter, Lente, Pasen, Zomer, Carnaval of Standaard. Een thema zet de
+         achtergrond, de accentkleur en de kleur van de randjes boven de
+         hoeken.</p>
+      <p>Bewust geen plaatjes en geen versiering. Een bord vol kerstballen
+         trekt een kleuter weg van de hoek waar hij naar moet kijken.</p>
+      <p>Daaronder kun je de achtergrond nog los veranderen: een rustige
+         sfeer, één kleur, of een eigen foto. En heb je bij een hoek zelf een
+         kleur gekozen, dan blijft die staan — ook als je van thema wisselt.</p>
+    </div>
+
+    <div class="stuk" id="apparaten">
+      <h2>School en thuis</h2>
+      <p>Je werkt op zoveel apparaten als je wilt. Log in op het digibord in
+         de klas en op je eigen laptop thuis: het is dezelfde groep, en alles
+         loopt vanzelf gelijk.</p>
+      <p>Zet je thuis een hoek klaar, dan staat die de volgende ochtend op het
+         digibord. Kiest een kind in de klas iets, dan zie jij dat op je
+         laptop binnen een paar seconden.</p>
+      <div class="let">
+        <p>Dit werkt alleen als je bent ingelogd. Links onderin staat of je
+           verbonden bent: <em>Opgeslagen</em> betekent dat alles op de server
+           staat.</p>
+      </div>
+    </div>
+
+    <div class="stuk" id="wifi">
+      <h2>Als de wifi wegvalt</h2>
+      <p>Dan gaat het bord gewoon door. De kinderen kiezen verder, en zodra
+         de verbinding terug is gaat alles alsnog naar de server. Je hoeft
+         niets te doen en je raakt niets kwijt.</p>
+      <p>Linksonder zie je <em>Nog niet verstuurd</em> zolang dat zo is. Blijft dat
+         lang staan, controleer dan het netwerk — en laat dat scherm openstaan
+         tot het weer <em>Opgeslagen</em> zegt.</p>
+    </div>
+
+    <div class="stuk" id="school">
+      <h2>Voor de schoolbeheerder</h2>
+      <p>Ben je de ICT'er of coördinator, dan heb je een scherm meer:
+         <strong>Schoolbeheer</strong>.</p>
+      <ul>
+        <li><strong>Groepen</strong> aanmaken en er leerkrachten aan koppelen.</li>
+        <li><strong>Collega's uitnodigen</strong>. Je krijgt een toegangscode van acht
+            tekens die je kunt doorgeven — ook mondeling, voor als de mail niet
+            aankomt. Die code vervalt na drie weken.</li>
+        <li><strong>Wachtwoord terugzetten</strong> voor iemand van je eigen school.</li>
+      </ul>
+      <p>Een leerkracht ziet alleen haar eigen groepen. Dat is geen
+         instelling maar een harde grens: de database laat de rest niet zien,
+         ook niet als iemand het adres verandert.</p>
+
+      <h3>Als je hulp nodig hebt van de leverancier</h3>
+      <p>Wie dit product levert kan <strong>niet</strong> bij je kinderen, je borden of je
+         statistieken. Moet er toch iemand meekijken, dan zet jij die deur
+         zelf open, in je eigen scherm. Hij gaat na vier uur vanzelf weer
+         dicht, en alles wat er gebeurt komt in een logboek dat jij kunt
+         nakijken.</p>
+    </div>
+
+    <div class="stuk" id="privacy">
+      <h2>Wat we van kinderen bewaren</h2>
+      <table>
+        <tr><th>Wat</th><th>Waarom</th></tr>
+        <tr><td>Voornaam of roepnaam</td><td>Het kind moet zichzelf herkennen op het bord.</td></tr>
+        <tr><td>Een pictogram of foto (optioneel)</td><td>Hetzelfde, voor wie nog niet leest.</td></tr>
+        <tr><td>Welke hoek, wanneer, hoe lang</td><td>De statistieken.</td></tr>
+      </table>
+      <p>Verder niets. Geen achternaam, geen geboortedatum, geen klasnummer.
+         "Met wie speelt dit kind" staat nergens apart opgeschreven: dat volgt
+         uit twee kinderen die in dezelfde hoek dezelfde tijd overlappen, en
+         dat rekent de statistiek zelf uit.</p>
+      <p>De losse speelmomenten blijven één schooljaar bewaard. Daarna
+         blijven alleen de totalen per kind per hoek staan — genoeg voor een
+         oudergesprek in juni, en daarna bewaren we niet langer dan nodig.</p>
+      <p>Alle gegevens staan in de Europese Unie.</p>
+    </div>
+
+    <div class="stuk" id="vast">
+      <h2>Als er iets vastloopt</h2>
+      <h3>Het bord reageert niet</h3>
+      <p>Ververs de pagina. Je raakt niets kwijt: alles wat is gekozen staat
+         al opgeslagen.</p>
+
+      <h3>Ik zie oude gegevens</h3>
+      <p>Twee tabbladen van hetzelfde bord open? Sluit er een. De app zegt het
+         er ook bij als er elders is gewerkt.</p>
+
+      <h3>Ik kan niet inloggen</h3>
+      <p>Vraag je schoolbeheerder om je wachtwoord terug te zetten. Ben jij de
+         schoolbeheerder, neem dan contact op met de leverancier.</p>
+
+      <h3>Een kind is van het bord verdwenen</h3>
+      <p>Kijk linksonder of er nog iets staat te wachten om verstuurd te
+         worden. Laat dat scherm openstaan tot het <em>Opgeslagen</em> zegt. Gebeurt
+         dit vaker, meld het dan — dat hoort niet te kunnen.</p>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

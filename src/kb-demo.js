@@ -16,15 +16,16 @@ if (!global.KB_DEMO) return;
 var KINDEREN = ['Bram','Isa','Kees','Yara','Otis','Loua','Sam','Fenne',
                 'Joep','Nora','Timo','Wies','Levi','Roos','Cas','Maud'];
 /* Zes hoeken met een plek of vier: genoeg om te zien dat een hoek vol
-   kan raken, en weinig genoeg om op één scherm te passen. */
-var HOEKEN = [['Bouwhoek', 4, '#3b6ff0'], ['Huishoek', 3, '#b8436d'],
-              ['Zandtafel', 4, '#c8820a'], ['Knutselhoek', 4, '#2e9e6b'],
-              ['Leeshoek', 3, '#7c5cbf'], ['Ontdekhoek', 4, '#1a9aad']];
+   kan raken, en weinig genoeg om op één scherm te passen. Zonder eigen
+   kleur, zodat ze het thema volgen -- een hoek met een vaste kleur doet
+   dat met opzet niet, en dan zou de demo het thema niet laten zien. */
+var HOEKEN = [['Bouwhoek', 4], ['Huishoek', 3], ['Zandtafel', 4],
+              ['Knutselhoek', 4], ['Leeshoek', 3], ['Ontdekhoek', 4]];
 
 function vullen(){
   var k = KB.leegKlas('Groep 1A');
   k.hoekLib = HOEKEN.map(function (h, i) {
-    return { id:'demo-hoek-' + i, naam:h[0], maxKinderen:h[1], kleur:h[2],
+    return { id:'demo-hoek-' + i, naam:h[0], maxKinderen:h[1], kleur:null,
              timerMinuten:0, fotoId:null, leerlijnen:[] };
   });
   var b = k.borden[0];

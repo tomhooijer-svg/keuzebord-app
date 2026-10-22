@@ -273,6 +273,23 @@ function tekenMenu(){
     over.appendChild(el('span', null, 'Naar ' + ander.naam));
     menu.appendChild(over);
   }
+  /* De handleiding. Onderin bij de andere links, want je zoekt hem als
+     je ergens niet uitkomt -- niet terwijl je aan het werk bent. */
+  /* Een eigen klasse: zij-over betekent "naar de andere app", en dat is
+     dit niet. In een nieuw tabblad, zodat je je scherm niet kwijtraakt
+     omdat je even iets wilde opzoeken. */
+  var hulp = el('a', 'zij-knop zij-hulp');
+  hulp.href = 'handleiding.html';
+  hulp.target = '_blank';
+  hulp.rel = 'noopener';
+  hulp.innerHTML = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
+    'aria-hidden="true"><circle cx="12" cy="12" r="9"></circle>' +
+    '<path d="M9.6 9.4a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.4"></path>' +
+    '<path d="M12 16.6h.01"></path></svg>';
+  hulp.appendChild(el('span', null, 'Handleiding'));
+  menu.appendChild(hulp);
+
   /* De weg naar het bord onderin. In Keuzebord ligt dat hiernaast; in
      Planbord staat het in de andere app en moet de groep mee. Stond hier
      een vast bord.html, en dan kwam je in Planbord op de 404 van GitHub
@@ -1900,6 +1917,44 @@ panelen.uiterlijk = function (v){
   });
   ververs();
   v.appendChild(voorbeeld);
+
+  /* thema kiezen -- de kleuren van het hele bord in één keer */
+  var themaP = paneel('Thema');
+  themaP.appendChild(el('p', 'hint',
+    'Een thema zet de kleuren van het bord: de achtergrond, de accentkleur ' +
+    'en de randjes boven de hoeken. Geen plaatjes \u2014 die leiden af van ' +
+    'waar een kleuter naar moet kijken. Heb je bij een hoek zelf een kleur ' +
+    'gekozen, dan blijft die staan.'));
+  var themaRooster = el('div', 'sfeerrooster');
+  KB.BORDTHEMAS.forEach(function (t) {
+    var aan = (u.thema || 'standaard') === t.id;
+    var knopje = el('button', 'sfeerknop' + (aan ? ' aan' : ''));
+    var vlak = el('div', 'sfeervlak');
+    /* Laat de kleuren zien waar het om gaat: de achtergrond met vier
+       randjes erop, zoals ze op het bord boven de hoeken staan. */
+    var sf = KB.SFEREN.filter(function (x) { return x.id === t.sfeer; })[0] || KB.SFEREN[0];
+    vlak.style.background = sf.grond;
+    var streepjes = el('div');
+    streepjes.style.cssText = 'display:flex;gap:4px;padding:8px;height:100%;align-items:flex-end';
+    t.hoeken.slice(0, 4).forEach(function (c) {
+      var st = el('div');
+      st.style.cssText = 'flex:1;height:22px;border-radius:4px 4px 2px 2px;background:' + c;
+      streepjes.appendChild(st);
+    });
+    vlak.appendChild(streepjes);
+    knopje.appendChild(vlak);
+    knopje.appendChild(el('span', null, t.naam));
+    knopje.addEventListener('click', function () {
+      u.thema = t.id;
+      /* De achtergrond gaat mee, want dat is wat je verwacht als je een
+         thema kiest. Daarna kun je hem hieronder nog los veranderen. */
+      u.soort = 'sfeer'; u.sfeer = t.sfeer;
+      bewaarOfKlaag(); teken();
+    });
+    themaRooster.appendChild(knopje);
+  });
+  themaP.appendChild(themaRooster);
+  v.appendChild(themaP);
 
   /* sfeer kiezen */
   var sfeerP = paneel('Sfeer');

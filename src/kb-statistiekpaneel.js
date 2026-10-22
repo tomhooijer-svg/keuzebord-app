@@ -244,9 +244,123 @@ function merkTeken(soort){
   return '·';
 }
 
+/* ── het blad voor het oudergesprek ──────────────────────────────────
+   Eén kind, één A4, geen schermpraat. Wat een ouder wil weten is waar
+   hun kind speelt, met wie, en of het ergens niet komt -- in die
+   volgorde. Geen cijfers die je moet uitleggen; zinnen die je kunt
+   voorlezen.
+
+   Het print vanuit dit blad: de stylesheet laat bij het printen alleen
+   dit blad staan. Zo hoeft er geen tweede pagina te bestaan die
+   dezelfde cijfers nog eens uitrekent. */
+function oudergesprekBlad(l, k, opties){
+  var telling = KBSTAT.perKind(k, opties)[l.id] || { keuzes:0, perHoek:{} };
+  var hoeken = Object.keys(telling.perHoek || {})
+    .map(function (id) { return { id:id, n:telling.perHoek[id] }; })
+    .sort(function (a, b) { return b.n - a.n; });
+  var maatjes = KBSTAT.maatjesVan(l.id, k, opties)
+    .sort(function (a, b) { return b.minuten - a.minuten; });
+  var opBord = (k.hoekLib || []).filter(function (h) {
+    return (KB.bord(k).hoekLibIds || []).indexOf(h.id) >= 0;
+  });
+  var nooit = opBord.filter(function (h) { return !(telling.perHoek || {})[h.id]; });
+
+  BH.toonBlad(function (blad) {
+    blad.classList.add('printblad');
+
+    var kop = el('div', 'printkop');
+    var links = el('div');
+    links.appendChild(el('div', 'printnaam', l.naam));
+    links.appendChild(el('div', 'printsub',
+      k.naam + ' \u00b7 ' + KBSTAT.periodeZin(opties)));
+    kop.appendChild(links);
+    kop.appendChild(BH.pictoBol(l, 56));
+    blad.appendChild(kop);
+
+    if (!telling.keuzes) {
+      blad.appendChild(el('p', 'printtekst',
+        'In deze periode heeft ' + l.naam + ' nog niet op het bord gekozen.'));
+    } else {
+      /* Eén zin bovenaan die het samenvat. Wie alleen dat leest, weet
+         genoeg. */
+      var top = KB.hoekVan(hoeken[0].id, k);
+      var deel = Math.round((hoeken[0].n / telling.keuzes) * 100);
+      blad.appendChild(el('p', 'printtekst',
+        l.naam + ' koos ' + telling.keuzes + ' keer, verdeeld over ' +
+        telling.hoekenBezocht + (telling.hoekenBezocht === 1 ? ' hoek' : ' verschillende hoeken') +
+        (top ? '. Het vaakst de ' + top.naam.toLowerCase() + ' (' + deel + '% van de keren).' : '.')));
+
+      var h1 = el('div', 'printstuk');
+      h1.appendChild(el('h3', null, 'Waar ' + l.naam + ' speelt'));
+      var lijst = el('div', 'printlijst');
+      hoeken.forEach(function (h) {
+        var hoek = KB.hoekVan(h.id, k);
+        var rij = el('div', 'printrij');
+        rij.appendChild(el('span', 'printlabel', hoek ? hoek.naam : 'onbekende hoek'));
+        var balk = el('span', 'printbalk');
+        var vul = el('span');
+        vul.style.width = Math.round((h.n / hoeken[0].n) * 100) + '%';
+        balk.appendChild(vul);
+        rij.appendChild(balk);
+        rij.appendChild(el('span', 'printgetal',
+          h.n + (h.n === 1 ? ' keer' : ' keer')));
+        lijst.appendChild(rij);
+      });
+      h1.appendChild(lijst);
+      blad.appendChild(h1);
+
+      if (nooit.length) {
+        var h2 = el('div', 'printstuk');
+        h2.appendChild(el('h3', null, 'Waar ' + l.naam + ' niet kwam'));
+        h2.appendChild(el('p', 'printtekst',
+          nooit.map(function (h) { return h.naam; }).join(', ') + '.'));
+        blad.appendChild(h2);
+      }
+
+      var h3 = el('div', 'printstuk');
+      h3.appendChild(el('h3', null, 'Met wie'));
+      if (!maatjes.length) {
+        h3.appendChild(el('p', 'printtekst',
+          l.naam + ' kwam in deze periode niemand vaak genoeg tegen om er iets over te zeggen.'));
+      } else {
+        var mlijst = el('div', 'printlijst');
+        maatjes.slice(0, 5).forEach(function (m) {
+          var ander = KB.leerling(m.leerlingId, k);
+          var rij = el('div', 'printrij');
+          rij.appendChild(el('span', 'printlabel', ander ? ander.naam : 'onbekend'));
+          var balk = el('span', 'printbalk');
+          var vul = el('span');
+          vul.style.width = Math.round((m.minuten / maatjes[0].minuten) * 100) + '%';
+          balk.appendChild(vul);
+          rij.appendChild(balk);
+          rij.appendChild(el('span', 'printgetal', m.keren + ' keer samen'));
+          mlijst.appendChild(rij);
+        });
+        h3.appendChild(mlijst);
+      }
+      blad.appendChild(h3);
+    }
+
+    blad.appendChild(el('p', 'printvoet',
+      'Uit het keuzebord van ' + k.naam + '. Dit gaat alleen over wat ' + l.naam +
+      ' op het bord heeft gekozen \u2014 niet over wat het kan of heeft geleerd.'));
+
+    var rij = el('div', 'knoprij nietprinten');
+    rij.style.marginTop = '24px';
+    rij.appendChild(knop('Printen', 'primair', function () { window.print(); }));
+    rij.appendChild(knop('Sluiten', 'stil', BH.sluitBlad));
+    blad.appendChild(rij);
+  });
+}
+
 function kindDetail(l, k, opties){
   var vak = el('div', 'kinddetail');
   var telling = KBSTAT.perKind(k, opties)[l.id];
+  var gesprek = knop('Blad voor het oudergesprek', 'stil', function () {
+    oudergesprekBlad(l, k, opties);
+  });
+  gesprek.style.marginBottom = '14px';
+  vak.appendChild(gesprek);
 
   var hoeken = Object.keys(telling.perHoek || {})
     .map(function (id) { return { id:id, n:telling.perHoek[id] }; })

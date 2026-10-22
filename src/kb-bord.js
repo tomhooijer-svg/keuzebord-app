@@ -183,6 +183,14 @@ function toonBord(){
 function pasUiterlijkToe(k){
   try { document.body.style.background = KB.achtergrondCss(k); }
   catch (e) { /* dan blijft de standaardachtergrond staan */ }
+  /* Het thema zet alleen kleurwaarden; alle opmaak blijft in de
+     stylesheet staan. Zo is er nergens een tweede versie van het bord. */
+  try {
+    var v = KB.bordthemaVariabelen(k);
+    Object.keys(v).forEach(function (naam) {
+      document.documentElement.style.setProperty(naam, v[naam]);
+    });
+  } catch (e) {}
 }
 
 /* Nog geen hoeken? Dan staat er niets om te kiezen. In plaats van een
@@ -400,6 +408,7 @@ function maakHoekKaart(hoek, index, k, b, indeling){
     var l = KB.leerling(p.leerlingId, k);
     if (!l) return;
     var plek = el('div', 'plek bezet');
+    plek.dataset.leerling = l.id;
     /* Mét zijn naam eronder. Op het bord is dat niet alleen handig voor
        de leerkracht: eind groep 2 lezen ze hun eigen naam en die van hun
        vriendjes, en dit is een plek waar dat elke dag vanzelf gebeurt. */
@@ -787,7 +796,12 @@ function maakSleepbaar(picto, leerling, vanHoekId){
       } };
 
       if (kaart) {
-        var doos = kaart.getBoundingClientRect();
+        /* Niet naar het midden van de kaart maar naar de plek waar hij
+           écht komt te staan. Daarvóór vloog hij naar het midden en
+           sprong hij daarna naar zijn plekje -- precies op het moment dat
+           een kleuter kijkt of het gelukt is. */
+        var vrij = kaart.querySelector('.plek.vrij');
+        var doos = (vrij || kaart).getBoundingClientRect();
         geest.classList.remove('opgetild');
         geest.classList.add('landt');
         var hoekId = kaart.dataset.hoekId;
@@ -798,7 +812,11 @@ function maakSleepbaar(picto, leerling, vanHoekId){
                         { x: doos.left + doos.width / 2, y: doos.top + doos.height / 2 },
                         v, { demping: gegooid ? 0.82 : 1, respons: gegooid ? 0.34 : 0.28 },
                         zet,
-                        function () { ruimOp(); leg(leerling, hoekId); });
+                        function () {
+                          netGeland = leerling.id;
+                          ruimOp();
+                          leg(leerling, hoekId);
+                        });
       } else {
         /* Nergens neergezet. Dan gaat hij terug waar hij vandaan kwam --
            langs dezelfde weg, want iets dat de ene kant op verdwijnt
@@ -818,6 +836,34 @@ function maakSleepbaar(picto, leerling, vanHoekId){
     document.addEventListener('pointerup', los);
     document.addEventListener('pointercancel', los);
   });
+}
+
+/* Wie er zojuist is neergezet. Het bord wordt na een keuze helemaal
+   opnieuw getekend, dus dit is de enige manier om bij dat tekenen te
+   weten welke plek even mag laten zien dat er net iemand is geland. */
+var netGeland = null;
+
+function toonLanding(){
+  if (!netGeland) return;
+  var plek = document.querySelector('.plek.bezet[data-leerling="' + netGeland + '"]');
+  netGeland = null;
+  if (!plek) return;
+  var rond = plek.querySelector('.picto-rond');
+  if (rond) {
+    /* De ring moet om de cirkel passen, en die is op elk bord weer een
+       andere maat. Meten is dus eerlijker dan gokken in de stylesheet.
+
+       offsetWidth en niet getBoundingClientRect: die laatste telt een
+       lopende schaalanimatie mee, en dan krijgt de ring de maat van een
+       cirkel die op dat moment net iets groter is dan hij wordt. */
+    var maat = rond.offsetWidth;
+    if (maat) plek.style.setProperty('--ringmaat', Math.round(maat) + 'px');
+  }
+  plek.classList.add('netgeland');
+  setTimeout(function () {
+    plek.classList.remove('netgeland');
+    plek.style.removeProperty('--ringmaat');
+  }, 800);
 }
 
 function leg(leerling, hoekId){
@@ -845,6 +891,7 @@ function leg(leerling, hoekId){
   var uitkomst = KB.plaats(leerling.id, hoekId);
   if (uitkomst.ok) {
     tekenBord();
+    toonLanding();
     meld(leerling.naam + ' → ' + uitkomst.hoek.naam);
     return;
   }

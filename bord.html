@@ -14,7 +14,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
 <title>Keuzebord</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-2af2d430">
+<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-eb1e66a6">
 <style>
 /* ── het bord ─────────────────────────────────────────── */
 /* Een zachte, warme ondergrond. Warm met opzet: het beheer staat op een
@@ -332,6 +332,39 @@ body.bord{
 .plek.bezet .picto{ position: static; }
 /* Even groot als een lege plek ernaast: het zijn dezelfde plekken, en dan
    horen ze ook dezelfde maat te hebben. */
+/* Net geland. Twee dingen tegelijk, allebei kort: het picto zet zich
+   op zijn plaats, en er gaat één ring open die meteen weer vervaagt.
+   Dat zegt "hier zit hij nu" zonder de aandacht op te eisen -- en het
+   vervangt de sprong die er eerst zat, waarbij een kind precies op het
+   moment van kijken zijn plaatje zag verspringen.
+
+   De maat van de ring wordt gemeten en als --ringmaat meegegeven; de
+   cirkel is op elk bord een andere grootte. */
+@keyframes kb-landingsring{
+  from{ transform: translateX(-50%) scale(.96); opacity: .5; }
+  to  { transform: translateX(-50%) scale(1.55); opacity: 0; }
+}
+@keyframes kb-landingszet{
+  0%  { transform: scale(.74); }
+  58% { transform: scale(1.05); }
+  100%{ transform: scale(1); }
+}
+.plek.netgeland::after{
+  content: ''; position: absolute; top: 0; left: 50%;
+  width: var(--ringmaat, 56px); height: var(--ringmaat, 56px);
+  border-radius: 50%; pointer-events: none; z-index: 2;
+  border: 2px solid var(--hoekkleur, var(--accent));
+  animation: kb-landingsring .58s cubic-bezier(.2,.7,.3,1) forwards;
+}
+.plek.netgeland .picto-rond{
+  animation: kb-landingszet .44s cubic-bezier(.22,.9,.25,1.02);
+}
+/* Wie bewegende beelden liever niet heeft, krijgt alleen het eindbeeld. */
+@media (prefers-reduced-motion: reduce){
+  .plek.netgeland::after{ display: none; }
+  .plek.netgeland .picto-rond{ animation: none; }
+}
+
 .plek.bezet .picto-rond{
   width: var(--slot, 40px); height: var(--slot, 40px);
   font-size: calc(var(--slot, 40px) * .42);
@@ -629,13 +662,13 @@ body.bord{
 window.KB_DEMO = false;
 try { window.KB_DEMO = localStorage.getItem('kb_demo') === 'aan'; } catch (e) {}
 </script>
-<script src="src/kb-app.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-data.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-demo.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-supabase.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-media.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-sync.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-verbinding.js?v=6september2026-2af2d430"></script>
-<script src="src/kb-bord.js?v=6september2026-2af2d430"></script>
+<script src="src/kb-app.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-data.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-demo.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-supabase.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-media.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-sync.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-verbinding.js?v=6september2026-eb1e66a6"></script>
+<script src="src/kb-bord.js?v=6september2026-eb1e66a6"></script>
 </body>
 </html>
