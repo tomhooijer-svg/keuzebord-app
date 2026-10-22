@@ -10,20 +10,22 @@
      over het hele scherm. Op een Prowise-scherm doe je dat via het menu van
      de browser, "toevoegen aan beginscherm". -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#fbf8f4">
+<meta name="theme-color" content="#d8eafb">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23fbf8f4%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2221%22%20r=%229%22%20fill=%22%233b6ff0%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2221%22%20r=%229%22%20fill=%22%23e79a1f%22/%3E%3Ccircle%20cx=%2221%22%20cy=%2243%22%20r=%229%22%20fill=%22%232e9e6b%22/%3E%3Ccircle%20cx=%2243%22%20cy=%2243%22%20r=%229%22%20fill=%22%23b8436d%22/%3E%3C/svg%3E">
+<link rel="icon" href="stijl/logo/ptje.svg">
 <title>Inloggen — Keuzebord</title>
-<link rel="stylesheet" href="src/kb-stijl.css?v=6september2026-5c16a7c5">
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-a193e237">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-a193e237">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-a193e237">
 <style>
 body.inlog{
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
   padding: 30px 20px;
   background:
-    radial-gradient(1100px 620px at 8% -12%,  #ffeede 0%, transparent 62%),
-    radial-gradient(1000px 560px at 96% 4%,   #e2f0fb 0%, transparent 58%),
-    radial-gradient(900px 640px at 42% 110%,  #eaf6ec 0%, transparent 60%),
-    #fbf8f4;
+    radial-gradient(1100px 620px at 8% -12%,  var(--pp-color-ice-soft, #eaf3fd) 0%, transparent 62%),
+    radial-gradient(1000px 560px at 96% 4%,   var(--pp-color-butter-soft, #fdf4dc) 0%, transparent 58%),
+    radial-gradient(900px 640px at 42% 110%,  var(--pp-color-white, #fff) 0%, transparent 60%),
+    var(--pp-color-ice, #d8eafb);
 }
 .kaart{
   width: 100%; max-width: 420px;
@@ -32,10 +34,13 @@ body.inlog{
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
+/* Hier stond een verloop van vier kleuren. Dat hoorde bij de vorige
+   stijl; de huisstijl zegt: één accentkleur per scherm, en dat is hier
+   de knop. Een naam in vier kleuren is dan een tweede accent dat niets
+   betekent. Inkt dus, in de kopletter. */
 .merk{
   font-size: 1.9rem; font-weight: 650; letter-spacing: -.032em; margin: 0 0 4px;
-  background: linear-gradient(96deg, #3b6ff0, #17a9bd 42%, #37ab74 72%, #e79a1f);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-family: var(--letter-kop); color: var(--inkt);
 }
 .onder{ font-size: .95rem; color: var(--inkt-3); margin: 0 0 26px; }
 .veld{ margin-bottom: 14px; }
@@ -70,6 +75,8 @@ body.inlog{
 <body class="inlog">
 
 <div class="kaart">
+  <img class="merkteken" src="stijl/logo/ptje.svg" alt=""
+       aria-hidden="true" style="width:40px;height:40px;margin:0 auto 14px">
   <h1 class="merk">Keuzebord</h1>
   <p class="onder" id="onder">Log in om verder te gaan.</p>
 
@@ -97,7 +104,7 @@ body.inlog{
      werken; wat je doet gaat later vanzelf mee.</p>
 </div>
 
-<script src="src/kb-supabase.js?v=6september2026-5c16a7c5"></script>
+<script src="src/kb-supabase.js?v=22oktober2026-a193e237"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };

@@ -522,6 +522,7 @@ function tekenSchool(v){
     'groep het bij het opstarten laat zien, zodat er \u2019s ochtends niemand hoeft te kiezen.'));
   v.appendChild(uitleg);
 
+  if (metServer()) v.appendChild(huisstijlPaneel());
   if (metServer()) v.appendChild(ondersteuningPaneel());
   if (metServer()) v.appendChild(uitdraaiPaneel());
   if (metServer()) v.appendChild(logboekPaneel());
@@ -554,6 +555,105 @@ function tekenSchool(v){
   }));
   opnieuw.appendChild(rij);
   v.appendChild(opnieuw);
+}
+
+/* ── de kleuren van de school ─────────────────────────────────────────
+   De app staat in de stijl van Pixelplein. Een school die hem afneemt
+   mag daar haar eigen kleuren voor in de plaats zetten -- drie, meer
+   niet, en de rest rekent de app eruit (zie KB.huisstijlVariabelen).
+
+   Waarom drie en niet alles: met een volledige kleurenkiezer kan een
+   school eindigen met lichtgrijze tekst op wit, en dan is het onze
+   fout dat het product niet leesbaar is. Met deze drie kan dat niet:
+   de gedimde tekst blijft de inkt met wit erdoor, en de ingedrukte
+   knop blijft de knop met zwart erdoor.
+
+   Het botergeel zit er met opzet niet bij. Dat betekent op het bord
+   "gekozen" of "aan de beurt" -- een afspraak met de kinderen, geen
+   smaakkwestie. */
+
+function huisstijlPaneel(){
+  var p = el('div', 'paneel');
+  p.appendChild(el('div', 'paneelkop', 'De kleuren van de school'));
+
+  var wie = KBV.wie();
+  if (!wie || wie.profiel.rol !== 'schoolbeheerder') {
+    p.appendChild(el('p', 'hint', 'Alleen de schoolbeheerder kan dit aanpassen.'));
+    return p;
+  }
+
+  p.appendChild(el('p', 'hint',
+    'Standaard staat het keuzebord in de kleuren van Pixelplein. Wil je school haar ' +
+    'eigen kleuren, dan zet je ze hier. Ze gelden voor iedereen van de school, op elk ' +
+    'apparaat. Het bord zelf houdt daarnaast zijn eigen sfeer per groep \u2014 die stel je ' +
+    'bij Uiterlijk in.'));
+
+  var school = wie.school || {};
+  /* Een werkkopie: pas als er op Bewaren wordt gedrukt gaat hij naar de
+     server. Tot die tijd mag je rustig rondschuiven en terug. */
+  var nu = {
+    inkt:  KB.geldigeKleur((school.huisstijl || {}).inkt)  || KB.HUISSTIJL_STANDAARD.inkt,
+    grond: KB.geldigeKleur((school.huisstijl || {}).grond) || KB.HUISSTIJL_STANDAARD.grond,
+    knop:  KB.geldigeKleur((school.huisstijl || {}).knop)  || KB.HUISSTIJL_STANDAARD.knop
+  };
+
+  var rij = el('div', 'huisstijlrij');
+  var proef = el('div', 'huisstijlproef');
+  var pk = el('div', 'pk', 'Groep 1A');
+  var pt = el('p', 'pt', 'Zo ziet een scherm er dan uit.');
+  var pknop = el('div', 'pknop', 'Bord openen');
+  proef.appendChild(pk); proef.appendChild(pt); proef.appendChild(pknop);
+
+  function toonProef(){
+    proef.style.background = nu.grond;
+    pk.style.color = nu.inkt;
+    pt.style.color = KB.mengMetWit(nu.inkt, 0.28);
+    pknop.style.background = nu.knop;
+  }
+
+  [['inkt', 'Inkt', 'tekst en menu'],
+   ['grond', 'Grond', 'de achtergrond'],
+   ['knop', 'Knop', 'waar je op drukt']].forEach(function (k) {
+    var vak = el('div', 'huisstijlkleur');
+    var kiezer = el('input');
+    kiezer.type = 'color';
+    kiezer.value = nu[k[0]];
+    kiezer.setAttribute('aria-label', k[1]);
+    kiezer.addEventListener('input', function () {
+      nu[k[0]] = kiezer.value.toLowerCase();
+      toonProef();
+    });
+    vak.appendChild(kiezer);
+    vak.appendChild(el('div', 'n', k[1]));
+    vak.appendChild(el('div', 's', k[2]));
+    rij.appendChild(vak);
+  });
+  rij.appendChild(proef);
+  toonProef();
+  p.appendChild(rij);
+
+  function bewaarKleuren(waarden){
+    return SB.wijzig('scholen', { huisstijl: waarden }, { id: 'eq.' + school.id })
+      .then(function () {
+        /* Meteen zichtbaar maken, en in deze browser onthouden zodat de
+           volgende pagina er niet eerst zonder opent. */
+        KB.zetHuisstijl(waarden);
+        return KBV.herstart();
+      })
+      .then(function () { teken(); });
+  }
+
+  var knoppen = el('div', 'knoprij-onder');
+  knoppen.appendChild(knop('Bewaren', 'primair', function () {
+    bewaarKleuren(nu).then(function () { meld('De kleuren staan aan'); },
+      function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+  }));
+  knoppen.appendChild(knop('Terug naar Pixelplein', 'stil', function () {
+    bewaarKleuren({}).then(function () { meld('Terug naar de standaardkleuren'); },
+      function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+  }));
+  p.appendChild(knoppen);
+  return p;
 }
 
 /* ── hulp van de leverancier ──────────────────────────────────────────

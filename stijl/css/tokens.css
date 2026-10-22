@@ -1,0 +1,61 @@
+/* Pixelplein tokens. Gebouwd door tools/build-app-kit.py uit assets/css/tokens.css; niet met de hand bewerken. */
+:root {
+  /* Kleur: merk (stijl v2, richting B) */
+  --pp-color-ice: #d8eafb;         /* Ice Blue - achtergrond van de site */
+  --pp-color-ink: #0e2a56;         /* Dark Blue - tekst en grote donkere vellen */
+  --pp-color-butter: #fbe8b5;      /* Butter Yellow - kop op donker, markeerstift, uitgelichte kaart */
+  --pp-color-red: #b5182b;         /* Cool Red - knoppen en een enkel accentwoord */
+
+  /* Kleur: afgeleid (contrast nagerekend, zie DESIGN-NOTITIES.md) */
+  --pp-color-red-press: #94121f;   /* rood bij hover en indrukken */
+  --pp-color-ice-soft: #eaf3fd;    /* zacht ijs - kleine vlakken, hover */
+  --pp-color-butter-deep: #f6d98a;
+  --pp-color-butter-soft: #fdf4dc; /* uitgelichte kaart */
+  --pp-color-paper: #fffbf2;       /* menubalk, rustige vlakken */
+  --pp-color-white: #ffffff;       /* kaarten */
+  --pp-color-ink-muted: #4a5d80;   /* lopende tekst op licht: >= 5,4:1 */
+  --pp-color-ink-dim: #6e7c99;     /* toonverschil, alleen grote koppen */
+  --pp-color-on-ink-dim: #8fa3c7;  /* toonverschil op Dark Blue */
+  --pp-color-line: rgb(14 42 86 / 0.12);
+  --pp-color-wine: var(--pp-color-red); /* oude naam, blijft werken */
+
+  /* Lettertypen (zelf gehost, SIL OFL) */
+  --pp-font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --pp-font-hero: "Bricolage Grotesque", "Figtree", system-ui, sans-serif; /* alleen de hero-kop */
+  --pp-font-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  /* Typeschaal: vloeiend van 390px tot 1440px, bewust ingetogen */
+  --pp-size-display: clamp(2.6rem, 1.9rem + 3vw, 4.75rem);
+  --pp-size-h1: clamp(2.25rem, 1.7rem + 2.2vw, 3.75rem);
+  --pp-size-h2: clamp(1.875rem, 1.5rem + 1.4vw, 2.75rem);
+  --pp-size-h3: clamp(1.375rem, 1.25rem + 0.5vw, 1.625rem);
+  --pp-size-lead: clamp(1.0625rem, 1rem + 0.25vw, 1.25rem);
+  --pp-size-body: 1.0625rem;
+  --pp-size-small: 0.875rem;
+  --pp-size-eyebrow: 0.8125rem;
+
+  /* Ruimte */
+  --pp-space-1: 0.25rem;
+  --pp-space-2: 0.5rem;
+  --pp-space-3: 0.75rem;
+  --pp-space-4: 1rem;
+  --pp-space-5: 1.5rem;
+  --pp-space-6: 2rem;
+  --pp-space-7: 3rem;
+  --pp-space-8: clamp(4rem, 3rem + 4vw, 7rem);
+  --pp-content: 70rem;
+
+  /* Vorm */
+  --pp-radius-pill: 999px;
+  --pp-radius-card: 1.25rem;
+  --pp-radius-sm: 0.75rem;
+  --pp-radius-vel: clamp(1.75rem, 0.75rem + 4vw, 5rem); /* grote donkere vellen */
+
+  /* Beweging */
+  --pp-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --pp-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pp-dur-fast: 150ms;
+  --pp-dur-base: 300ms;
+  --pp-dur-slow: 600ms;
+  --pp-stagger: 25ms;
+}

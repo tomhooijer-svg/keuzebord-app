@@ -94,7 +94,7 @@ var scholenRij = [];     // de scholen zelf, voor de modules
 function haalAlles(){
   return Promise.all([
     SB.roep('schoolcijfers', {}),
-    SB.lees('scholen', { kies:'id,naam,modules' }),
+    SB.lees('scholen', { kies:'id,naam,modules,huisstijl' }),
     SB.roep('databankcijfers', {}),
     SB.lees('ondersteuning', { kies:'*', volgorde:'tot.desc', hoeveel:50 }),
     SB.lees('handelingen',   { kies:'*', volgorde:'tijd.desc', hoeveel:40 })

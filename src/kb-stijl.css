@@ -18,36 +18,68 @@
      schoolnetwerk dat traag is of Google filtert, keek je daardoor naar
      een wit bord terwijl er niets mis was. Nu hangt er niets meer van
      buiten af. */
-  --letter: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+  /* De letters van Pixelplein, zelf gehost (zie stijl/css/fonts.css).
+     Figtree voor alles wat een kind of een leerkracht leest en aantikt,
+     Fraunces alleen voor koppen. Komt het lettertype niet binnen, dan
+     zakt hij terug op de letters van het apparaat zelf en blijft alles
+     leesbaar -- er hangt niets van een server buiten de deur af. */
+  --letter: var(--pp-font-body, "Figtree"), -apple-system, BlinkMacSystemFont,
             "Segoe UI Variable Text", "Segoe UI", system-ui,
             "Helvetica Neue", Arial, sans-serif;
+  --letter-kop: var(--pp-font-display, "Fraunces"), "Iowan Old Style", Georgia, serif;
 
-  --inkt:      #1a2233;
-  --inkt-2:    #4a5568;
-  --inkt-3:    #8a94a6;
-  --inkt-4:    #b0b8c6;
+  /* ── kleur ──────────────────────────────────────────────────────
+     Hieronder staan de kleuren van het merk, uit stijl/css/tokens.css.
+     Ze staan met opzet áchter onze eigen namen: de rest van deze app
+     noemt alleen --inkt, --vlak en --accent, en weet niets van een
+     merk. Daardoor kan een school straks haar eigen kleur krijgen door
+     één variabele te overschrijven, en hoeft er geen regel hieronder
+     te veranderen.
 
-  --vlak:      #ffffff;
-  --vlak-2:    #f2f4f7;
-  --lijn:      #e6e9ef;
+     Valt tokens.css weg, dan gelden de waarden achter de komma en ziet
+     het er nog steeds uit zoals het was. */
+  --inkt:      var(--pp-color-ink, #0e2a56);
+  --inkt-2:    var(--pp-color-ink-muted, #4a5d80);
+  --inkt-3:    var(--pp-color-ink-dim, #6e7c99);
+  --inkt-4:    var(--pp-color-on-ink-dim, #8fa3c7);
 
-  --accent:      #3b6ff0;
-  --accent-zacht:#eaf0fe;
-  --goed:        #2e9e6b;
-  --goed-zacht:  #e9f6f0;
-  --let-op:      #c8820a;
-  --let-op-zacht:#fbf0e6;
-  --stop:        #d94f4f;
-  --stop-zacht:  #fdeeee;
+  --vlak:      var(--pp-color-white, #ffffff);
+  --vlak-2:    var(--pp-color-ice, #d8eafb);
+  --lijn:      var(--pp-color-line, rgb(14 42 86 / .12));
 
-  --rond-s: 10px;
-  --rond-m: 16px;
-  --rond-l: 26px;
-  --rond-vol: 999px;
+  /* Donkerblauw is de kleur van "hier ben je": het gekozen menu-item,
+     de rand om een veld waar je in staat. Rood is de klik, en daarvan
+     staat er hooguit één per scherm -- zie --knop hieronder. */
+  --accent:      var(--pp-color-ink, #0e2a56);
+  --accent-zacht:var(--pp-color-ice-soft, #eaf3fd);
+  --knop:        var(--pp-color-red, #b5182b);
+  --knop-diep:   var(--pp-color-red-press, #94121f);
 
-  --schaduw-1: 0 1px 2px rgba(20,28,44,.05), 0 4px 16px rgba(20,28,44,.05);
-  --schaduw-2: 0 1px 2px rgba(20,28,44,.05), 0 8px 24px rgba(20,28,44,.06);
-  --schaduw-3: 0 1px 2px rgba(20,28,44,.05), 0 14px 38px rgba(20,28,44,.09);
+  /* Botergeel betekent "gekozen" of "aan de beurt". */
+  --warm:        var(--pp-color-butter, #fbe8b5);
+  --warm-diep:   var(--pp-color-butter-deep, #f6d98a);
+  --warm-zacht:  var(--pp-color-butter-soft, #fdf4dc);
+  --papier:      var(--pp-color-paper, #fffbf2);
+
+  /* Stand-kleuren. Die horen niet bij het merk maar bij de betekenis:
+     groen is opgeslagen, amber is let op, rood is mis. Rood is wel
+     dezelfde rode als die van de knoppen, anders heeft één scherm twee
+     verschillende roden. */
+  --goed:        #1f7a52;
+  --goed-zacht:  #e4f2ea;
+  --let-op:      #966a12;
+  --let-op-zacht:var(--pp-color-butter-soft, #fdf4dc);
+  --stop:        var(--pp-color-red, #b5182b);
+  --stop-zacht:  #fbe9eb;
+
+  --rond-s: var(--pp-radius-sm, 12px);
+  --rond-m: var(--pp-radius-card, 20px);
+  --rond-l: 28px;
+  --rond-vol: var(--pp-radius-pill, 999px);
+
+  --schaduw-1: 0 1px 2px rgba(14,42,86,.06), 0 4px 16px rgba(14,42,86,.06);
+  --schaduw-2: 0 1px 2px rgba(14,42,86,.06), 0 8px 24px rgba(14,42,86,.07);
+  --schaduw-3: 0 1px 2px rgba(14,42,86,.06), 0 14px 38px rgba(14,42,86,.10);
 
   --veer: cubic-bezier(.22,1,.36,1);
 
@@ -84,9 +116,20 @@ body{
   letter-spacing: var(--spoor-tekst);
 }
 
-/* Koppen zetten we iets strakker en zwaarder — dat is wat een interface
-   van Apple zo rustig doet ogen: weinig maten, duidelijk verschil. */
-h1, h2, h3, .titel, .groepnaam, .klas-titel, .hoek-naam{
+/* Koppen in de letter van het merk. Fraunces alleen hier: de rest van
+   het scherm blijft Figtree, want dat is wat een kleuter en een juf de
+   hele dag lezen en aantikken.
+
+   De naam van een hoek hoort daar niet bij. Die staat op het bord naast
+   het aantal plekken en onder de plaatjes, en moet van achter in de
+   klas leesbaar zijn -- daar wint de schreefloze letter. */
+h1, h2, h3, .titel, .groepnaam, .klas-titel{
+  font-family: var(--letter-kop);
+  font-weight: 600;
+  letter-spacing: var(--spoor-kop);
+  text-wrap: balance;
+}
+.hoek-naam{
   letter-spacing: var(--spoor-kop);
   text-wrap: balance;
 }
@@ -96,7 +139,7 @@ h1, h2, h3, .titel, .groepnaam, .klas-titel, .hoek-naam{
    valt in losse regels uiteen. De koppen die hun eigen afstand al zetten
    -- de naam onder een kind bijvoorbeeld, waar de staart van een g niet
    mag worden afgesneden -- raken we niet aan. */
-h1, h2, .titel, .klas-titel{ line-height: 1.06; }
+h1, h2, .titel, .klas-titel{ line-height: 1.08; }
 h3{ line-height: 1.2; }
 
 /* Kleine letters: een haartje ruimer, zodat ze niet aan elkaar plakken. */
@@ -135,8 +178,14 @@ input, select, textarea{ font: inherit; color: inherit; }
    zo zie je dat je er al bent in plaats van te blijven drukken. */
 .knop:disabled{ opacity: .38; cursor: default; }
 .knop:disabled:active{ transform: none; }
-.knop-primair{ background: var(--accent); color: #fff; }
-.knop-stil   { background: rgba(20,28,44,.06); color: var(--inkt-2); }
+/* Rood is de klik, en daarvan hoort er hooguit één per scherm te staan
+   -- vandaar dat alleen de hoofdknop hem krijgt en de rest stil is. Het
+   donkerblauw is voor "hier ben je" (het gekozen menu-item, de rand om
+   een veld), niet voor "druk hier". */
+.knop-primair{ background: var(--knop); color: #fff; }
+.knop-primair:hover{ background: var(--knop-diep); }
+.knop-stil   { background: rgba(14,42,86,.07); color: var(--inkt-2); }
+.knop-stil:hover{ background: rgba(14,42,86,.11); }
 .knop-gevaar { background: var(--stop-zacht); color: var(--stop); }
 .knop-groot  { padding: 15px 30px; font-size: 1.1rem; }
 .knop-klein  { padding: 8px 15px; font-size: .84rem; }
@@ -494,3 +543,53 @@ input, select, textarea{ font: inherit; color: inherit; }
 .cijfer .n{ font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em;
             font-variant-numeric: tabular-nums; line-height: 1.1; }
 .cijfer .l{ font-size: .74rem; color: var(--inkt-3); margin-top: 2px; line-height: 1.3; }
+
+/* ── het merk ─────────────────────────────────────────────
+   Het keuzebord is een product van Pixelplein. Dat mag te zien zijn,
+   maar het hoort nergens in de weg te zitten: het p'tje staat klein
+   naast de groepsnaam, het woordmerk staat onderin waar niemand het
+   nodig heeft, en op het bord zelf -- waar kleuters naar kijken --
+   staat alleen het p'tje.
+
+   Allebei zijn het <img>-plaatjes uit stijl/logo/. Komt die map ooit
+   niet mee, dan valt er een plaatje weg en verder niets. */
+.merkteken{ flex: none; display: block; border-radius: 6px; }
+.merkwoord{ display: block; width: 94px; height: auto; opacity: .46; }
+.merkregel{
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 10px 0; margin-top: 2px;
+}
+.merkregel .merkwoord{ transition: opacity .16s ease; }
+.merkregel:hover .merkwoord{ opacity: .66; }
+
+/* In de zijbalk staat het p'tje vóór de groepsnaam. De kop wordt
+   daarvoor een rij; de twee regels tekst blijven onder elkaar. */
+.zij-kop{ display: flex; align-items: center; gap: 11px; }
+.zij-kop .merkteken{ width: 28px; height: 28px; }
+.zij-kop .zij-kop-tekst{ min-width: 0; }
+
+/* Op het bord: klein, links van de groepsnaam, in de balk mee. */
+.balk-links .merkteken{ width: 26px; height: 26px; }
+
+/* ── de kleuren van de school ─────────────────────────────
+   Drie kleuren naast elkaar, elk met zijn naam eronder, en een
+   voorbeeldje ernaast dat meteen laat zien wat het wordt. Staat in
+   het schoolbeheer. */
+.huisstijlrij{ display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.huisstijlkleur{ display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.huisstijlkleur input[type="color"]{
+  width: 46px; height: 46px; border: none; border-radius: 50%;
+  padding: 0; background: none; cursor: pointer;
+}
+.huisstijlkleur .n{ font-size: .78rem; font-weight: 600; color: var(--inkt-2); }
+.huisstijlkleur .s{ font-size: .7rem; color: var(--inkt-4); }
+.huisstijlproef{
+  flex: 1; min-width: 210px; border-radius: var(--rond-m);
+  padding: 16px 18px; box-shadow: inset 0 0 0 1px rgba(20,28,44,.08);
+}
+.huisstijlproef .pk{ font-family: var(--letter-kop); font-size: 1.12rem; font-weight: 600; }
+.huisstijlproef .pt{ font-size: .84rem; margin: 4px 0 12px; }
+.huisstijlproef .pknop{
+  display: inline-block; padding: 9px 16px; border-radius: var(--rond-s);
+  color: #fff; font-size: .85rem; font-weight: 600;
+}

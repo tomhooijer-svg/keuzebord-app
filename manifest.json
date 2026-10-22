@@ -8,12 +8,12 @@
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "orientation": "landscape",
-  "background_color": "#fbf8f4",
-  "theme_color": "#fbf8f4",
+  "background_color": "#d8eafb",
+  "theme_color": "#d8eafb",
   "icons": [
-    { "src": "keuzebord-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "keuzebord-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "keuzebord-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "keuzebord.svg", "sizes": "any", "type": "image/svg+xml" }
+    { "src": "stijl/logo/app-icoon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "stijl/logo/app-icoon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "stijl/logo/app-icoon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "stijl/logo/ptje.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

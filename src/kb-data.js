@@ -1173,7 +1173,7 @@ function heeftBeurtVandaag(leerlingId, k){
 /* Welke versie van de app draait hier. Staat onder in het bordmenu en
    bij Groep, zodat je kunt zien of je de nieuwe versie al voor je hebt
    of nog naar de oude uit de cache van je browser kijkt. */
-var VERSIE = '6 september 2026';
+var VERSIE = '22 oktober 2026';
 
 /* Waar het bord staat. In Keuzebord is dat gewoon bord.html hiernaast.
    In Planbord ligt het bord in de andere app, en dan moet de groep mee
@@ -1754,6 +1754,14 @@ function leesBackupBestand(file, vraagWachtwoord){
    krijgt een sluier zodat de picto's leesbaar blijven.
    ══════════════════════════════════════════════════════════════ */
 var SFEREN = [
+  /* De ondergrond van het merk. Staat vooraan en is de stand waarin een
+     nieuwe groep begint; de rest staat eronder voor wie iets anders wil. */
+  { id:'ijs',    naam:'IJsblauw',  grond:'#d8eafb',
+    vlekken:[['#eaf3fd', '8% -12%'], ['#fdf4dc', '94% 4%'], ['#e4effb', '44% 110%']] },
+  /* Dezelfde stijl, maar donker. Op een groot digibord achter in de klas
+     springen de witte kaarten hier het sterkst uit. */
+  { id:'diep',   naam:'Diepblauw', grond:'#0e2a56',
+    vlekken:[['#14386e', '10% -10%'], ['#16325f', '92% 6%'], ['#102c58', '48% 108%']] },
   { id:'warm',   naam:'Warm',      grond:'#fbf8f4',
     vlekken:[['#ffeede','8% -12%'],['#e2f0fb','96% 4%'],['#eaf6ec','42% 110%']] },
   { id:'koel',   naam:'Koel',      grond:'#f5f8fb',
@@ -1785,9 +1793,13 @@ var SFEREN = [
    van het bord gemaakt. Een thema kiezen zet de achtergrond mee, maar de
    leerkracht kan die daarna nog los veranderen. */
 var BORDTHEMAS = [
-  { id:'standaard', naam:'Standaard', sfeer:'warm', accent:'#3b6ff0',
-    hoeken:['#3b6ff0','#e2607f','#e79a1f','#8b6ad0','#17a9bd',
-            '#37ab74','#e8674f','#c9772f','#6b7fd7','#d4589b'] },
+  /* De kleuren van het merk. De randjes boven de hoeken blijven
+     verschillend -- daar herkent een kleuter zijn hoek aan, en dat is
+     geen versiering maar hoe het werkt. Ze zijn wel bijgesteld zodat ze
+     op ijsblauw staan en niet erop schreeuwen. */
+  { id:'standaard', naam:'Pixelplein', sfeer:'ijs', accent:'#0e2a56',
+    hoeken:['#0e2a56','#b5182b','#1f6f8f','#8a5a12','#2f6b4f',
+            '#5b4a8a','#9c4a2f','#2a5f86','#7a3350','#46603f'] },
   { id:'herfst', naam:'Herfst', sfeer:'herfst', accent:'#c9772f',
     hoeken:['#c9772f','#a8552c','#8a6d2f','#b8823a','#9c6b45',
             '#7d6a3c','#c05f36','#96703b'] },
@@ -1830,7 +1842,7 @@ function sfeerVan(id){
 
 function uiterlijk(k){
   k = k || klas();
-  if (!k.uiterlijk) k.uiterlijk = { soort:'sfeer', sfeer:'warm', kleur:'#fbf8f4',
+  if (!k.uiterlijk) k.uiterlijk = { soort:'sfeer', sfeer:'ijs', kleur:'#d8eafb',
                                     foto:null, sluier:0.4 };
   return k.uiterlijk;
 }
@@ -1841,6 +1853,88 @@ function bordthemaVariabelen(k){
   var t = bordthemaNu(k);
   return { '--accent': t.accent,
            '--accent-zacht': mengMetWit(t.accent, 0.9) };
+}
+
+/* ── de huisstijl van de school ───────────────────────────
+   De app staat in de kleuren van Pixelplein, en dat is ook wat een
+   school te zien krijgt als ze niets doet. Maar een school die hem
+   afneemt mag hem in haar eigen kleuren zetten.
+
+   Drie knoppen, niet meer:
+
+     inkt   de donkere kleur -- tekst, koppen, het menu
+     grond  de ondergrond van elk scherm
+     knop   de kleur van de knop waar je op moet drukken
+
+   Al het andere wordt hieruit gerekend: de gedimde tekst is de inkt
+   met wit erdoor, de ingedrukte knop is de knop met zwart erdoor, de
+   zachte ijskleur is de grond met wit erdoor. Dat is met opzet: zet
+   een school haar drie kleuren, dan klopt de rest vanzelf mee, en
+   kan ze het niet half doen en met onleesbare tekst eindigen.
+
+   Wat er níét bij zit is botergeel. Dat betekent "gekozen" of "aan de
+   beurt" -- dat is geen smaak maar een afspraak met de kinderen, en
+   die laat ik niet verzetten.
+
+   Leeg betekent Pixelplein. Dan zetten we niets, en gelden gewoon de
+   waarden uit stijl/css/tokens.css. */
+var HUISSTIJL_STANDAARD = { inkt:'#0e2a56', grond:'#d8eafb', knop:'#b5182b' };
+var HUISSTIJL_SLEUTEL   = 'kb_huisstijl';
+
+function geldigeKleur(h){
+  return (typeof h === 'string' && /^#[0-9a-fA-F]{6}$/.test(h.trim())) ? h.trim().toLowerCase() : null;
+}
+
+/* Van drie kleuren naar de variabelen van het stijlpakket. */
+function huisstijlVariabelen(h){
+  h = h || {};
+  var inkt  = geldigeKleur(h.inkt)  || HUISSTIJL_STANDAARD.inkt;
+  var grond = geldigeKleur(h.grond) || HUISSTIJL_STANDAARD.grond;
+  var knop  = geldigeKleur(h.knop)  || HUISSTIJL_STANDAARD.knop;
+  return {
+    '--pp-color-ink':         inkt,
+    '--pp-color-ink-muted':   mengMetWit(inkt, 0.28),
+    '--pp-color-ink-dim':     mengMetWit(inkt, 0.46),
+    '--pp-color-on-ink-dim':  mengMetWit(inkt, 0.62),
+    '--pp-color-ice':         grond,
+    '--pp-color-ice-soft':    mengMetWit(grond, 0.45),
+    '--pp-color-red':         knop,
+    '--pp-color-red-press':   donkerder(knop, 0.18)
+  };
+}
+
+/* Heeft deze school iets van de standaard afwijkends ingesteld? */
+function huisstijlEigen(h){
+  if (!h) return false;
+  return ['inkt','grond','knop'].some(function (sleutel) {
+    var k = geldigeKleur(h[sleutel]);
+    return !!k && k !== HUISSTIJL_STANDAARD[sleutel];
+  });
+}
+
+/* De kleuren op de pagina zetten. Dit gebeurt twee keer: meteen bij het
+   openen uit wat er in deze browser onthouden is, en nog eens zodra de
+   school is opgehaald. Zonder die eerste zie je bij elke paginaopening
+   eerst Pixelplein en dan de school -- een flits waar niemand om heeft
+   gevraagd. */
+function zetHuisstijl(h){
+  if (typeof document === 'undefined' || !document.documentElement) return;
+  var wortel = document.documentElement.style;
+  var vars = huisstijlVariabelen(h);
+  Object.keys(vars).forEach(function (naam) {
+    if (huisstijlEigen(h)) wortel.setProperty(naam, vars[naam]);
+    else wortel.removeProperty(naam);
+  });
+  try {
+    if (huisstijlEigen(h)) localStorage.setItem(HUISSTIJL_SLEUTEL, JSON.stringify(h));
+    else localStorage.removeItem(HUISSTIJL_SLEUTEL);
+  } catch (e) {}
+}
+
+/* Wat deze browser nog wist van de vorige keer. */
+function huisstijlOnthouden(){
+  try { return JSON.parse(localStorage.getItem(HUISSTIJL_SLEUTEL) || 'null'); }
+  catch (e) { return null; }
 }
 
 /* De css-achtergrond die bij de instelling hoort. */
@@ -2136,6 +2230,9 @@ global.KB = {
   HOEKKLEUREN: HOEKKLEUREN, hoekKleur: hoekKleur, hoekTinten: hoekTinten,
   BORDTHEMAS: BORDTHEMAS, bordthemaVan: bordthemaVan, bordthemaNu: bordthemaNu,
   bordthemaVariabelen: bordthemaVariabelen,
+  HUISSTIJL_STANDAARD: HUISSTIJL_STANDAARD, geldigeKleur: geldigeKleur,
+  huisstijlVariabelen: huisstijlVariabelen, huisstijlEigen: huisstijlEigen,
+  zetHuisstijl: zetHuisstijl, huisstijlOnthouden: huisstijlOnthouden,
   mengMetWit: mengMetWit, donkerder: donkerder,
   SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,
   achtergrondCss: achtergrondCss, achtergrondUitBestand: achtergrondUitBestand,
@@ -2171,5 +2268,11 @@ global.KB = {
   pictos: pictos, voegPictoToe: voegPictoToe, pictoVan: pictoVan, koppelPicto: koppelPicto,
   isTekening: isTekening, verkleinTekening: verkleinTekening, TEKENING_MAAT: TEKENING_MAAT
 };
+
+/* De kleuren van de school meteen zetten, uit wat deze browser nog wist.
+   kb-data.js staat op elke pagina en staat bovenaan: dit gebeurt dus
+   voordat er iets getekend is. Zodra de school echt is opgehaald zet
+   kb-verbinding.js hem nog een keer, met de waarde van de server. */
+zetHuisstijl(huisstijlOnthouden());
 
 })(window);

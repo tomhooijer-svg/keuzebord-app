@@ -331,7 +331,7 @@ function wieBenIk(){
     if (!ik) return { profiel: null, school: null, groepen: [] };
     if (!ik.school_id) return { profiel: ik, school: null, groepen: [] };
     return Promise.all([
-      lees('scholen', { kies: 'id,naam,modules' }),
+      lees('scholen', { kies: 'id,naam,modules,huisstijl' }),
       lees('groepen', { kies: 'id,naam,volgorde,instellingen,uiterlijk', volgorde: 'volgorde,naam' })
     ]).then(function (uit) {
       return { profiel: ik, school: (uit[0] || [])[0] || null, groepen: uit[1] || [] };

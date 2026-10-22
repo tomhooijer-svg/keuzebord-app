@@ -1,0 +1,118 @@
+/* Pixelplein: onderdelen voor apps en tools (keuzebord e.d.).
+   Laadt na tokens.css uit dit pakket. Alle klassen beginnen met pp-, zodat ze niet botsen met bestaande app-CSS.
+   Bron: onderwijstools-website/src/app-kit. Niet in het pakket zelf bewerken. */
+
+/* ---------- Basis (optioneel: zet class="pp" op <body> of op een wrapper) ---------- */
+.pp {
+  background: var(--pp-color-ice);
+  color: var(--pp-color-ink);
+  font: 400 var(--pp-size-body)/1.55 var(--pp-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+.pp :focus-visible { outline: 3px solid var(--pp-color-red); outline-offset: 3px; border-radius: 6px; }
+.pp-dark { background: var(--pp-color-ink); color: var(--pp-color-ice); }
+.pp-dark :focus-visible { outline-color: var(--pp-color-butter); }
+.pp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Koppen en tekst ---------- */
+.pp-hero-title { margin: 0; font: 700 clamp(2.5rem, 1.7rem + 4vw, 5rem)/0.94 var(--pp-font-hero); letter-spacing: -0.045em; text-wrap: balance; }
+.pp-hero-title span { color: var(--pp-color-ink-dim); }
+.pp-dark .pp-hero-title { color: var(--pp-color-butter); }
+.pp-dark .pp-hero-title span { color: var(--pp-color-on-ink-dim); }
+
+.pp-title { margin: 0; font: 400 clamp(1.8rem, 1.4rem + 1.8vw, 3rem)/1.05 var(--pp-font-display); font-variation-settings: "SOFT" 100; letter-spacing: -0.02em; text-wrap: balance; }
+.pp-title .dim { color: var(--pp-color-ink-dim); }
+.pp-title em { font-style: italic; color: var(--pp-color-red); }
+.pp-dark .pp-title .dim { color: var(--pp-color-on-ink-dim); }
+.pp-dark .pp-title em { color: var(--pp-color-butter); }
+.pp-h3 { margin: 0; font: 450 var(--pp-size-h3)/1.2 var(--pp-font-display); font-variation-settings: "SOFT" 100; letter-spacing: -0.01em; }
+.pp-muted { color: var(--pp-color-ink-muted); }
+.pp-dark .pp-muted { color: var(--pp-color-on-ink-dim); }
+
+.pp-label { margin: 0; font: 600 0.75rem/1 ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pp-color-ink-muted); }
+.pp-dark .pp-label { color: var(--pp-color-on-ink-dim); }
+.pp-chip { margin: 0; display: inline-flex; align-items: center; gap: 0.5rem; width: fit-content; padding: 0.4rem 0.85rem; border-radius: 999px; border: 1.5px solid var(--pp-color-line); font: 600 0.8125rem/1 var(--pp-font-body); }
+.pp-chip::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 0.14rem; background: var(--pp-color-red); }
+.pp-dark .pp-chip { border-color: rgb(216 234 251 / 0.4); }
+.pp-dark .pp-chip::before { background: var(--pp-color-butter); }
+.pp-badge { display: inline-grid; place-items: center; min-width: 1.6rem; height: 1.6rem; padding-inline: 0.45rem; border-radius: 999px; background: var(--pp-color-butter); color: var(--pp-color-ink); font: 700 0.8125rem/1 var(--pp-font-body); }
+.pp-mark { background: linear-gradient(transparent 18%, var(--pp-color-butter) 18%, var(--pp-color-butter) 90%, transparent 90%); border-radius: 0.15em; padding-inline: 0.1em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.pp-dark .pp-mark { color: var(--pp-color-ink); }
+
+/* ---------- Knoppen: rode pil, botergeel rondje, lettergolf ---------- */
+.pp-btn {
+  --btn-bg: var(--pp-color-red); --btn-fg: #fff; --btn-bg-hover: var(--pp-color-red-press); --btn-border: var(--pp-color-red);
+  --btn-dot: var(--pp-color-butter); --btn-dot-fg: var(--pp-color-ink);
+  display: inline-flex; align-items: center; gap: 0.7em;
+  min-height: 3rem; padding: 0.45rem 0.45rem 0.45rem 1.35rem;
+  border: 1.5px solid var(--btn-border); border-radius: 999px;
+  background: var(--btn-bg); color: var(--btn-fg);
+  font: 600 1rem/1 var(--pp-font-body); text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background-color var(--pp-dur-base) var(--pp-ease-out), transform var(--pp-dur-fast) var(--pp-ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.pp-btn--plain { padding-right: 1.35rem; } /* zonder rondje */
+.pp-btn--secondary { --btn-bg: transparent; --btn-fg: var(--pp-color-ink); --btn-bg-hover: var(--pp-color-white); --btn-border: var(--pp-color-ink); --btn-dot: var(--pp-color-ink); --btn-dot-fg: var(--pp-color-ice); }
+.pp-dark .pp-btn--secondary { --btn-fg: var(--pp-color-ice); --btn-border: var(--pp-color-ice); --btn-bg-hover: rgb(216 234 251 / 0.12); --btn-dot: var(--pp-color-ice); --btn-dot-fg: var(--pp-color-ink); }
+.pp-btn--sm { min-height: 2.5rem; font-size: 0.9375rem; padding: 0.3rem 0.3rem 0.3rem 1.05rem; }
+.pp-btn--sm .pp-btn__icon { width: 1.75rem; height: 1.75rem; }
+/* Groot: voor het digibord en kleine vingers (minimaal 64 px hoog) */
+.pp-btn--lg { min-height: 4rem; font-size: 1.25rem; padding: 0.55rem 0.55rem 0.55rem 1.8rem; }
+.pp-btn--lg .pp-btn__icon { width: 2.8rem; height: 2.8rem; }
+.pp-btn__label { display: inline-flex; }
+.pp-btn__char { display: inline-block; white-space: pre; }
+.pp-btn__icon { position: relative; overflow: hidden; flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--btn-dot); color: var(--btn-dot-fg); display: grid; place-items: center; }
+.pp-btn__icon svg { width: 1rem; height: 1rem; grid-area: 1 / 1; transition: transform var(--pp-dur-base) var(--pp-ease-out); }
+.pp-btn__icon svg + svg { transform: translateX(-180%); }
+@media (hover: hover) {
+  .pp-btn:hover { background: var(--btn-bg-hover); }
+  .pp-btn:hover .pp-btn__char { animation: pp-wave 480ms var(--pp-ease-out) calc(var(--i) * var(--pp-stagger)) both; }
+  .pp-btn:hover .pp-btn__icon svg:first-child { transform: translateX(180%); }
+  .pp-btn:hover .pp-btn__icon svg + svg { transform: translateX(0); }
+}
+@media (hover: none) { .pp-btn:active .pp-btn__char { animation: pp-wave 480ms var(--pp-ease-out) calc(var(--i) * var(--pp-stagger)) both; } }
+.pp-btn:active { transform: scale(0.97); }
+@keyframes pp-wave { 0% { transform: none; } 40% { transform: translateY(-16%) rotate(-4deg); } 100% { transform: none; } }
+.pp-btn[aria-disabled="true"], .pp-btn:disabled { opacity: 0.4; pointer-events: none; }
+.pp-btn[aria-busy="true"] { pointer-events: none; }
+.pp-btn[aria-busy="true"] .pp-btn__icon svg { display: none; }
+.pp-btn[aria-busy="true"] .pp-btn__icon::after { content: ""; width: 0.95rem; height: 0.95rem; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: pp-spin 800ms linear infinite; }
+@keyframes pp-spin { to { transform: rotate(360deg); } }
+
+.pp-iconbtn { width: 2.75rem; height: 2.75rem; border-radius: 50%; display: inline-grid; place-items: center; flex: none; border: 1px solid var(--pp-color-line); background: var(--pp-color-white); color: var(--pp-color-ink); cursor: pointer; transition: transform var(--pp-dur-fast) var(--pp-ease-out), background-color var(--pp-dur-base); }
+.pp-iconbtn svg { width: 1.2rem; height: 1.2rem; }
+.pp-iconbtn:hover { background: var(--pp-color-ice-soft); }
+.pp-iconbtn:active { transform: scale(0.94); }
+
+/* ---------- Vlakken ---------- */
+.pp-card { background: var(--pp-color-white); border: 1px solid var(--pp-color-line); border-radius: var(--pp-radius-card); padding: 1.5rem; display: grid; gap: 0.75rem; align-content: start; min-width: 0; }
+.pp-card--featured { background: var(--pp-color-butter-soft); border: 1.5px solid var(--pp-color-ink); }
+.pp-panel { display: grid; gap: 1.25rem; align-content: start; border-radius: clamp(1.25rem, 0.75rem + 2vw, 2.5rem); padding: clamp(1.25rem, 1rem + 2vw, 2.5rem); }
+.pp-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.4rem 0.4rem 0.4rem 0.75rem; border-radius: 1.1rem; background: rgb(255 251 242 / 0.92); border: 1px solid var(--pp-color-line); }
+
+/* ---------- Invoer ---------- */
+.pp-field { display: grid; gap: 0.4rem; }
+.pp-field > span { font-weight: 600; font-size: 0.9375rem; }
+.pp-input { min-height: 3rem; padding: 0.6rem 1rem; border: 1.5px solid rgb(14 42 86 / 0.25); border-radius: 0.9rem; background: var(--pp-color-white); color: var(--pp-color-ink); font: inherit; }
+.pp-input:focus { outline: none; border-color: var(--pp-color-ink); box-shadow: 0 0 0 3px var(--pp-color-butter); }
+.pp-input[aria-invalid="true"] { border-color: var(--pp-color-red); }
+
+/* Schakelaar met segmenten (bv. thema kiezen) */
+.pp-segment { display: inline-flex; gap: 0.15rem; padding: 0.25rem; border-radius: 999px; background: var(--pp-color-white); border: 1px solid var(--pp-color-line); }
+.pp-segment button { border: 0; background: none; padding: 0.5rem 1rem; border-radius: 999px; font: 600 0.9375rem/1 var(--pp-font-body); color: var(--pp-color-ink); cursor: pointer; }
+.pp-segment button:hover { background: var(--pp-color-ice-soft); }
+.pp-segment button[aria-pressed="true"] { background: var(--pp-color-ink); color: var(--pp-color-ice); }
+
+/* ---------- Keuzetegel (een hoek op het bord, een plaatje van een kind) ---------- */
+.pp-tile { display: grid; gap: 0.5rem; justify-items: center; padding: 1rem; border-radius: var(--pp-radius-card); background: var(--pp-color-white); border: 2px solid transparent; color: var(--pp-color-ink); font: 600 1.0625rem/1.2 var(--pp-font-body); cursor: pointer; transition: transform var(--pp-dur-fast) var(--pp-ease-out), border-color var(--pp-dur-base), background-color var(--pp-dur-base); }
+.pp-tile:hover { border-color: var(--pp-color-line); }
+.pp-tile:active { transform: scale(0.97); }
+.pp-tile[aria-pressed="true"], .pp-tile.is-chosen { background: var(--pp-color-butter); border-color: var(--pp-color-ink); }
+.pp-tile[aria-pressed="true"] .pp-badge, .pp-tile.is-chosen .pp-badge { background: var(--pp-color-white); }
+.pp-tile.is-full { opacity: 0.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pp-btn:hover .pp-btn__char, .pp-btn:active .pp-btn__char { animation: none; }
+  .pp-btn[aria-busy="true"] .pp-btn__icon::after { animation: none; }
+  .pp-btn, .pp-iconbtn, .pp-tile, .pp-btn__icon svg { transition: none; }
+}

@@ -381,6 +381,14 @@ create index if not exists hoeken_herkomst on public.hoeken (uit_databank)
    versie van de code hoeft te bestaan. */
 alter table public.scholen add column if not exists modules jsonb not null default '{}'::jsonb;
 
+/* De kleuren van de school. Leeg betekent: de stijl van Pixelplein, en
+   dat is waar elke school mee begint. Een school die eraan draait zet er
+   drie kleuren in -- inkt, grond en knop -- en de app rekent de rest
+   daaruit. Dit is van de school zelf, geen onderdeel dat ze koopt: de
+   schoolbeheerder mag hem wél aanpassen, en de trekker hieronder laat
+   hem dus met rust. */
+alter table public.scholen add column if not exists huisstijl jsonb not null default '{}'::jsonb;
+
 -- ── de platformbeheerder erbij (zie docs/ROLLEN.md) ───────────────────
 alter table public.profielen drop constraint if exists profielen_rol_check;
 alter table public.profielen add  constraint profielen_rol_check
