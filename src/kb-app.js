@@ -12,7 +12,13 @@ window.KB_APP = {
      bordmenu en bij Groep, zodat je twee uitgaven van dezelfde dag uit
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
-  bouw: 'a193e237',
+  bouw: '6e13ed3f',
+  /* De datum die de leerkracht herkent. Staat samen met de
+     bouwvingerafdruk in de testchip, zodat je bij een melding weet
+     welke code ze voor zich had. */
+  versie: '22 oktober 2026',
+  /* Draait deze uitgave op proef? Zie src/kb-testbanner.js. */
+  testversie: true,
   /* Heeft deze uitgave het bord zelf? Planbord niet -- daar wijst een
      knop "Bord openen" naar de andere app, met de groep mee. */
   heeftBord: true,

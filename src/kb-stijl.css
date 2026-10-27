@@ -593,3 +593,34 @@ input, select, textarea{ font: inherit; color: inherit; }
   display: inline-block; padding: 9px 16px; border-radius: var(--rond-s);
   color: #fff; font-size: .85rem; font-weight: 600;
 }
+
+/* ── testversie ───────────────────────────────────────────
+   Zie src/kb-testbanner.js. Klein met opzet: een balk over de
+   breedte eet ruimte op een digibord waar elke pixel voor de
+   hoeken is, en hij staat er maanden. */
+.testmerk{
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 7px; font-size: .68rem; font-weight: 600;
+  color: var(--inkt-3); letter-spacing: .01em;
+}
+.testmerk-versie{ font-weight: 450; color: var(--inkt-4); }
+.testchip-stip{
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: var(--let-op);
+}
+.testchip{
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  padding: 4px 9px; border-radius: 999px;
+  border: 1px solid var(--lijn); background: var(--vlak-2);
+  font-family: inherit; font-size: .68rem; font-weight: 600;
+  color: var(--inkt-3); letter-spacing: .01em; cursor: pointer;
+  transition: padding .16s ease, background .16s ease;
+}
+.testchip:hover{ background: var(--vlak); }
+/* Ingeklapt: alleen de stip blijft staan, zo klein dat een kind
+   er niet per ongeluk op mikt maar de juf hem wel terugvindt. */
+.testchip.klein{ padding: 5px; gap: 0; }
+.testchip.klein .testchip-woord{
+  width: 0; overflow: hidden; white-space: nowrap;
+}
+.testchip-woord{ white-space: nowrap; }

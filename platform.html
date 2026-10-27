@@ -6,9 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" href="stijl/logo/ptje.svg">
 <title>Platformbeheer — Keuzebord</title>
-<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-a193e237">
-<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-a193e237">
-<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-a193e237">
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-6e13ed3f">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-6e13ed3f">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-6e13ed3f">
 <style>
 body{ background: var(--vlak-2); }
 .knoprij{ display:flex; gap:10px; flex-wrap:wrap; }
@@ -92,7 +92,11 @@ body.metbalk .zijbalk{ height:calc(100vh - 46px); top:46px; }
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
-<script src="src/kb-supabase.js?v=22oktober2026-a193e237"></script>
-<script src="src/kb-platform.js?v=22oktober2026-a193e237"></script>
+<!-- kb-app.js zegt welke uitgave dit is; de testchip leest daar of
+     deze app een testversie is. -->
+<script src="src/kb-app.js?v=22oktober2026-6e13ed3f"></script>
+<script src="src/kb-testbanner.js?v=22oktober2026-6e13ed3f"></script>
+<script src="src/kb-supabase.js?v=22oktober2026-6e13ed3f"></script>
+<script src="src/kb-platform.js?v=22oktober2026-6e13ed3f"></script>
 </body>
 </html>
