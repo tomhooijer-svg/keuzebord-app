@@ -12,7 +12,7 @@ window.KB_APP = {
      bordmenu en bij Groep, zodat je twee uitgaven van dezelfde dag uit
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
-  bouw: '174cdc47',
+  bouw: 'b6db7e52',
   /* De datum die de leerkracht herkent. Staat samen met de
      bouwvingerafdruk in de testchip, zodat je bij een melding weet
      welke code ze voor zich had. */

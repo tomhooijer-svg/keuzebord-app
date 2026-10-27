@@ -178,22 +178,87 @@ function vernieuw(){
 
 /* ── in- en uitloggen ────────────────────────────────────────────────── */
 
-function aanmelden(email, wachtwoord){
+/* ── gebruikersnaam en adres ──────────────────────────────────────────
+   Een leerkracht logt in met een gebruikersnaam. Supabase herkent
+   iemand aan een e-mailadres, dus daar zit er een achter:
+
+     juf.marieke  ->  juf.marieke@keuzebord.invalid
+
+   Dat .invalid is geen verzinsel maar een domein dat officieel is
+   vastgelegd om nooit te bestaan (RFC 2606). Er kan dus nooit per
+   ongeluk post heen, en wie in de database kijkt ziet meteen dat het
+   geen echt adres is.
+
+   Dezelfde regel staat in de database (public.inlogadres), want de twee
+   mogen het hier nooit oneens over zijn: een gebruikersnaam die hier
+   anders wordt opgeschreven dan daar, is iemand die niet binnenkomt.
+
+   Typt iemand toch een volledig adres, dan laten we dat staan. Dat is
+   geen tweede manier van inloggen maar een vangnet: tijdens het
+   omzetten van bestaande accounts bestaan beide vormen even naast
+   elkaar, en dan hoort niemand buiten te staan. */
+var INLOG_DOMEIN = 'keuzebord.invalid';
+
+function gebruikersnaamNet(ruw){
+  var n = String(ruw == null ? '' : ruw).trim().toLowerCase();
+  n = n.replace(/[^a-z0-9.-]+/g, '.').replace(/^[.-]+|[.-]+$/g, '');
+  return n;
+}
+
+function inlogadres(wat){
+  var w = String(wat == null ? '' : wat).trim();
+  if (w.indexOf('@') >= 0) return w.toLowerCase();
+  var n = gebruikersnaamNet(w);
+  return n ? n + '@' + INLOG_DOMEIN : '';
+}
+
+function aanmelden(gebruikersnaam, wachtwoord){
   return vraag('/auth/v1/token?grant_type=password', {
     methode: 'POST', zonderSessie: true,
-    lijf: { email: String(email || '').trim(), password: wachtwoord }
+    lijf: { email: inlogadres(gebruikersnaam), password: wachtwoord }
   }).then(bewaarUitAntwoord);
 }
 
-function registreren(email, wachtwoord, naam){
+function registreren(gebruikersnaam, wachtwoord, naam){
+  var adres = inlogadres(gebruikersnaam);
   return vraag('/auth/v1/signup', {
     methode: 'POST', zonderSessie: true,
-    lijf: { email: String(email || '').trim(), password: wachtwoord,
-            data: { naam: naam || '' } }
+    lijf: { email: adres, password: wachtwoord,
+            /* De gebruikersnaam gaat mee, zodat de database hem niet
+               hoeft te raden uit het adres. Zie nieuw_profiel(). */
+            data: { naam: naam || '', gebruikersnaam: gebruikersnaamNet(gebruikersnaam) } }
   }).then(function (a) {
     // Staat bevestiging per e-mail aan, dan krijgen we nog geen sessie.
     if (a && a.access_token) return bewaarUitAntwoord(a);
     return { bevestigen: true, gebruiker: a && (a.user || a) };
+  });
+}
+
+/* Een account aanmaken vóór iemand anders, zonder zelf uitgelogd te
+   raken.
+
+   Aanmelden levert normaal een sessie op, en die zou de jouwe
+   overschrijven: de schoolbeheerder die drie collega's aanmaakt zou na
+   de eerste als die collega binnen zitten. Daarom gooien we hier het
+   antwoord weg in plaats van het te bewaren.
+
+   De school en de rol komen niet van hier maar van de uitnodiging die
+   er al klaar ligt op dit adres; de trekker nieuw_profiel() in de
+   database koppelt ze. Zo is er maar één plek waar bepaald wordt bij
+   welke school iemand hoort, en die plek kan niet vanuit een browser
+   worden overruled. */
+function maakAccountVoor(gebruikersnaam, wachtwoord, naam){
+  var adres = inlogadres(gebruikersnaam);
+  if (!adres) return Promise.reject(new Error('Die gebruikersnaam kan niet.'));
+  return vraag('/auth/v1/signup', {
+    methode: 'POST', zonderSessie: true,
+    lijf: { email: adres, password: wachtwoord,
+            data: { naam: naam || '', gebruikersnaam: gebruikersnaamNet(gebruikersnaam) } }
+  }).then(function (a) {
+    /* Met opzet niets bewaren. Het antwoord bevat een sessie van de
+       zojuist gemaakte persoon; die hoort nergens thuis. */
+    var g = a && (a.user || a);
+    return { id: g && g.id, gebruikersnaam: gebruikersnaamNet(gebruikersnaam), adres: adres };
   });
 }
 
@@ -352,6 +417,8 @@ global.SB = {
   wachtwoordVergeten: wachtwoordVergeten, inloglinkSturen: inloglinkSturen,
   vernieuw: vernieuw,
   lees: lees, schrijf: schrijf, wijzig: wijzig, wis: wis, roep: roep,
+  INLOG_DOMEIN: INLOG_DOMEIN, maakAccountVoor: maakAccountVoor,
+  gebruikersnaamNet: gebruikersnaamNet, inlogadres: inlogadres,
   bestandOp: bestandOp, bestandLink: bestandLink, bestandWeg: bestandWeg,
   wieBenIk: wieBenIk
 };

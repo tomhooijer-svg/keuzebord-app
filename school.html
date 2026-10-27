@@ -8,9 +8,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" href="stijl/logo/ptje.svg">
 <title>Schoolbeheer — Keuzebord</title>
-<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-174cdc47">
-<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-174cdc47">
-<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-174cdc47">
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-b6db7e52">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-b6db7e52">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-b6db7e52">
 <style>
 body{ background: var(--vlak-2); }
 .knoprij{ display:flex; gap:10px; flex-wrap:wrap; }
@@ -68,6 +68,22 @@ body{ background: var(--vlak-2); }
 .veldrij{ margin:16px 0; }
 .veldlabel{ display:block; font-size:.83rem; font-weight:550; color:var(--inkt-2);
             margin-bottom:7px; letter-spacing:-.008em; }
+
+@media print{
+  /* Alles weg behalve het blad zelf. Een leerkracht krijgt een kaartje
+     met haar inloggegevens, geen schermafdruk van het beheer. */
+  .app, .melding{ display:none !important; }
+  .overlay{ position:static !important; display:block !important;
+            background:none !important; backdrop-filter:none !important;
+            padding:0 !important; opacity:1 !important; }
+  .blad{ box-shadow:none !important; border-radius:0 !important;
+         max-width:none !important; width:auto !important;
+         max-height:none !important; transform:none !important;
+         animation:none !important; padding:0 !important; }
+  .nietprinten{ display:none !important; }
+  body{ background:#fff !important; }
+  @page{ margin: 18mm; }
+}
 </style>
 </head>
 <body>
@@ -92,14 +108,15 @@ body{ background: var(--vlak-2); }
 <div class="overlay" id="overlay"><div class="blad" id="blad"></div></div>
 <div class="melding" id="melding"></div>
 
-<script src="src/kb-app.js?v=22oktober2026-174cdc47"></script>
-<script src="src/kb-pictobank.js?v=22oktober2026-174cdc47"></script>
-<script src="src/kb-data.js?v=22oktober2026-174cdc47"></script>
-<script src="src/kb-testbanner.js?v=22oktober2026-174cdc47"></script>
-<script src="src/kb-supabase.js?v=22oktober2026-174cdc47"></script>
-<script src="src/kb-media.js?v=22oktober2026-174cdc47"></script>
-<script src="src/kb-sync.js?v=22oktober2026-174cdc47"></script>
-<script src="src/kb-verbinding.js?v=22oktober2026-174cdc47"></script>
-<script src="src/kb-school.js?v=22oktober2026-174cdc47"></script>
+<script src="src/kb-app.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-pictobank.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-data.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-testbanner.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-supabase.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-kaartje.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-media.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-sync.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-verbinding.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-school.js?v=22oktober2026-b6db7e52"></script>
 </body>
 </html>

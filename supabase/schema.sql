@@ -389,6 +389,198 @@ alter table public.scholen add column if not exists modules jsonb not null defau
    hem dus met rust. */
 alter table public.scholen add column if not exists huisstijl jsonb not null default '{}'::jsonb;
 
+-- ── inloggen met een gebruikersnaam ───────────────────────────────────
+/* Een testleerkracht krijgt een kaartje in haar handen en moet binnen
+   een minuut binnen zijn. Een e-mailadres intypen op een digibord is
+   daarvoor te veel gedoe, en het betekent ook dat er van elke juf een
+   echt adres in dit systeem staat.
+
+   Supabase herkent iemand altijd aan een e-mailadres, dus achter de
+   gebruikersnaam zit er een: juf.marieke@keuzebord.invalid. Dat
+   .invalid is geen verzinsel maar een domein dat officieel is
+   vastgelegd om nooit te bestaan (RFC 2606). Er kan dus nooit per
+   ongeluk post heen, en wie later in deze database kijkt ziet meteen
+   dat het geen echt adres is.
+
+   De prijs: "wachtwoord vergeten" per mail kan niet meer. Dat is met
+   open ogen gekozen -- de platformbeheerder zet een wachtwoord terug.
+   Zie DECISIONS.md en docs/HERSTEL.md.
+
+   De gebruikersnaam is uniek over alle scholen heen. Dat kan niet
+   anders zolang hij een adres moet worden, en het heeft een voordeel:
+   op het inlogscherm hoeft niemand eerst zijn school te kiezen. */
+alter table public.profielen add column if not exists gebruikersnaam text;
+
+/* Wat een geldige gebruikersnaam is: kleine letters, cijfers, punt en
+   streepje. Geen spaties (niet te typen op een digibord), geen hoofd-
+   letters (dan logt de helft zichzelf buiten door een hoofdletter), en
+   geen accenten (want die moeten door een e-mailadres heen). */
+create or replace function public.gebruikersnaam_net(ruw text)
+returns text language sql immutable as $$
+  select nullif(
+    regexp_replace(
+      regexp_replace(lower(trim(coalesce(ruw, ''))), '[^a-z0-9.-]+', '.', 'g'),
+      '^[.-]+|[.-]+$', '', 'g'),
+    '')
+$$;
+
+/* Het adres dat erbij hoort. Eén plek, zodat de app en de database het
+   nooit oneens kunnen zijn. */
+create or replace function public.inlogadres(gebruikersnaam text)
+returns text language sql immutable as $$
+  select public.gebruikersnaam_net(gebruikersnaam) || '@keuzebord.invalid'
+$$;
+
+-- Bestaande profielen krijgen er een, afgeleid van wat voor hun @ stond.
+update public.profielen
+   set gebruikersnaam = public.gebruikersnaam_net(split_part(email, '@', 1))
+ where gebruikersnaam is null and email <> '';
+
+/* Botsingen oplossen voordat de regel erop komt: twee mensen met
+   dezelfde naam voor de @ (jan@school-a.nl en jan@school-b.nl) zouden
+   anders dezelfde gebruikersnaam krijgen, en dan kan de tweede niet
+   meer inloggen. De oudste houdt hem; de rest krijgt een cijfer. */
+with dubbel as (
+  select id, gebruikersnaam,
+         row_number() over (partition by gebruikersnaam order by aangemaakt, id) as n
+    from public.profielen
+   where gebruikersnaam is not null
+)
+update public.profielen p
+   set gebruikersnaam = d.gebruikersnaam || d.n::text
+  from dubbel d
+ where p.id = d.id and d.n > 1;
+
+create unique index if not exists profielen_gebruikersnaam_uniek
+  on public.profielen (gebruikersnaam) where gebruikersnaam is not null;
+
+/* Is deze gebruikersnaam nog vrij? Het accountscherm vraagt dit vóór
+   het aanmaken, zodat niemand pas bij het opslaan hoort dat de naam
+   bezet is.
+
+   Alleen voor wie is ingelogd. Zou dit open staan, dan kon iedereen
+   met een lijstje namen uitvinden wie er op welke school werkt -- één
+   vraag per naam, en je weet het. Het antwoord is ook niet meer dan
+   ja of nee: wie de naam heeft blijft erbuiten. */
+/* De parameter heet met opzet niet 'naam': profielen heeft een kolom
+   die zo heet, en binnen de subquery wint de kolom. Dan vergelijkt hij
+   elke gebruikersnaam met de persoonsnaam van die rij, en is geen enkele
+   naam ooit vrij -- zonder dat er iets klaagt. */
+create or replace function public.gebruikersnaam_vrij(gewenst text)
+returns boolean language sql security definer stable set search_path = public as $$
+  select public.gebruikersnaam_net(gewenst) is not null
+     and not exists (select 1 from public.profielen p
+                      where p.gebruikersnaam = public.gebruikersnaam_net(gewenst))
+$$;
+/* Eerst intrekken, dan uitdelen. PostgreSQL geeft van zichzelf aan
+   iedereen uitvoerrecht op een nieuwe functie, dus zonder deze regel
+   voegt de grant hieronder niets toe en kan een willekeurige bezoeker
+   alsnog namen aflopen. */
+revoke execute on function public.gebruikersnaam_vrij(text) from public;
+grant  execute on function public.gebruikersnaam_vrij(text) to authenticated;
+
+/* ── een wachtwoord opnieuw instellen ─────────────────────────────────
+   Inloggen gaat met een gebruikersnaam, dus er is geen adres om een
+   herstelmail heen te sturen. Wie zijn wachtwoord kwijt is, krijgt een
+   nieuw van een mens:
+
+     een leerkracht          van haar schoolbeheerder
+     een schoolbeheerder     van de leverancier
+     de leverancier zelf     uit docs/HERSTEL.md
+
+   Waarom dit in de database staat en niet in de app: een wachtwoord
+   zetten kan bij Supabase alleen met de servicesleutel, en die hoort
+   nergens in een browser en ook niet in iemands hoofd. Deze functie
+   doet het namens de server, met de rechten die hieronder worden
+   gecontroleerd.
+
+   We schrijven daarmee in auth.users, een tabel van Supabase zelf. Dat
+   is de prijs van niet met die sleutel willen werken. Verandert
+   Supabase ooit hoe wachtwoorden worden opgeslagen, dan breekt dit --
+   en het zou stil breken, want "wachtwoord gezet" en "kan niet
+   inloggen" zien er van buiten hetzelfde uit. Daarom controleert deze
+   functie haar eigen werk voordat ze ja zegt. */
+create or replace function public.wachtwoord_zetten(wie uuid, nieuw text)
+returns void language plpgsql security definer set search_path = public as $$
+declare doel public.profielen%rowtype;
+        ik   public.profielen%rowtype;
+begin
+  select * into doel from public.profielen where id = wie;
+  if doel.id is null then raise exception 'Dat account bestaat niet.'; end if;
+  select * into ik from public.profielen where id = auth.uid();
+  if ik.id is null then raise exception 'Je bent niet ingelogd.'; end if;
+
+  /* Wie mag van wie het wachtwoord zetten.
+
+     Een schoolbeheerder mag dat voor haar eigen school -- ook voor een
+     andere schoolbeheerder daar, want anders kan een school zichzelf
+     buitensluiten zodra er één persoon uitvalt.
+
+     De platformbeheerder mag het voor iedereen. Dat is niet hetzelfde
+     als bij de gegevens van een school kunnen: een wachtwoord zetten
+     geeft hem geen inzage, en zonder dit recht kan hij een school die
+     niemand meer binnen heeft helemaal niet helpen. */
+  if not (public.ben_platformbeheerder()
+          or (ik.rol = 'schoolbeheerder' and ik.school_id is not null
+              and ik.school_id = doel.school_id)
+          or ik.id = doel.id) then
+    raise exception 'Je mag het wachtwoord van dit account niet zetten.';
+  end if;
+
+  /* Kort genoeg om te raden is geen wachtwoord. De app maakt er zelf
+     een van drie woorden; dit is de ondergrens voor wie het met de
+     hand doet. */
+  if length(coalesce(nieuw, '')) < 10 then
+    raise exception 'Een wachtwoord van minstens tien tekens, graag.';
+  end if;
+
+  update auth.users
+     set encrypted_password = extensions.crypt(nieuw, extensions.gen_salt('bf'))
+   where id = wie;
+
+  -- en meteen kijken of het ook echt zo is opgeslagen
+  if not exists (select 1 from auth.users
+                  where id = wie
+                    and encrypted_password = extensions.crypt(nieuw, encrypted_password)) then
+    raise exception 'Het wachtwoord is niet opgeslagen zoals verwacht. Meld dit.';
+  end if;
+
+  /* En dan het account meteen omzetten naar zijn gebruikersnaam, als
+     dat nog niet is gebeurd.
+
+     Waarom dat hier gebeurt en niet ergens apart: op dit moment rolt er
+     een kaartje uit met "Gebruikersnaam: juf". Een account dat nog op
+     een echt e-mailadres staat, komt met die gebruikersnaam niet
+     binnen -- en dan staat er op papier iets dat niet werkt. Een
+     kaartje dat liegt is erger dan geen kaartje.
+
+     Het is dus geen bijwerking maar de andere helft van dezelfde
+     handeling: een nieuw wachtwoord én de manier om in te loggen die
+     erbij hoort. Daarmee verdwijnt het oude e-mailadres ook uit de
+     database, en dat is precies de bedoeling.
+
+     Zit die gebruikersnaam al op een ander account, dan stoppen we. Het
+     wachtwoord is dan wel gezet; dat is vervelend maar veilig -- veel
+     erger zou zijn dat twee mensen op hetzelfde adres uitkomen. */
+  if doel.gebruikersnaam is not null then
+    if exists (select 1 from auth.users
+                where lower(email) = public.inlogadres(doel.gebruikersnaam)
+                  and id <> wie) then
+      raise exception 'Die gebruikersnaam hoort al bij een ander account. Het wachtwoord is wel gezet; kies een andere gebruikersnaam.';
+    end if;
+    update auth.users set email = public.inlogadres(doel.gebruikersnaam)
+     where id = wie and lower(coalesce(email, '')) is distinct from public.inlogadres(doel.gebruikersnaam);
+    update public.profielen set email = public.inlogadres(doel.gebruikersnaam)
+     where id = wie;
+  end if;
+
+  perform public.noteer('wachtwoord opnieuw ingesteld', doel.school_id,
+                        coalesce(nullif(doel.naam, ''), doel.gebruikersnaam),
+                        jsonb_build_object('gebruikersnaam', doel.gebruikersnaam));
+end $$;
+revoke execute on function public.wachtwoord_zetten(uuid, text) from public;
+grant  execute on function public.wachtwoord_zetten(uuid, text) to authenticated;
+
 -- ── de platformbeheerder erbij (zie docs/ROLLEN.md) ───────────────────
 alter table public.profielen drop constraint if exists profielen_rol_check;
 alter table public.profielen add  constraint profielen_rol_check
@@ -1059,12 +1251,19 @@ begin
    where lower(email) = lower(new.email) and verzilverd is null
    order by aangemaakt limit 1;
 
-  insert into public.profielen (id, email, naam, school_id, rol)
+  insert into public.profielen (id, email, naam, school_id, rol, gebruikersnaam)
   values (new.id,
           coalesce(new.email, ''),
           coalesce(new.raw_user_meta_data ->> 'naam', ''),
           u.school_id,
-          coalesce(u.rol, 'leerkracht'))
+          coalesce(u.rol, 'leerkracht'),
+          /* De gebruikersnaam staat in de gegevens die bij het aanmelden
+             zijn meegestuurd; staat hij er niet, dan leiden we hem af van
+             wat voor de @ staat. Zo krijgt ook een account dat ergens
+             anders vandaan komt er een. */
+          public.gebruikersnaam_net(
+            coalesce(new.raw_user_meta_data ->> 'gebruikersnaam',
+                     split_part(coalesce(new.email, ''), '@', 1))))
   on conflict (id) do nothing;
 
   if u.id is not null then

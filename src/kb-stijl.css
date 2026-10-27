@@ -624,3 +624,32 @@ input, select, textarea{ font: inherit; color: inherit; }
   width: 0; overflow: hidden; white-space: nowrap;
 }
 .testchip-woord{ white-space: nowrap; }
+
+/* ── het inlogkaartje ─────────────────────────────────────
+   Wat een testleerkracht in haar handen krijgt. Op het scherm is het
+   een venster; bij printen blijft alleen dit over (zie @media print
+   in school.html). Groot genoeg om over te typen vanaf een afstandje,
+   want dat gebeurt staand voor een digibord. */
+.kaartje{
+  border: 2px solid var(--inkt); border-radius: var(--rond-m);
+  padding: 22px 24px; margin: 6px 0 4px;
+}
+.kaartje-kop{
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 12px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--lijn);
+}
+.kaartje-kop img{ width: 30px; height: 30px; border-radius: 7px; flex: none; }
+.kaartje-kop .s{ font-size: .78rem; color: var(--inkt-3); }
+.kaartje-kop .n{ font-family: var(--letter-kop); font-size: 1.08rem; font-weight: 600; }
+.kaartje-regel{ display: flex; gap: 14px; align-items: baseline; margin-bottom: 11px; }
+.kaartje-regel .l{ width: 116px; flex: none; font-size: .8rem; color: var(--inkt-3); }
+.kaartje-regel .w{
+  font-size: 1.22rem; font-weight: 650; letter-spacing: -.01em;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+.kaartje-voet{
+  margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--lijn);
+  font-size: .8rem; color: var(--inkt-3); line-height: 1.55;
+}

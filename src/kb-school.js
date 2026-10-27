@@ -497,7 +497,7 @@ function tekenAccounts(v){
     return;
   }
   v.appendChild(kopregel('Accounts',
-    'Wie mag er bij welke groep', knop('Iemand uitnodigen', 'primair', function () { toonUitnodigen(); })));
+    'Wie mag er bij welke groep', knop('Collega toevoegen', 'primair', function () { toonCollegaToevoegen(); })));
   v.appendChild(mensenPaneel());
 }
 
@@ -995,7 +995,7 @@ function mensenPaneel(){
   var kop = el('div', 'kopregel');
   kop.appendChild(el('div', 'paneelkop', 'Accounts'));
   var kopknoppen = el('div', 'knoprij');
-  kopknoppen.appendChild(knop('Iemand uitnodigen', 'primair', function () { toonUitnodigen(); }));
+  kopknoppen.appendChild(knop('Collega toevoegen', 'primair', function () { toonCollegaToevoegen(); }));
   kop.appendChild(kopknoppen);
   p.appendChild(kop);
   p.appendChild(el('p', 'hint',
@@ -1023,8 +1023,12 @@ function mensenPaneel(){
     var links = el('div');
     links.appendChild(el('div', 'ledennaam', mens.naam || mens.email));
     links.appendChild(el('div', 'ledenmail',
-      groepen.length ? groepen.sort().join(', ') : 'nog geen groep'));
+      (mens.gebruikersnaam ? mens.gebruikersnaam + ' \u00b7 ' : '') +
+      (groepen.length ? groepen.sort().join(', ') : 'nog geen groep')));
     rij.appendChild(links);
+    rij.appendChild(knop('Nieuw wachtwoord', 'stil', function () {
+      vraagNieuwWachtwoord(mens);
+    }));
     p.appendChild(rij);
   });
 
@@ -1033,8 +1037,13 @@ function mensenPaneel(){
     var rij = el('div', 'ledenrij');
     var links = el('div');
     links.appendChild(el('div', 'ledennaam', mens.naam || mens.email));
-    links.appendChild(el('div', 'ledenmail', 'schoolbeheerder — mag bij alle groepen'));
+    links.appendChild(el('div', 'ledenmail',
+      (mens.gebruikersnaam ? mens.gebruikersnaam + ' \u00b7 ' : '') +
+      'schoolbeheerder \u2014 mag bij alle groepen'));
     rij.appendChild(links);
+    rij.appendChild(knop('Nieuw wachtwoord', 'stil', function () {
+      vraagNieuwWachtwoord(mens);
+    }));
     p.appendChild(rij);
   });
 
@@ -1141,38 +1150,105 @@ function toonCode(email, code){
   });
 }
 
-/* ── iemand uitnodigen ────────────────────────────────────────────────
-   Een account aanmaken kan alleen de persoon zelf, met een eigen
-   wachtwoord. Wat wij hier doen is de plek klaarzetten: e-mailadres, rol
-   en eventueel een groep. Zodra die persoon zich aanmeldt valt alles op zijn
-   plaats. */
+/* ══════════════════════════════════════════════════════════
+   EEN COLLEGA ERBIJ
+   Eén knop: naam invullen, account staat klaar, kaartje eruit.
 
-function toonUitnodigen(concept){
-  concept = concept || { email:'', rol:'leerkracht', groepId:'' };
+   Hiervoor stond hier een uitnodiging: de schoolbeheerder vulde een
+   e-mailadres in en haar collega maakte zelf een account. Dat werkte,
+   maar het vroeg van een testleerkracht dat ze zich ergens aanmeldt
+   voordat ze iets kan zien -- en het zette van elke juf een echt
+   adres in dit systeem.
+
+   De uitnodiging is niet weg: hij is nu de binnenkant. We zetten er
+   een klaar op het interne adres en maken meteen het account aan; de
+   trekker nieuw_profiel() in de database koppelt dan school, rol en
+   groep. Zo blijft er één plek waar bepaald wordt bij welke school
+   iemand hoort, en die plek zit niet in een browser.
+   ══════════════════════════════════════════════════════════ */
+
+function naamNaarGebruikersnaam(naam){
+  return SB.gebruikersnaamNet(String(naam || '')
+    .replace(/\b(juf|meester|meneer|mevrouw)\b/gi, ''));
+}
+
+function toonCollegaToevoegen(concept){
+  concept = concept || { naam:'', gebruikersnaam:'', zelfGekozen:false,
+                         rol:'leerkracht', groepId:'' };
   toonBlad(function (blad) {
-    blad.appendChild(el('h3', 'titel', 'Iemand uitnodigen'));
+    blad.appendChild(el('h3', 'titel', 'Een collega erbij'));
     blad.appendChild(el('p', 'hint',
-      'Vul het e-mailadres in waarmee je collega een account gaat maken. Er gaat van ons ' +
-      'geen mailtje uit — geef zelf even het adres van de site door.'));
+      'Vul haar naam in. Het account staat meteen klaar en je krijgt een kaartje ' +
+      'om uit te printen \u2014 daar staat op hoe ze inlogt. Er gaat van ons geen ' +
+      'mail uit; geef het kaartje zelf even.'));
 
     var veld = el('div', 'veldrij');
-    veld.appendChild(el('label', 'veldlabel', 'E-mailadres'));
+    veld.appendChild(el('label', 'veldlabel', 'Naam'));
     var invoer = el('input', 'invoer');
-    invoer.type = 'email'; invoer.placeholder = 'collega@school.nl';
-    invoer.autocapitalize = 'off'; invoer.spellcheck = false;
-    invoer.value = concept.email;
-    invoer.addEventListener('input', function () { concept.email = invoer.value; });
+    invoer.type = 'text'; invoer.placeholder = 'Juf Marieke';
+    invoer.value = concept.naam;
     veld.appendChild(invoer);
     blad.appendChild(veld);
+
+    var gveld = el('div', 'veldrij');
+    gveld.appendChild(el('label', 'veldlabel', 'Gebruikersnaam'));
+    var ginvoer = el('input', 'invoer');
+    ginvoer.type = 'text'; ginvoer.placeholder = 'juf.marieke';
+    ginvoer.autocapitalize = 'off'; ginvoer.spellcheck = false;
+    ginvoer.value = concept.gebruikersnaam;
+    gveld.appendChild(ginvoer);
+    var gstand = el('div', 'hint');
+    gstand.style.marginTop = '4px';
+    gveld.appendChild(gstand);
+    blad.appendChild(gveld);
+
+    /* Vóór het aanmaken kijken of de naam vrij is, niet erna. Hoort
+       iemand pas bij het opslaan dat de naam bezet is, dan staat ze al
+       een kaartje te printen. */
+    var kijker = null;
+    function kijkNaam(){
+      var n = concept.gebruikersnaam;
+      clearTimeout(kijker);
+      gstand.style.color = '';
+      if (!n) { gstand.textContent = ''; return; }
+      gstand.textContent = 'Even kijken\u2026';
+      kijker = setTimeout(function () {
+        SB.roep('gebruikersnaam_vrij', { gewenst: n }).then(function (vrij) {
+          gstand.textContent = vrij
+            ? 'Vrij. Ze logt straks in met ' + n + '.'
+            : 'Die naam is al in gebruik. Kies een andere, bijvoorbeeld ' + n + '2.';
+          gstand.style.color = vrij ? '' : 'var(--stop)';
+        }, function () { gstand.textContent = ''; });
+      }, 350);
+    }
+
+    /* De gebruikersnaam volgt de naam, tot iemand hem zelf aanpast.
+       Daarna blijft hij staan: niets is vervelender dan een veld dat je
+       net hebt ingevuld en dat zichzelf weer overschrijft. */
+    invoer.addEventListener('input', function () {
+      concept.naam = invoer.value;
+      if (!concept.zelfGekozen) {
+        ginvoer.value = naamNaarGebruikersnaam(invoer.value);
+        concept.gebruikersnaam = ginvoer.value;
+        kijkNaam();
+      }
+    });
+    ginvoer.addEventListener('input', function () {
+      concept.zelfGekozen = true;
+      ginvoer.value = SB.gebruikersnaamNet(ginvoer.value);
+      concept.gebruikersnaam = ginvoer.value;
+      kijkNaam();
+    });
+    if (concept.gebruikersnaam) kijkNaam();
 
     var rolrij = el('div', 'veldrij');
     rolrij.appendChild(el('label', 'veldlabel', 'Wat mag deze collega?'));
     var chips = el('div', 'knoprij');
-    [['leerkracht', 'Leerkracht — alleen de eigen groepen'],
-     ['schoolbeheerder', 'Schoolbeheerder — alles']].forEach(function (paar) {
+    [['leerkracht', 'Leerkracht \u2014 alleen de eigen groepen'],
+     ['schoolbeheerder', 'Schoolbeheerder \u2014 alles']].forEach(function (paar) {
       var c = el('button', 'chip' + (concept.rol === paar[0] ? ' aan' : ''), paar[1]);
       c.addEventListener('click', function () {
-        concept.rol = paar[0]; sluitBlad(); toonUitnodigen(concept);
+        concept.rol = paar[0]; sluitBlad(); toonCollegaToevoegen(concept);
       });
       chips.appendChild(c);
     });
@@ -1185,7 +1261,7 @@ function toonUitnodigen(concept){
       var gchips = el('div', 'knoprij');
       var geen = el('button', 'chip' + (concept.groepId ? '' : ' aan'), 'Nog geen');
       geen.addEventListener('click', function () {
-        concept.groepId = ''; sluitBlad(); toonUitnodigen(concept);
+        concept.groepId = ''; sluitBlad(); toonCollegaToevoegen(concept);
       });
       gchips.appendChild(geen);
       KB.G.klassen.forEach(function (k) {
@@ -1193,7 +1269,7 @@ function toonUitnodigen(concept){
         if (!sid) return;
         var c = el('button', 'chip' + (concept.groepId === sid ? ' aan' : ''), k.naam);
         c.addEventListener('click', function () {
-          concept.groepId = sid; sluitBlad(); toonUitnodigen(concept);
+          concept.groepId = sid; sluitBlad(); toonCollegaToevoegen(concept);
         });
         gchips.appendChild(c);
       });
@@ -1203,28 +1279,106 @@ function toonUitnodigen(concept){
 
     var rij = el('div', 'knoprij-onder');
     rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
-    rij.appendChild(knop('Uitnodigen', 'primair', function () {
-      var email = (concept.email || '').trim();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-        meld('Dat lijkt geen geldig e-mailadres'); return;
-      }
-      var rijGegevens = { school_id: KBV.wie().profiel.school_id, email: email,
-                          rol: concept.rol, code: nieuweCode() };
-      if (concept.rol === 'leerkracht' && concept.groepId) rijGegevens.groep_id = concept.groepId;
-      SB.schrijf('uitnodigingen', [rijGegevens]).then(haalMensen).then(function () {
-        sluitBlad(); teken();
-        toonCode(email, rijGegevens.code);
-      }, function (e) {
-        meld(/duplicate|unique/i.test(e && e.message || '')
-          ? 'Voor dat adres staat al een uitnodiging klaar.'
-          : 'Dat lukte niet: ' + (e && e.message));
-      });
-    }));
+    var maak = knop('Account aanmaken', 'primair', function () {
+      var naam = (concept.naam || '').trim();
+      var gn = SB.gebruikersnaamNet(concept.gebruikersnaam);
+      if (!naam) { meld('Vul haar naam in'); invoer.focus(); return; }
+      if (!gn)   { meld('Vul een gebruikersnaam in'); ginvoer.focus(); return; }
+
+      var ww;
+      try { ww = KBKAARTJE.wachtwoord(); }
+      catch (e) { meld('Deze browser kan geen veilig wachtwoord maken. Probeer een andere.'); return; }
+
+      maak.disabled = true;
+      maak.textContent = 'Bezig\u2026';
+
+      /* Eerst de uitnodiging, dan het account. In die volgorde, want de
+         trekker die school en rol koppelt kijkt bij het aanmaken of er
+         een uitnodiging klaarligt. Andersom zou ze binnen zijn zonder
+         school, en dan staat ze voor het scherm "begin een school". */
+      var uitnodiging = { school_id: KBV.wie().profiel.school_id,
+                          email: SB.inlogadres(gn), rol: concept.rol,
+                          code: nieuweCode() };
+      if (concept.rol === 'leerkracht' && concept.groepId) uitnodiging.groep_id = concept.groepId;
+
+      SB.schrijf('uitnodigingen', [uitnodiging])
+        .then(function () { return SB.maakAccountVoor(gn, ww, naam); })
+        .then(function () { return haalMensen(); })
+        .then(function () {
+          sluitBlad(); teken();
+          toonKaartje({ naam: naam, gebruikersnaam: gn, wachtwoord: ww, rol: concept.rol });
+        }, function (e) {
+          maak.disabled = false;
+          maak.textContent = 'Account aanmaken';
+          var bericht = (e && e.message) || '';
+          if (/duplicate|unique|al een account|already/i.test(bericht)) {
+            meld('Die gebruikersnaam is al in gebruik. Kies een andere.');
+          } else {
+            meld('Dat lukte niet: ' + bericht);
+          }
+        });
+    });
+    rij.appendChild(maak);
     blad.appendChild(rij);
     zetCursor(invoer, blad);
   });
 }
 
+/* ── een nieuw wachtwoord ─────────────────────────────────────────────
+   Niemand kan een wachtwoord terugkijken, ook de schoolbeheerder niet.
+   Dat is met opzet: een lijst met wachtwoorden die ergens blijft
+   liggen is gevaarlijker dan een juf die er af en toe een nieuw moet
+   vragen. Wat hier gebeurt is dus geen "opzoeken" maar "vervangen" --
+   en daarmee is het oude wachtwoord meteen onbruikbaar.
+
+   Vandaar de waarschuwing vooraf: staat zij op dit moment ingelogd op
+   het digibord, dan blijft dat werken tot ze uitlogt, maar de volgende
+   keer heeft ze het nieuwe kaartje nodig. */
+function vraagNieuwWachtwoord(mens){
+  var wie = mens.naam || mens.gebruikersnaam || mens.email;
+  vraagBevestiging('Nieuw wachtwoord voor ' + wie + '?',
+    'Het oude wachtwoord werkt daarna niet meer. Je krijgt een nieuw kaartje om ' +
+    'uit te printen; daarna kan niemand het meer opzoeken, ook jij niet.',
+    'Nieuw wachtwoord', function () {
+      var ww;
+      try { ww = KBKAARTJE.wachtwoord(); }
+      catch (e) { meld('Deze browser kan geen veilig wachtwoord maken. Probeer een andere.'); return; }
+      SB.roep('wachtwoord_zetten', { wie: mens.id, nieuw: ww }).then(function () {
+        toonKaartje({ naam: mens.naam || wie, gebruikersnaam: mens.gebruikersnaam || '',
+                      wachtwoord: ww, rol: mens.rol });
+      }, function (e) {
+        meld('Dat lukte niet: ' + (e && e.message));
+      });
+    });
+}
+
+/* Het kaartje zelf wordt getekend door src/kb-kaartje.js, omdat het
+   platformbeheer hetzelfde kaartje nodig heeft. Hier staan alleen de
+   knoppen eronder: vensters en meldingen werken per scherm anders. */
+function toonKaartje(gegevens){
+  gegevens.school = (KBV.wie() && KBV.wie().school && KBV.wie().school.naam) || '';
+  toonBlad(function (blad) {
+    var kop = el('div', 'nietprinten');
+    kop.appendChild(el('h3', 'titel', 'Het account staat klaar'));
+    kop.appendChild(el('p', 'hint',
+      'Print dit kaartje of schrijf het over, en geef het aan ' + gegevens.naam + '. ' +
+      'Het wachtwoord staat hierna nergens meer \u2014 wij bewaren het niet, en ook jij ' +
+      'kunt het straks niet opzoeken. Raakt ze het kwijt, dan maak je een nieuw.'));
+    blad.appendChild(kop);
+
+    blad.appendChild(KBKAARTJE.bouw(gegevens));
+
+    var rij = el('div', 'knoprij-onder nietprinten');
+    rij.appendChild(knop('Printen', 'primair', function () { window.print(); }));
+    rij.appendChild(knop('Kopi\u00ebren', 'stil', function () {
+      KBKAARTJE.kopieer(gegevens).then(
+        function () { meld('Gekopieerd'); },
+        function () { meld('Kopi\u00ebren lukte niet \u2014 schrijf het over'); });
+    }));
+    rij.appendChild(knop('Klaar', 'stil', sluitBlad));
+    blad.appendChild(rij);
+  });
+}
 
 
 KB.laad();

@@ -503,7 +503,9 @@ function maakAccountknop(opties){
    één groep. */
 
 function collegas(){
-  return SB.lees('profielen', { kies:'id,naam,email,rol', volgorde:'rol,naam' });
+  /* gebruikersnaam hoort erbij: hij staat op het kaartje en in de
+     ledenlijst. Zonder dit veld kwam er een leeg hokje op papier. */
+  return SB.lees('profielen', { kies:'id,naam,email,rol,gebruikersnaam', volgorde:'rol,naam' });
 }
 
 /* Alle koppelingen van de school in één keer: {groepId: [profielId, ...]} */

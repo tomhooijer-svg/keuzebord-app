@@ -14,9 +14,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="stijl/logo/ptje.svg">
 <title>Inloggen — Keuzebord</title>
-<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-174cdc47">
-<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-174cdc47">
-<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-174cdc47">
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-b6db7e52">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-b6db7e52">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-b6db7e52">
 <style>
 body.inlog{
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
@@ -87,10 +87,13 @@ body.inlog{
       <label for="naam">Je naam</label>
       <input id="naam" type="text" autocomplete="name" placeholder="Juf Marieke">
     </div>
+    <!-- type="text" en niet "email": een gebruikersnaam is geen adres,
+         en met type="email" weigert de browser hem te versturen. -->
     <div class="veld">
-      <label for="email">E-mailadres</label>
-      <input id="email" type="email" autocomplete="username" required
-             autocapitalize="off" spellcheck="false">
+      <label for="email">Gebruikersnaam</label>
+      <input id="email" type="text" autocomplete="username" required
+             autocapitalize="off" autocorrect="off" spellcheck="false"
+             placeholder="juf.marieke">
     </div>
     <div class="veld">
       <label for="ww">Wachtwoord</label>
@@ -104,7 +107,7 @@ body.inlog{
      werken; wat je doet gaat later vanzelf mee.</p>
 </div>
 
-<script src="src/kb-supabase.js?v=22oktober2026-174cdc47"></script>
+<script src="src/kb-supabase.js?v=22oktober2026-b6db7e52"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
@@ -120,7 +123,7 @@ body.inlog{
   function teken(){
     var registreren = stand === 'registreren';
     $('onder').textContent = registreren
-      ? 'Maak een account. Ben je uitgenodigd, gebruik dan datzelfde e-mailadres.'
+      ? 'Maak een account. Kies een gebruikersnaam zonder spaties, bijvoorbeeld juf.marieke.'
       : 'Log in om verder te gaan.';
     $('veld-naam').style.display = registreren ? '' : 'none';
     $('verstuur').textContent = registreren ? 'Account maken' : 'Inloggen';
@@ -128,7 +131,7 @@ body.inlog{
     $('wissel').innerHTML = registreren
       ? 'Heb je al een account? <button type="button" data-naar="aanmelden">Inloggen</button>'
       : 'Nog geen account? <button type="button" data-naar="registreren">Er een maken</button>' +
-        '<br><button type="button" data-naar="vergeten" style="margin-top:8px;font-weight:500;color:var(--inkt-3)">Wachtwoord vergeten</button>';
+        '<br><button type="button" data-naar="vergeten" style="margin-top:8px;font-weight:500;color:var(--inkt-3)">Wachtwoord kwijt?</button>';
     meld('');
   }
 
@@ -139,21 +142,93 @@ body.inlog{
     stand = knop.dataset.naar; teken();
   });
 
+  /* Wachtwoord vergeten gaat niet meer per mail. Dat is de prijs van
+     inloggen zonder e-mailadres: er is geen adres om een link heen te
+     sturen. Wie het kwijt is, krijgt een nieuw wachtwoord van iemand die
+     daar wél bij kan -- de schoolbeheerder voor haar eigen team, de
+     leverancier voor een schoolbeheerder.
+
+     Dit stil weglaten zou erger zijn dan het uitleggen: dan staat iemand
+     te zoeken naar een knop die er niet is. */
   function vergeten(){
-    var email = $('email').value.trim();
-    if (!email) { meld('Vul eerst je e-mailadres in, dan sturen we je een link.'); $('email').focus(); return; }
-    SB.wachtwoordVergeten(email).then(function () {
-      meld('We hebben een link gestuurd naar ' + email + '.', 'goed');
-    }).catch(toonFout);
+    meld('Een nieuw wachtwoord krijg je van je schoolbeheerder. Is dat ' +
+         'jij zelf? Neem dan contact op met de leverancier.', 'goed');
+  }
+
+  /* ── de pogingenrem ───────────────────────────────────────────────
+     Na een paar misgeslagen pogingen moet je even wachten, en elke
+     volgende keer langer.
+
+     Wees eerlijk over wat dit is: deze rem zit in de browser, en
+     inloggen gaat rechtstreeks naar Supabase. Wie deze pagina overslaat
+     en de server zelf aanroept, merkt er niets van. Dit remt dus een
+     mens -- een kind dat aan het digibord wachtwoorden zit te proberen,
+     een collega die blijft gokken -- en geen programma.
+
+     De echte rem staat in Supabase zelf, bij Authentication → Rate
+     Limits. Die hoort aan te staan; zie docs/HERSTEL.md en
+     DECISIONS.md. Zolang die er is, zijn drie woorden en een cijfer
+     genoeg. Valt die weg, dan moeten de wachtwoorden langer.
+
+     De telling staat per browser en per naam. Niet per account op de
+     server: dan kon iemand een juf buitensluiten door tien keer een
+     fout wachtwoord voor haar in te typen, en dat is een aanval op
+     zichzelf. */
+  var REM_NA = 5;                       // zoveel misslagen mogen vrijuit
+  var REM_TIJDEN = [10, 30, 60, 120, 300];   // daarna wachten, in seconden
+
+  function remLees(){
+    try { return JSON.parse(localStorage.getItem('kb_pogingen') || '{}'); }
+    catch (e) { return {}; }
+  }
+  function remSchrijf(p){
+    try { localStorage.setItem('kb_pogingen', JSON.stringify(p)); } catch (e) {}
+  }
+  function remSleutel(naam){ return String(naam || '').trim().toLowerCase(); }
+
+  /* Hoeveel seconden moet deze naam nog wachten? */
+  function remWacht(naam){
+    var p = remLees()[remSleutel(naam)];
+    if (!p || !p.tot) return 0;
+    return Math.max(0, Math.ceil((p.tot - Date.now()) / 1000));
+  }
+
+  function remMisgeslagen(naam){
+    var alles = remLees(), k = remSleutel(naam);
+    var p = alles[k] || { aantal: 0, tot: 0 };
+    p.aantal++;
+    if (p.aantal > REM_NA) {
+      var i = Math.min(p.aantal - REM_NA - 1, REM_TIJDEN.length - 1);
+      p.tot = Date.now() + REM_TIJDEN[i] * 1000;
+    }
+    alles[k] = p;
+    remSchrijf(alles);
+  }
+
+  function remGelukt(naam){
+    var alles = remLees();
+    delete alles[remSleutel(naam)];
+    remSchrijf(alles);
+  }
+
+  function wachttekst(sec){
+    if (sec >= 60) {
+      var m = Math.ceil(sec / 60);
+      return m === 1 ? 'een minuut' : m + ' minuten';
+    }
+    return sec + ' seconden';
   }
 
   function toonFout(e){
     if (e && e.offline) {
       meld('Geen verbinding met de server. Controleer het internet en probeer het opnieuw.');
     } else if (e && /invalid login|klopt niet|credentials/i.test(e.message || '')) {
-      meld('Dit e-mailadres of wachtwoord klopt niet.');
+      /* Niet zeggen wélke van de twee fout is. Zou er staan "die
+         gebruikersnaam kennen we niet", dan kan iemand met een lijstje
+         namen uitvinden wie hier werkt. */
+      meld('Deze gebruikersnaam of dit wachtwoord klopt niet.');
     } else if (e && /already registered|al een account/i.test(e.message || '')) {
-      meld('Er bestaat al een account met dit e-mailadres. Log in of vraag een nieuw wachtwoord aan.');
+      meld('Deze gebruikersnaam is al in gebruik. Kies een andere, of log in.');
     } else {
       meld((e && e.message) || 'Er ging iets mis. Probeer het nog eens.');
     }
@@ -182,8 +257,14 @@ body.inlog{
     if (bezig) return;
     var email = $('email').value.trim();
     var ww    = $('ww').value;
-    if (!email) { meld('Vul je e-mailadres in.'); $('email').focus(); return; }
+    if (!email) { meld('Vul je gebruikersnaam in.'); $('email').focus(); return; }
     if (!ww)    { meld('Vul je wachtwoord in.');  $('ww').focus();    return; }
+
+    var wacht = remWacht(email);
+    if (wacht > 0) {
+      meld('Te vaak misgeslagen. Probeer het over ' + wachttekst(wacht) + ' nog eens.');
+      return;
+    }
     if (stand === 'registreren' && ww.length < 8) {
       meld('Kies een wachtwoord van minstens acht tekens.'); $('ww').focus(); return;
     }
@@ -198,12 +279,26 @@ body.inlog{
 
     werk.then(function (uit) {
       if (uit && uit.bevestigen) {
-        meld('Bijna klaar. We hebben een link gestuurd naar ' + email +
-             '. Klik daarop om je account te bevestigen.', 'goed');
+        meld('Je account staat klaar, maar moet nog bevestigd worden. ' +
+             'Lukt inloggen niet, meld het dan bij de leverancier.', 'goed');
         return;
       }
+      remGelukt(email);
       return verder();
-    }).catch(toonFout).then(function () {
+    }).catch(function (e) {
+      /* Alleen tellen bij een afgewezen inlogpoging. Geen verbinding of
+         een server die piept is geen misslag -- dan zou een school met
+         slecht wifi zichzelf buitensluiten. */
+      if (e && !e.offline && /invalid login|klopt niet|credentials/i.test(e.message || '')) {
+        remMisgeslagen(email);
+        var nu = remWacht(email);
+        if (nu > 0) {
+          meld('Te vaak misgeslagen. Probeer het over ' + wachttekst(nu) + ' nog eens.');
+          return;
+        }
+      }
+      toonFout(e);
+    }).then(function () {
       bezig = false;
       document.querySelector('.kaart').classList.remove('bezig');
     });

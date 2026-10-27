@@ -3,11 +3,26 @@
 create schema if not exists auth;
 create schema if not exists storage;
 
+/* Supabase bewaart het wachtwoord gehasht in encrypted_password, met
+   bcrypt via pgcrypto. Hier deden we dat eerst in platte tekst in een
+   metaveld, en dat is prima zolang je alleen inloggen nabootst -- maar
+   zodra de app zélf een wachtwoord terugzet (public.wachtwoord_zetten)
+   zou je dat tegen een verzinsel testen. Dan werkt het hier en niet op
+   een echte school. Dus: hetzelfde veld, dezelfde hash. */
 create table if not exists auth.users (
   id uuid primary key default gen_random_uuid(),
   email text,
+  encrypted_password text,
   raw_user_meta_data jsonb default '{}'::jsonb
 );
+
+/* Supabase heeft pgcrypto in het schema 'extensions'. Hier staat het in
+   public; met dit schema erbij werkt dezelfde SQL op allebei. */
+create schema if not exists extensions;
+do $$ begin
+  create extension if not exists pgcrypto with schema extensions;
+exception when others then null;
+end $$;
 
 -- auth.uid() leest in Supabase de ingelogde gebruiker uit de aanvraag.
 -- Hier zetten we die met een instelling, zodat we per test kunnen doen
