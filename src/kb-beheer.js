@@ -1287,7 +1287,72 @@ panelen.pictos = function (v){
     p.appendChild(rooster);
   }
   v.appendChild(p);
+
+  if (window.KB_PICTOBANK) {
+    var b = paneel();
+    b.classList.add('bibliotheek');
+    b.appendChild(el('div', 'paneelkop', 'Bibliotheek'));
+    b.appendChild(el('p', 'hint',
+      KB_PICTOBANK.alle().length + ' getekende picto\'s die elke school heeft. Klik er een ' +
+      'aan om hem aan een kind te geven. Ze zijn ook uit te printen \u2014 handig voor op ' +
+      'een bakje, een kapstok of de deur van een hoek.'));
+    /* Een link, geen knop. Dit brengt je ergens heen, en dan hoort het
+       een link te zijn: middelklikken werkt, "openen in nieuw tabblad"
+       werkt, en een schermlezer zegt "link" in plaats van "knop". Als
+       knop met window.open was het bovendien niet te onderscheiden van
+       een dode knop -- zie test/knoppen.test.js, die daarover viel. */
+    var printrij = el('div', 'knoprij-onder');
+    var printlink = el('a', 'knop knop-stil knop-klein', 'Printvel openen');
+    printlink.href = 'pictos.html';
+    printlink.target = '_blank';
+    printlink.rel = 'noopener';
+    printrij.appendChild(printlink);
+    b.appendChild(printrij);
+    var zoekvak = el('div', 'veld');
+    zoekvak.style.marginTop = '12px';
+    var zoek = el('input');
+    zoek.type = 'search';
+    zoek.placeholder = 'Zoeken, bijvoorbeeld kat of trein';
+    zoekvak.appendChild(zoek);
+    var vak = el('div');
+    var vul = function () {
+      leeg(vak);
+      vak.appendChild(bankRooster(function (p) { geefAanKind(p); }, zoek.value));
+    };
+    zoek.addEventListener('input', vul);
+    b.appendChild(zoekvak);
+    b.appendChild(vak);
+    vul();
+    v.appendChild(b);
+  }
 };
+
+/* Aan wie geef je dit picto? Dit loopt vanuit de bibliotheek naar het
+   kind; vanuit het kind zelf loopt het andersom, via kiesPicto. */
+function geefAanKind(picto){
+  var k = KB.klas();
+  var kinderen = (k.leerlingen || []).filter(function (l) { return l.lid !== false; });
+  toonBlad(function (blad) {
+    blad.appendChild(bladTitel(picto.naam, 'Aan wie geef je dit picto?'));
+    if (!kinderen.length) {
+      blad.appendChild(el('p', 'hint',
+        'Er staan nog geen kinderen in deze groep. Voeg ze toe bij Leerlingen.'));
+    } else {
+      var rooster = el('div', 'leerlingrooster');
+      kinderen.forEach(function (l) {
+        rooster.appendChild(kindKaart(l, 54, function (kind) {
+          KB.koppelPicto(kind.id, picto.id, k);
+          bewaarOfKlaag(); sluitBlad(); teken();
+          meld(picto.naam + ' is nu van ' + kind.naam);
+        }));
+      });
+      blad.appendChild(rooster);
+    }
+    var rij = el('div', 'knoprij');
+    rij.appendChild(knop('Sluiten', 'stil', sluitBlad));
+    blad.appendChild(rij);
+  }, true);
+}
 
 function voegPictosToe(bestanden){
   var k = KB.klas(), klaar = 0, gelukt = 0;
@@ -1347,6 +1412,50 @@ function bewerkPicto(picto){
   });
 }
 
+/* ══════════════════════════════════════════════════════════
+   DE PICTOBANK
+   Vierenveertig getekende picto's die elke school heeft: dieren,
+   voertuigen en dingen die een kleuter herkent. Bedoeld voor een
+   school die geen eigen foto's gebruikt -- en dat is in de
+   testomgeving de standaard, want een foto van een kind is het
+   laatste wat je ergens heen wilt sturen.
+
+   Klikken zet de picto klaar in deze groep (KB.bankPicto) en geeft
+   hem door. Vanaf dat moment is het een gewone picto.
+   ══════════════════════════════════════════════════════════ */
+
+function bankRooster(bijKeuze, zoekwoord){
+  var k = KB.klas();
+  var vak = el('div');
+  if (!window.KB_PICTOBANK) return vak;
+  var zoek = (zoekwoord || '').trim().toLowerCase();
+
+  KB_PICTOBANK.GROEPEN.forEach(function (g) {
+    var erin = KB_PICTOBANK.alle().filter(function (p) {
+      return p.groep === g.id && (!zoek || p.naam.toLowerCase().indexOf(zoek) >= 0);
+    });
+    if (!erin.length) return;
+    vak.appendChild(el('div', 'paneelkop', g.naam));
+    var rooster = el('div', 'leerlingrooster');
+    erin.forEach(function (bron) {
+      var kaart = el('button', 'leerlingkaart');
+      var bol = el('div', 'picto-rond tekening');
+      bol.style.cssText = 'width:54px;height:54px;background-image:url("' +
+                          KB_PICTOBANK.dataUri(bron.id) + '")';
+      kaart.appendChild(bol);
+      kaart.appendChild(el('div', 'picto-naam', bron.naam));
+      kaart.addEventListener('click', function () {
+        var p = KB.bankPicto(bron.id, k);
+        if (p) bijKeuze(p);
+      });
+      rooster.appendChild(kaart);
+    });
+    vak.appendChild(rooster);
+  });
+  if (!vak.firstChild) vak.appendChild(leegBericht('Geen picto met die naam.'));
+  return vak;
+}
+
 function kiesPicto(bijKeuze){
   var k = KB.klas(), lijst = KB.pictos(k);
   toonBlad(function (blad) {
@@ -1367,6 +1476,28 @@ function kiesPicto(bijKeuze){
       });
       blad.appendChild(rooster);
     }
+
+    /* En de bank eronder. Die staat er altijd, ook als de school nog
+       niets van zichzelf heeft -- dat is precies waar hij voor is. */
+    if (window.KB_PICTOBANK) {
+      blad.appendChild(el('div', 'paneelkop', 'Uit de bibliotheek'));
+      var zoekvak2 = el('div', 'veld');
+      var zoekveld = el('input');
+      zoekveld.type = 'search';
+      zoekveld.placeholder = 'Zoeken, bijvoorbeeld kat of trein';
+      zoekvak2.appendChild(zoekveld);
+      var bankVak = el('div', 'bibliotheek');
+      var vulBank = function () {
+        leeg(bankVak);
+        bankVak.appendChild(bankRooster(function (p) { bijKeuze(p); sluitBlad(); },
+                                        zoekveld.value));
+      };
+      zoekveld.addEventListener('input', vulBank);
+      blad.appendChild(zoekvak2);
+      blad.appendChild(bankVak);
+      vulBank();
+    }
+
     var rij = el('div', 'knoprij');
     rij.appendChild(knop('Sluiten', 'stil', sluitBlad));
     blad.appendChild(rij);

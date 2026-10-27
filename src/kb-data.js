@@ -1595,6 +1595,38 @@ function isTekening(l, k){
   return false;
 }
 
+/* Een picto uit de bank klaarzetten in deze klas. Hij wordt een gewone
+   picto in k.pictos -- met een vast id en een vlaggetje erbij -- zodat
+   alles eromheen ongewijzigd werkt: het rondje op het bord, de kaart in
+   het beheer, het passen in plaats van bijsnijden, en werken zonder
+   wifi. Er is dus geen tweede manier om een kind een plaatje te geven,
+   en dat scheelt precies de fouten die zo'n tweede weg oplevert.
+
+   Het vlaggetje bank doet één ding: hij houdt de picto uit de opslag.
+   Hij staat in de code, dus er hoeft niets geüpload te worden en geen
+   school bewaart 44 keer dezelfde kilobyte. Zie KBMEDIA.alleMedia en
+   de functie pad() in kb-sync.js. */
+function bankPicto(bankId, k){
+  k = k || klas();
+  if (!global.KB_PICTOBANK) return null;
+  var bron = KB_PICTOBANK.van(bankId);
+  if (!bron) return null;
+  var id = 'bank-' + bankId;
+  var bestaat = pictos(k).filter(function (p) { return p.id === id; })[0];
+  if (bestaat) return bestaat;
+  var p = { id:id, naam:bron.naam, data:KB_PICTOBANK.dataUri(bankId),
+            bank:bankId, gemaakt:Date.now() };
+  pictos(k).push(p);
+  return p;
+}
+
+/* Een kind een picto uit de bank geven. */
+function koppelBankPicto(leerlingId, bankId, k){
+  k = k || klas();
+  var p = bankPicto(bankId, k);
+  return p ? koppelPicto(leerlingId, p.id, k) : false;
+}
+
 function koppelPicto(leerlingId, pictoId, k){
   k = k || klas();
   var l = leerling(leerlingId, k), p = pictoVan(pictoId, k);
@@ -2266,6 +2298,7 @@ global.KB = {
   hoekLeerlijnen: hoekLeerlijnen, hoekDomeinen: hoekDomeinen,
   stelLeerlijnenVoor: stelLeerlijnenVoor, dekkingVanHoeken: dekkingVanHoeken,
   pictos: pictos, voegPictoToe: voegPictoToe, pictoVan: pictoVan, koppelPicto: koppelPicto,
+  bankPicto: bankPicto, koppelBankPicto: koppelBankPicto,
   isTekening: isTekening, verkleinTekening: verkleinTekening, TEKENING_MAAT: TEKENING_MAAT
 };
 

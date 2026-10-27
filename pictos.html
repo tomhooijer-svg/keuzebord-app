@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="stijl/logo/ptje.svg">
+<title>Picto's om te printen</title>
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-174cdc47">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-174cdc47">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-174cdc47">
+<style>
+/* ── het printvel ─────────────────────────────────────────
+   Twee dingen tegelijk: een scherm om uit te kiezen, en papier
+   om op te hangen. Wat op papier niet hoort -- de knoppen, de
+   uitleg -- valt bij het printen weg; de rest is zo gemaakt dat
+   hij op A4 past zonder dat er een picto over de vouw valt. */
+body{ background: var(--vlak-2); padding: 0 0 60px; }
+.blad-mid{ max-width: 980px; margin: 0 auto; padding: 36px 20px 0; }
+.kop{ display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+.maatrij{ display:flex; gap:8px; align-items:center; margin: 18px 0 6px; flex-wrap:wrap; }
+.vel{
+  background: var(--vlak); border-radius: var(--rond-m); padding: 22px;
+  margin-top: 16px; box-shadow: 0 1px 2px rgba(20,28,44,.05);
+}
+.rooster{ display:grid; gap:14px; }
+.rooster.groot{ grid-template-columns: repeat(3, 1fr); }
+.rooster.midden{ grid-template-columns: repeat(5, 1fr); }
+.rooster.klein{ grid-template-columns: repeat(8, 1fr); }
+.kaartje{
+  border: 1.5px dashed var(--lijn); border-radius: 14px;
+  padding: 12px 6px 10px; text-align:center; break-inside: avoid;
+}
+.kaartje svg{ width: 100%; height: auto; max-height: 150px; display:block; }
+.rooster.midden .kaartje svg{ max-height: 96px; }
+.rooster.klein  .kaartje svg{ max-height: 62px; }
+.kaartje .n{
+  margin-top: 8px; font-size: .9rem; font-weight: 600; color: var(--inkt);
+  letter-spacing: -.01em;
+}
+.rooster.klein .kaartje .n{ font-size: .72rem; }
+.groepkop{ font-family: var(--letter-kop); font-size: 1.15rem; margin: 26px 0 2px; }
+
+@media print{
+  /* De knippellijn mag blijven -- daar knip je op. De rest van het
+     scherm hoort niet op papier. */
+  body{ background:#fff; padding:0; }
+  .nietprinten{ display:none !important; }
+  .blad-mid{ max-width:none; padding:0; }
+  .vel{ box-shadow:none; border-radius:0; padding:0; margin:0; }
+  .groepkop{ break-after: avoid; }
+  @page{ margin: 12mm; }
+}
+</style>
+</head>
+<body>
+
+<div class="blad-mid">
+  <div class="kop nietprinten">
+    <div>
+      <h1>Picto's om te printen</h1>
+      <p class="hint" id="aantal">—</p>
+    </div>
+    <div class="knoprij">
+      <button class="knop knop-primair" id="print">Printen</button>
+      <a class="knop knop-stil" href="beheer.html">Terug naar het beheer</a>
+    </div>
+  </div>
+
+  <div class="maatrij nietprinten">
+    <span class="hint">Formaat:</span>
+    <button class="knop knop-stil knop-klein" data-maat="groot">Groot &middot; 3 per rij</button>
+    <button class="knop knop-stil knop-klein" data-maat="midden">Middel &middot; 5 per rij</button>
+    <button class="knop knop-stil knop-klein" data-maat="klein">Klein &middot; 8 per rij</button>
+  </div>
+  <p class="hint nietprinten" id="uitleg"></p>
+
+  <div class="vel" id="vel"></div>
+</div>
+
+<script src="src/kb-pictobank.js?v=22oktober2026-174cdc47"></script>
+<script>
+/* Het vel tekenen. De svg komt rechtstreeks in de pagina -- niet als
+   background-image zoals in het bord -- want een achtergrondplaatje
+   wordt door veel browsers niet meegeprint, en dan houd je een vel met
+   lege kaders over. */
+(function () {
+  'use strict';
+  var B = window.KB_PICTOBANK;
+  var vel = document.getElementById('vel');
+  var maat = 'midden';
+
+  function teken(){
+    vel.innerHTML = '';
+    B.GROEPEN.forEach(function (g) {
+      var erin = B.alle().filter(function (p) { return p.groep === g.id; });
+      if (!erin.length) return;
+      var kop = document.createElement('div');
+      kop.className = 'groepkop';
+      kop.textContent = g.naam;
+      vel.appendChild(kop);
+      var rooster = document.createElement('div');
+      rooster.className = 'rooster ' + maat;
+      erin.forEach(function (p) {
+        var kaart = document.createElement('div');
+        kaart.className = 'kaartje';
+        kaart.innerHTML = B.svg(p.id, 120) +
+          '<div class="n">' + p.naam + '</div>';
+        rooster.appendChild(kaart);
+      });
+      vel.appendChild(rooster);
+    });
+  }
+
+  var uitleg = {
+    groot:  'Groot genoeg voor op de deur van een hoek of boven een bakje.',
+    midden: 'Voor aan de kapstok of op een naamkaartje.',
+    klein:  'Alles op één vel, om uit te kiezen.'
+  };
+  function zetMaat(m){
+    maat = m;
+    [].forEach.call(document.querySelectorAll('[data-maat]'), function (b) {
+      b.classList.toggle('aan', b.dataset.maat === m);
+    });
+    document.getElementById('uitleg').textContent = uitleg[m];
+    teken();
+  }
+  [].forEach.call(document.querySelectorAll('[data-maat]'), function (b) {
+    b.addEventListener('click', function () { zetMaat(b.dataset.maat); });
+  });
+
+  document.getElementById('aantal').textContent =
+    B.alle().length + " picto's. Kies een formaat en print het vel; knip op de stippellijn.";
+  document.getElementById('print').addEventListener('click', function () { window.print(); });
+  zetMaat('midden');
+})();
+</script>
+</body>
+</html>

@@ -80,7 +80,13 @@ function naarRijen(k){
     observaties:[]
   };
 
+  /* Waar het plaatje van dit kind of deze hoek staat. Meestal een pad in
+     de opslag; voor een picto uit de bank een naam uit de code, want die
+     wordt nergens heen gestuurd. Zie KB.bankPicto. */
   var pad = function (mediaId) {
+    if (!mediaId) return null;
+    var p = (k.pictos || []).filter(function (x) { return x.id === mediaId; })[0];
+    if (p && p.bank) return 'bank:' + p.bank;
     return global.KBMEDIA ? KBMEDIA.padVan(mediaId) : null;
   };
 

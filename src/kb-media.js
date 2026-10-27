@@ -62,6 +62,12 @@ function extensie(dataUri){
 function alleMedia(k){
   var uit = [];
   (k.pictos || []).forEach(function (p) {
+    /* Picto's uit de bank blijven hier buiten. Ze staan in de code
+       (src/kb-pictobank.js), dus opsturen zou betekenen dat elke school
+       dezelfde tekeningen nog een keer in haar opslag heeft staan. Op
+       een ander apparaat worden ze opnieuw uit de code opgebouwd; in de
+       synchronisatie staat alleen 'bank:<naam>'. */
+    if (p.bank) return;
     uit.push({ id:p.id, naam:p.naam, data:p.data, soort:'picto' });
   });
   (k.fotoLib || []).forEach(function (f) {
@@ -158,6 +164,15 @@ function haalBinnen(k, groepId){
 function koppelTerug(k, rijen){
   (rijen.leerlingen || []).forEach(function (r) {
     if (!r.foto_pad) return;
+    /* Een picto uit de bank: geen pad in de opslag maar een naam in de
+       code. Hier wordt hij opnieuw opgebouwd, zodat een kind op elk
+       apparaat hetzelfde plaatje heeft zonder dat er iets is verstuurd. */
+    if (r.foto_pad.indexOf('bank:') === 0) {
+      var kindB = (k.leerlingen || []).filter(function (l) {
+        return l.id === (KBSYNC.opLokaal(r.id) || r.id); })[0];
+      if (kindB) KB.koppelBankPicto(kindB.id, r.foto_pad.slice(5), k);
+      return;
+    }
     var mediaId = idBijPad(r.foto_pad);
     var picto = (k.pictos || []).filter(function (p) { return p.id === mediaId; })[0];
     if (!picto) return;
