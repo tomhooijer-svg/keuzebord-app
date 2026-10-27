@@ -10,9 +10,9 @@
 <!-- iPad/iPhone kijkt niet in manifest.json voor zijn icoon. -->
 <link rel="apple-touch-icon" href="stijl/logo/app-icoon-180.png">
 <title>Keuzebord — beheer</title>
-<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-b6db7e52">
-<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-b6db7e52">
-<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-b6db7e52">
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-c6088570">
 <style>
 
 
@@ -480,6 +480,33 @@
   .printbalk span{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   body{ background:#fff !important; }
 }
+
+/* ── de rondleiding ───────────────────────────────────────────────
+   Een kaart in de hoek, geen venster over het scherm. Zo kun je de
+   stap meteen doen terwijl je hem leest. */
+.rl-kaart{ position:fixed; right:20px; bottom:20px; z-index:900; width:330px;
+           max-width:calc(100vw - 32px);
+           background:var(--vlak); border-radius:var(--rond-m);
+           box-shadow:0 10px 34px rgba(20,28,44,.18), 0 2px 6px rgba(20,28,44,.08);
+           padding:16px 18px 18px; animation:rl-op .22s ease-out; }
+@keyframes rl-op{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
+@media (max-width:560px){ .rl-kaart{ right:12px; left:12px; bottom:12px; width:auto; } }
+.rl-kop{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.rl-teller{ font-size:.7rem; font-weight:600; letter-spacing:.06em;
+            text-transform:uppercase; color:var(--inkt-3); }
+.rl-weg{ font-size:1.1rem; line-height:1; color:var(--inkt-3); cursor:pointer;
+         background:none; border:0; padding:2px 6px; border-radius:8px; }
+.rl-weg:hover{ background:var(--vlak-2); color:var(--inkt); }
+.rl-titel{ font-size:1.05rem; font-weight:620; letter-spacing:-.02em;
+           color:var(--inkt); margin:6px 0 6px; }
+.rl-waar{ display:inline-block; font-size:.74rem; font-weight:600;
+          color:var(--accent); background:var(--accent-zacht);
+          padding:3px 10px; border-radius:var(--rond-vol); }
+.rl-tekst{ font-size:.88rem; line-height:1.56; color:var(--inkt-2); margin:11px 0 0; }
+.rl-bolletjes{ display:flex; gap:6px; margin:14px 0 0; }
+.rl-bol{ width:6px; height:6px; border-radius:50%; background:var(--lijn); }
+.rl-bol.aan{ background:var(--accent); }
+.rl-knoppen{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
 </style>
 </head>
 <body class="beheer">
@@ -526,22 +553,24 @@
 window.KB_DEMO = false;
 try { window.KB_DEMO = localStorage.getItem('kb_demo') === 'aan'; } catch (e) {}
 </script>
-<script src="src/kb-app.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-pictobank.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-data.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-testbanner.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-demo.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-supabase.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-media.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-sync.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-verbinding.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-app.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-pictobank.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-data.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-testbanner.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-demo.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-supabase.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-feedback.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-rondleiding.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-media.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-sync.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-verbinding.js?v=22oktober2026-c6088570"></script>
 <!-- het rekenwerk van de statistieken: Keuzebord toont het, Planbord
      gebruikt het voor het verslag -- allebei dus. -->
-<script src="src/kb-statistiek.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-beheer.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-statistiek.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-beheer.js?v=22oktober2026-c6088570"></script>
 <!-- schermen: het uitgeefscript laat hier per app staan wat erbij hoort -->
-<script src="src/kb-statistiekpaneel.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-docx.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-statistiekpaneel.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-docx.js?v=22oktober2026-c6088570"></script>
 <script>KB.laad(); KB.doelenZorg().then(BH.start);</script>
 </body>
 </html>

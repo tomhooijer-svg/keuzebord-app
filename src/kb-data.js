@@ -1910,19 +1910,45 @@ function bordthemaVariabelen(k){
 
    Leeg betekent Pixelplein. Dan zetten we niets, en gelden gewoon de
    waarden uit stijl/css/tokens.css. */
-var HUISSTIJL_STANDAARD = { inkt:'#0e2a56', grond:'#d8eafb', knop:'#b5182b' };
+var HUISSTIJL_STANDAARD = {
+  inkt:  '#0e2a56',   // tekst, koppen, het menu
+  grond: '#d8eafb',   // de ondergrond van elk scherm
+  knop:  '#b5182b',   // de knop waar je op moet drukken
+  warm:  '#fbe8b5',   // gekozen, aan de beurt, een badge
+  kaart: '#ffffff',   // de kaarten en tegels
+  rust:  '#fffbf2'    // de menubalk en rustige vlakken
+};
+/* De namen die op het scherm bij die kleuren staan, en wat ze doen.
+   Hier, zodat het scherm en de kleuren niet uit elkaar kunnen lopen. */
+var HUISSTIJL_UITLEG = [
+  ['inkt',  'Inkt',     'tekst en menu'],
+  ['grond', 'Grond',    'de achtergrond'],
+  ['knop',  'Knop',     'waar je op drukt'],
+  ['warm',  'Aan de beurt', 'gekozen en badges'],
+  ['kaart', 'Kaarten',  'hoeken en tegels'],
+  ['rust',  'Rustvlak', 'balken en randen']
+];
 var HUISSTIJL_SLEUTEL   = 'kb_huisstijl';
+var HUISSTIJL_LOGO      = 'kb_schoollogo';
+var KINDFOTOS_SLEUTEL   = 'kb_kindfotos';
 
 function geldigeKleur(h){
   return (typeof h === 'string' && /^#[0-9a-fA-F]{6}$/.test(h.trim())) ? h.trim().toLowerCase() : null;
 }
 
 /* Van drie kleuren naar de variabelen van het stijlpakket. */
+function huisstijlKleur(h, sleutel){
+  return geldigeKleur((h || {})[sleutel]) || HUISSTIJL_STANDAARD[sleutel];
+}
+
 function huisstijlVariabelen(h){
   h = h || {};
-  var inkt  = geldigeKleur(h.inkt)  || HUISSTIJL_STANDAARD.inkt;
-  var grond = geldigeKleur(h.grond) || HUISSTIJL_STANDAARD.grond;
-  var knop  = geldigeKleur(h.knop)  || HUISSTIJL_STANDAARD.knop;
+  var inkt  = huisstijlKleur(h, 'inkt');
+  var grond = huisstijlKleur(h, 'grond');
+  var knop  = huisstijlKleur(h, 'knop');
+  var warm  = huisstijlKleur(h, 'warm');
+  var kaart = huisstijlKleur(h, 'kaart');
+  var rust  = huisstijlKleur(h, 'rust');
   return {
     '--pp-color-ink':         inkt,
     '--pp-color-ink-muted':   mengMetWit(inkt, 0.28),
@@ -1931,14 +1957,61 @@ function huisstijlVariabelen(h){
     '--pp-color-ice':         grond,
     '--pp-color-ice-soft':    mengMetWit(grond, 0.45),
     '--pp-color-red':         knop,
-    '--pp-color-red-press':   donkerder(knop, 0.18)
+    '--pp-color-red-press':   donkerder(knop, 0.18),
+    '--pp-color-butter':      warm,
+    '--pp-color-butter-soft': mengMetWit(warm, 0.55),
+    '--pp-color-white':       kaart,
+    '--pp-color-paper':       rust
   };
+}
+
+/* ── is het nog te lezen? ─────────────────────────────────
+   Met zes kleuren in plaats van drie kan een school zichzelf
+   onleesbaar maken: donkergrijze tekst op donkerblauw, of wit op
+   botergeel. Dat gaan we niet verbieden -- het is hun school -- maar
+   we zeggen het wel.
+
+   Dit is de contrastverhouding uit de toegankelijkheidsrichtlijnen
+   (WCAG): 4,5 is de ondergrens voor gewone tekst, 3 voor grote. We
+   waarschuwen onder de 4,5 en noemen het slecht onder de 3. */
+function kleurHelderheid(hex){
+  var c = hexNaarRgb(hex).map(function (x) {
+    var v = x / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contrast(a, b){
+  var la = kleurHelderheid(a), lb = kleurHelderheid(b);
+  var hoog = Math.max(la, lb), laag = Math.min(la, lb);
+  return (hoog + 0.05) / (laag + 0.05);
+}
+
+/* De combinaties die er echt toe doen, met hun uitkomst. */
+function huisstijlLeesbaarheid(h){
+  var k = {
+    inkt:  huisstijlKleur(h, 'inkt'),  grond: huisstijlKleur(h, 'grond'),
+    knop:  huisstijlKleur(h, 'knop'),  warm:  huisstijlKleur(h, 'warm'),
+    kaart: huisstijlKleur(h, 'kaart'), rust:  huisstijlKleur(h, 'rust')
+  };
+  var paren = [
+    ['Tekst op de achtergrond', k.inkt, k.grond],
+    ['Tekst op een kaart',      k.inkt, k.kaart],
+    ['Tekst op een rustvlak',   k.inkt, k.rust],
+    ['Wit op de knop',          '#ffffff', k.knop],
+    ['Tekst op aan-de-beurt',   k.inkt, k.warm]
+  ];
+  return paren.map(function (p) {
+    var v = contrast(p[1], p[2]);
+    return { wat: p[0], waarde: Math.round(v * 10) / 10,
+             oordeel: v >= 4.5 ? 'goed' : (v >= 3 ? 'krap' : 'slecht') };
+  });
 }
 
 /* Heeft deze school iets van de standaard afwijkends ingesteld? */
 function huisstijlEigen(h){
   if (!h) return false;
-  return ['inkt','grond','knop'].some(function (sleutel) {
+  return Object.keys(HUISSTIJL_STANDAARD).some(function (sleutel) {
     var k = geldigeKleur(h[sleutel]);
     return !!k && k !== HUISSTIJL_STANDAARD[sleutel];
   });
@@ -1949,7 +2022,7 @@ function huisstijlEigen(h){
    school is opgehaald. Zonder die eerste zie je bij elke paginaopening
    eerst Pixelplein en dan de school -- een flits waar niemand om heeft
    gevraagd. */
-function zetHuisstijl(h){
+function zetHuisstijl(h, logo){
   if (typeof document === 'undefined' || !document.documentElement) return;
   var wortel = document.documentElement.style;
   var vars = huisstijlVariabelen(h);
@@ -1960,12 +2033,69 @@ function zetHuisstijl(h){
   try {
     if (huisstijlEigen(h)) localStorage.setItem(HUISSTIJL_SLEUTEL, JSON.stringify(h));
     else localStorage.removeItem(HUISSTIJL_SLEUTEL);
+    /* Het logo onthouden we apart. Het inlogscherm wil het laten zien
+       en weet op dat moment nog niet van welke school je bent -- je
+       bent immers nog niet binnen. Dit is dus hetzelfde vangnet als bij
+       de kleuren: wat deze browser de vorige keer zag.
+
+       logo === undefined betekent "niet meegegeven", en dan laten we
+       staan wat er stond. Alleen een uitdrukkelijke null of lege tekst
+       wist het; anders zou elke pagina die de kleuren zet het logo
+       weggooien. */
+    if (logo !== undefined) {
+      if (logo) localStorage.setItem(HUISSTIJL_LOGO, logo);
+      else localStorage.removeItem(HUISSTIJL_LOGO);
+    }
   } catch (e) {}
+}
+
+/* ── foto's van kinderen ──────────────────────────────────────────────
+   Een school zet zelf aan of er foto's van kinderen in de app mogen.
+   Standaard staat het uit: een foto van een kleuter is het zwaarste wat
+   dit product bewaart, en dat hoort een keuze te zijn die iemand maakt
+   en niet een stand die iemand overkomt.
+
+   Staat het uit, dan blijft een foto die er al is wél bewaard -- hij
+   komt alleen niet in beeld. Weggooien bij het omzetten van een
+   schakelaar is onomkeerbaar werk doen namens iemand anders. Wie de
+   foto's echt kwijt wil, haalt ze per kind weg.
+
+   Deze stand staat in de opslag van de browser en niet alleen in de
+   sessie: het bord in de klas start 's ochtends op en moet het meteen
+   weten, nog voordat de server antwoord heeft gegeven.
+
+   Weet de browser het niet (de werkplaats, waar geen school achter zit
+   en geen echt kind in staat), dan mag het gewoon. */
+function kindfotosAan(){
+  try {
+    var v = localStorage.getItem(KINDFOTOS_SLEUTEL);
+    if (v === 'nee') return false;
+    if (v === 'ja')  return true;
+  } catch (e) {}
+  return true;
+}
+function zetKindfotos(aan){
+  try {
+    if (aan === null || aan === undefined) localStorage.removeItem(KINDFOTOS_SLEUTEL);
+    else localStorage.setItem(KINDFOTOS_SLEUTEL, aan ? 'ja' : 'nee');
+  } catch (e) {}
+}
+
+/* Welk plaatje van een kind er op het scherm mag. Staan de foto's uit,
+   dan blijft een getekende picto gewoon staan -- dat is geen foto. */
+function kindbeeld(l, k){
+  if (!l || !l.image) return null;
+  if (kindfotosAan()) return l.image;
+  return isTekening(l, k) ? l.image : null;
 }
 
 /* Wat deze browser nog wist van de vorige keer. */
 function huisstijlOnthouden(){
   try { return JSON.parse(localStorage.getItem(HUISSTIJL_SLEUTEL) || 'null'); }
+  catch (e) { return null; }
+}
+function schoollogo(){
+  try { return localStorage.getItem(HUISSTIJL_LOGO) || null; }
   catch (e) { return null; }
 }
 
@@ -2262,9 +2392,13 @@ global.KB = {
   HOEKKLEUREN: HOEKKLEUREN, hoekKleur: hoekKleur, hoekTinten: hoekTinten,
   BORDTHEMAS: BORDTHEMAS, bordthemaVan: bordthemaVan, bordthemaNu: bordthemaNu,
   bordthemaVariabelen: bordthemaVariabelen,
-  HUISSTIJL_STANDAARD: HUISSTIJL_STANDAARD, geldigeKleur: geldigeKleur,
+  HUISSTIJL_STANDAARD: HUISSTIJL_STANDAARD, HUISSTIJL_UITLEG: HUISSTIJL_UITLEG,
+  geldigeKleur: geldigeKleur, huisstijlKleur: huisstijlKleur,
+  contrast: contrast, huisstijlLeesbaarheid: huisstijlLeesbaarheid,
   huisstijlVariabelen: huisstijlVariabelen, huisstijlEigen: huisstijlEigen,
   zetHuisstijl: zetHuisstijl, huisstijlOnthouden: huisstijlOnthouden,
+  kindfotosAan: kindfotosAan, zetKindfotos: zetKindfotos, kindbeeld: kindbeeld,
+  schoollogo: schoollogo,
   mengMetWit: mengMetWit, donkerder: donkerder,
   SFEREN: SFEREN, sfeerVan: sfeerVan, uiterlijk: uiterlijk,
   achtergrondCss: achtergrondCss, achtergrondUitBestand: achtergrondUitBestand,

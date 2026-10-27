@@ -564,9 +564,12 @@ input, select, textarea{ font: inherit; color: inherit; }
 
 /* In de zijbalk staat het p'tje vóór de groepsnaam. De kop wordt
    daarvoor een rij; de twee regels tekst blijven onder elkaar. */
-.zij-kop{ display: flex; align-items: center; gap: 11px; }
+.zij-kop{ display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
 .zij-kop .merkteken{ width: 28px; height: 28px; }
-.zij-kop .zij-kop-tekst{ min-width: 0; }
+.zij-kop .zij-kop-tekst{ min-width: 0; flex: 1; }
+/* De testchip hoort op een eigen regel onder de naam. Zonder dit wordt
+   hij een derde kolom en wringt de kop zichzelf in de knoop. */
+.zij-kop .testmerk{ flex-basis: 100%; margin-top: 2px; }
 
 /* Op het bord: klein, links van de groepsnaam, in de balk mee. */
 .balk-links .merkteken{ width: 26px; height: 26px; }
@@ -580,6 +583,15 @@ input, select, textarea{ font: inherit; color: inherit; }
 .huisstijlkleur input[type="color"]{
   width: 46px; height: 46px; border: none; border-radius: 50%;
   padding: 0; background: none; cursor: pointer;
+}
+/* Een randje eromheen, anders is een witte of roomwitte kleur op een
+   wit paneel een onzichtbaar vakje -- en dan lijkt het alsof die kleur
+   er niet is. */
+.huisstijlkleur{ position: relative; }
+.huisstijlkleur::before{
+  content: ''; position: absolute; top: 0; left: 50%; margin-left: -23px;
+  width: 46px; height: 46px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(20,28,44,.22); pointer-events: none;
 }
 .huisstijlkleur .n{ font-size: .78rem; font-weight: 600; color: var(--inkt-2); }
 .huisstijlkleur .s{ font-size: .7rem; color: var(--inkt-4); }
@@ -652,4 +664,51 @@ input, select, textarea{ font: inherit; color: inherit; }
 .kaartje-voet{
   margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--lijn);
   font-size: .8rem; color: var(--inkt-3); line-height: 1.55;
+}
+
+/* ── het logo van de school ───────────────────────────────
+   Op het inlogscherm en in de zijbalk, en nergens anders. Op het
+   bord is elke plek die geen hoek is er een te veel.
+
+   In de zijbalk neemt het de plaats in van het p'tje: voor een juf
+   is haar school belangrijker dan wie de app gemaakt heeft. Het
+   woordmerk onderin blijft wel staan. */
+.schoollogo{
+  flex: none; display: block; width: 34px; height: 34px;
+  object-fit: contain; border-radius: 6px;
+}
+.inlog .schoollogo{ width: 56px; height: 56px; margin: 0 auto 14px; }
+
+.logovak{
+  display: flex; align-items: center; gap: 14px;
+  margin: 12px 0 4px; min-height: 40px;
+}
+.logovoorbeeld{
+  width: 64px; height: 64px; object-fit: contain; flex: none;
+  border: 1px solid var(--lijn); border-radius: var(--rond-s);
+  padding: 6px; background: var(--vlak);
+}
+
+/* ── is het nog te lezen? ─────────────────────────────────
+   Hoort bij de zes kleuren in het schoolbeheer. Geen verbod maar
+   een mededeling: dit is hun school, maar zwijgen als de tekst
+   onleesbaar wordt zou geen dienst zijn. */
+.leesbaarheid{ margin-top: 14px; display: flex; flex-direction: column; gap: 5px; }
+.leesregel{
+  font-size: .82rem; padding: 7px 11px; border-radius: var(--rond-s);
+  background: var(--vlak-2); color: var(--inkt-2);
+}
+.leesregel.goed{ color: var(--goed); }
+.leesregel.krap{ background: #fdf4dc; color: var(--let-op); }
+.leesregel.slecht{ background: #fbe9ea; color: var(--stop); font-weight: 600; }
+
+/* het voorbeeldje bij de kleurkiezers */
+.huisstijlproef .pkaart{
+  border-radius: var(--rond-s); padding: 10px 12px; margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(20,28,44,.08);
+  font-size: .84rem;
+}
+.huisstijlproef .pbeurt{
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  font-size: .75rem; font-weight: 600;
 }

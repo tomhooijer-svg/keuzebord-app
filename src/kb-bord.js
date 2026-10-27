@@ -89,7 +89,10 @@ function maakPicto(leerling, opties){
   /* Zie pictoBol in kb-beheer.js: een tekening past zich in het rondje, een
      foto vult het. Met vullen sneed het bord de plaatjes aan alle kanten
      af -- van een lieveheersbeestje bleef een rode vlek over. */
-  var tekening = leerling.image && KB.isTekening(leerling);
+  /* KB.kindbeeld en niet leerling.image: staan de foto's van kinderen
+     uit op deze school, dan komt een foto hier niet in beeld. */
+  var kindplaatje = KB.kindbeeld(leerling);
+  var tekening = kindplaatje && KB.isTekening(leerling);
   if (tekening) rond.classList.add('tekening');
   /* Let op: backgroundColor, niet background. De verkorte vorm zet álle
      achtergrond-eigenschappen terug op hun beginwaarde -- ook
@@ -98,8 +101,8 @@ function maakPicto(leerling, opties){
      ware grootte. Een picto van 260 bij 180 in een rondje van 62: je zag
      een uitvergrote hoek. Dát was wat er misging op het bord. */
   rond.style.backgroundColor = tekening ? '#fff' : (leerling.kleur || '#3b6ff0');
-  if (leerling.image) {
-    rond.style.backgroundImage = 'url(' + leerling.image + ')';
+  if (kindplaatje) {
+    rond.style.backgroundImage = 'url(' + kindplaatje + ')';
   } else {
     rond.textContent = (leerling.naam || '?').charAt(0).toUpperCase();
   }
@@ -425,10 +428,11 @@ function maakHoekKaart(hoek, index, k, b, indeling){
     if (!l) return;
     var plek = el('div', 'plek gereserveerd');
     var bol = el('div', 'picto-rond');
-    if (KB.isTekening(l)) bol.classList.add('tekening');
-    bol.style.backgroundColor = KB.isTekening(l) ? '#fff' : (l.kleur || '#3b6ff0');
+    var beeld = KB.kindbeeld(l);
+    if (beeld && KB.isTekening(l)) bol.classList.add('tekening');
+    bol.style.backgroundColor = (beeld && KB.isTekening(l)) ? '#fff' : (l.kleur || '#3b6ff0');
     bol.style.setProperty('--kindkleur', l.kleur || '#3b6ff0');
-    if (l.image) bol.style.backgroundImage = 'url(' + l.image + ')';
+    if (beeld) bol.style.backgroundImage = 'url(' + beeld + ')';
     else bol.textContent = (l.naam || '?').charAt(0).toUpperCase();
     plek.appendChild(bol);
     plek.title = l.naam + ' is nu aan de beurt';
@@ -1412,6 +1416,16 @@ function toonMenu(){
       knop.addEventListener('click', paar[1]);
       lijst.appendChild(knop);
     });
+
+    /* Iets melden staat hier en niet op het bord zelf. Dit menu zit al
+       achter de pincode, dus het is al van de leerkracht -- en op het
+       bord is elke plek die geen hoek is er een te veel. */
+    if (window.KBFEEDBACK && window.SB && SB.ingelogd && SB.ingelogd()) {
+      var melden = el('button', 'knop knop-stil', 'Iets melden');
+      melden.id = 'knop-melden';
+      melden.addEventListener('click', function () { sluitBlad(); KBFEEDBACK.open(); });
+      lijst.appendChild(melden);
+    }
 
     var beheer = el('a', 'knop knop-primair', 'Naar beheer');
     beheer.href = 'beheer.html';

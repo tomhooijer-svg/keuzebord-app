@@ -389,6 +389,45 @@ alter table public.scholen add column if not exists modules jsonb not null defau
    hem dus met rust. */
 alter table public.scholen add column if not exists huisstijl jsonb not null default '{}'::jsonb;
 
+/* Het logo van de school, als verkleind plaatje in de rij zelf.
+
+   Waarom niet in de opslag, waar alle andere plaatjes staan: het logo
+   hoort op het inlogscherm, en daar is nog niemand binnen. De
+   opslagregels vragen om een school, dus een logo daar is onzichtbaar
+   precies op de plek waar het moet staan. Hier komt het mee met de rij
+   die elke pagina toch al ophaalt.
+
+   Dat kan alleen omdat het klein is. De app verkleint naar 256 pixels
+   en weigert alles boven de 60 kB -- een logo dat zwaarder is dan de
+   hele app zou een merkwaardige ruil zijn. */
+alter table public.scholen add column if not exists logo text;
+
+/* Mogen er foto's van kinderen in de app? Standaard niet.
+
+   Dat is de kant waar je op moet vallen: een foto van een kleuter is
+   het zwaarste wat dit product kan bewaren, en een school die er niet
+   over heeft nagedacht hoort hem niet per ongeluk te gebruiken. Wie
+   hem wil, zet hem aan -- en krijgt daarbij te lezen wat dat betekent.
+
+   Scholen die al foto's gebruikten houden ze. Anders verdwijnt er bij
+   het bijwerken van de software zonder aankondiging een gezicht van het
+   bord, en dat is precies het soort verrassing waar een school haar
+   vertrouwen op verliest. Dit bijwerken gebeurt één keer: bij een
+   tweede keer draaien bestaat de kolom al, en dan zou het een school
+   overrulen die hem zelf heeft uitgezet. */
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'scholen'
+                    and column_name = 'kindfotos') then
+    alter table public.scholen add column kindfotos boolean not null default false;
+    update public.scholen s set kindfotos = true
+     where exists (select 1 from public.leerlingen l
+                    join public.groepen g on g.id = l.groep_id
+                   where g.school_id = s.id and coalesce(l.foto_pad, '') <> '');
+  end if;
+end $$;
+
 -- ── inloggen met een gebruikersnaam ───────────────────────────────────
 /* Een testleerkracht krijgt een kaartje in haar handen en moet binnen
    een minuut binnen zijn. Een e-mailadres intypen op een digibord is
@@ -854,6 +893,37 @@ create table if not exists public.handelingen (
 create index if not exists handelingen_per_school
   on public.handelingen (school_id, tijd desc);
 
+/* ── wat een leerkracht ons laat weten ────────────────────────────────
+   Eén knop in de app: er klopt iets niet, ik heb een idee, ik snap iets
+   niet. Wat er automatisch bij gaat is wat een melding bruikbaar maakt
+   zonder dat iemand het hoeft op te schrijven: welk scherm, welke
+   uitgave, wat voor apparaat.
+
+   Wat er met opzet NIET bij gaat: geen schermafdruk en geen enkel
+   gegeven van een kind. Een schermafdruk van een bord is een foto van
+   een klas met namen erop, en die hoort niet bij de leverancier terecht
+   te komen omdat iemand meldt dat een knop niet werkt.
+
+   De notitie is van de platformbeheerder en wordt door niemand anders
+   gelezen; vandaar dat deze tabel alleen voor hem leesbaar is. */
+create table if not exists public.feedback (
+  id         uuid primary key default gen_random_uuid(),
+  school_id  uuid references public.scholen(id) on delete set null,
+  wie        uuid references public.profielen(id) on delete set null,
+  soort      text not null default 'probleem'
+               check (soort in ('probleem','idee','vraag','compliment')),
+  tekst      text not null,
+  contact    text not null default '',
+  scherm     text not null default '',
+  versie     text not null default '',
+  apparaat   text not null default '',
+  stand      text not null default 'nieuw'
+               check (stand in ('nieuw','opgepakt','afgehandeld','afgewezen')),
+  notitie    text not null default '',
+  tijd       timestamptz not null default now()
+);
+create index if not exists feedback_op_tijd on public.feedback (tijd desc);
+
 -- ═══════════════════════════════════════════════════════════════════════
 --  Wie mag wat
 -- ═══════════════════════════════════════════════════════════════════════
@@ -948,7 +1018,7 @@ begin
     'media','hoeken','themas','thema_hoeken','thema_doelen','borden','bord_hoeken','groep_doelen',
     'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
     'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen',
-    'ondersteuning','handelingen']
+    'ondersteuning','handelingen','feedback']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('alter table public.%I force row level security', t);
@@ -1235,6 +1305,20 @@ create policy "logboek lezen" on public.handelingen
                     or public.ben_platformbeheerder());
 create policy "logboek bijschrijven" on public.handelingen
   for insert with check (wie = auth.uid());
+
+/* Iedereen die is ingelogd mag iets sturen, op zijn eigen naam. Lezen
+   doet alleen de platformbeheerder: er staat een notitie in die van hem
+   is, en een melding kan over een collega gaan. Een schoolbeheerder die
+   meeleest zou maken dat niemand meer iets durft te sturen. */
+create policy "feedback sturen" on public.feedback
+  for insert with check (wie = auth.uid());
+create policy "feedback lezen" on public.feedback
+  for select using (public.ben_platformbeheerder());
+create policy "feedback behandelen" on public.feedback
+  for update using (public.ben_platformbeheerder())
+  with check (public.ben_platformbeheerder());
+create policy "feedback opruimen" on public.feedback
+  for delete using (public.ben_platformbeheerder());
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Nieuwe accounts
@@ -1666,6 +1750,180 @@ begin
   return jsonb_build_object('naam', echte_naam, 'weg', aantallen);
 end $$;
 
+/* ── accounts beheren ────────────────────────────────────────────────
+   Een rol aanpassen, iemand naar een andere school verhuizen, of een
+   account echt weghalen. Alleen de platformbeheerder, en nooit bij
+   zichzelf -- wie zijn eigen rol kan afpakken kan zichzelf buitensluiten
+   en dan is er niemand meer die het terugzet.
+
+   Drie losse functies en niet één grote. Dat is met opzet: ze hebben
+   elk hun eigen gevaar, en een functie die "van alles wat" doet is een
+   functie waarvan je bij het lezen niet meer ziet wat hij afschermt.
+
+   Eén regel keert in alle drie terug: een school houdt ten minste één
+   schoolbeheerder. Een school zonder beheerder is een school waar
+   niemand meer collega's kan toevoegen of groepen kan regelen, en dat
+   merkt niemand tot het moment dat het nodig is. Het is te herstellen
+   -- maak eerst iemand anders beheerder -- en daarom mag het tegenhouden. */
+
+create or replace function public.laatste_beheerder(wie uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.profielen p
+     where p.id = wie and p.rol = 'schoolbeheerder' and p.school_id is not null
+       and not exists (select 1 from public.profielen q
+                        where q.school_id = p.school_id
+                          and q.rol = 'schoolbeheerder' and q.id <> p.id));
+$$;
+
+create or replace function public.account_rol(wie uuid, nieuwe_rol text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p public.profielen%rowtype;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder past rollen aan.';
+  end if;
+  if wie = auth.uid() then
+    raise exception 'Je eigen rol kun je niet aanpassen.';
+  end if;
+  if nieuwe_rol not in ('leerkracht','schoolbeheerder','platformbeheerder') then
+    raise exception 'Die rol bestaat niet.';
+  end if;
+  select * into p from public.profielen where id = wie;
+  if p.id is null then
+    raise exception 'Dat account bestaat niet.';
+  end if;
+  if p.rol = nieuwe_rol then
+    return jsonb_build_object('naam', p.naam, 'rol', p.rol);
+  end if;
+  if nieuwe_rol <> 'schoolbeheerder' and public.laatste_beheerder(wie) then
+    raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
+  end if;
+
+  /* Een platformbeheerder hoort bij geen school. Zou hij dat wel doen,
+     dan ziet hij op één school alles én overal de aantallen, en dan is
+     niet meer uit te leggen wat hij waar mag. Zijn groepen gaan mee weg. */
+  if nieuwe_rol = 'platformbeheerder' then
+    delete from public.groep_leden where profiel_id = wie;
+  end if;
+
+  perform set_config('kb.systeem', 'aan', true);
+  update public.profielen
+     set rol = nieuwe_rol,
+         school_id = case when nieuwe_rol = 'platformbeheerder' then null else school_id end
+   where id = wie;
+  perform set_config('kb.systeem', '', true);
+
+  perform public.noteer('rol gewijzigd', p.school_id,
+                        coalesce(nullif(p.naam, ''), p.gebruikersnaam, p.email),
+                        jsonb_build_object('van', p.rol, 'naar', nieuwe_rol));
+  return jsonb_build_object('naam', p.naam, 'rol', nieuwe_rol);
+end $$;
+
+/* Iemand naar een andere school. Haar groepen gaan niet mee: die zijn
+   van de oude school en een koppeling die blijft staan zou haar bij
+   kinderen laten die niet meer de hare zijn. Dat staat ook met zoveel
+   woorden in het scherm, want het is precies wat iemand vergeet. */
+create or replace function public.account_verplaatsen(wie uuid, nieuwe_school uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p public.profielen%rowtype;
+        nieuwe_naam text;
+        weg int;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder verplaatst een account.';
+  end if;
+  if wie = auth.uid() then
+    raise exception 'Je kunt jezelf niet verplaatsen.';
+  end if;
+  select * into p from public.profielen where id = wie;
+  if p.id is null then
+    raise exception 'Dat account bestaat niet.';
+  end if;
+  if p.rol = 'platformbeheerder' then
+    raise exception 'Een platformbeheerder hoort bij geen school. Geef eerst een andere rol.';
+  end if;
+  if nieuwe_school is not null then
+    select naam into nieuwe_naam from public.scholen where id = nieuwe_school;
+    if nieuwe_naam is null then
+      raise exception 'Die school bestaat niet.';
+    end if;
+  end if;
+  if p.school_id is not distinct from nieuwe_school then
+    return jsonb_build_object('naam', p.naam, 'school', nieuwe_naam, 'groepen_weg', 0);
+  end if;
+  if public.laatste_beheerder(wie) then
+    raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
+  end if;
+
+  delete from public.groep_leden where profiel_id = wie;
+  get diagnostics weg = row_count;
+
+  perform set_config('kb.systeem', 'aan', true);
+  update public.profielen set school_id = nieuwe_school where id = wie;
+  perform set_config('kb.systeem', '', true);
+
+  /* Twee regels in het logboek, want beide scholen hebben er mee te
+     maken: de ene raakt iemand kwijt, de andere krijgt er iemand bij. */
+  if p.school_id is not null then
+    perform public.noteer('account verplaatst', p.school_id,
+                          coalesce(nullif(p.naam, ''), p.gebruikersnaam, p.email),
+                          jsonb_build_object('naar', nieuwe_naam, 'groepen_weg', weg));
+  end if;
+  if nieuwe_school is not null then
+    perform public.noteer('account erbij gekomen', nieuwe_school,
+                          coalesce(nullif(p.naam, ''), p.gebruikersnaam, p.email),
+                          jsonb_build_object('rol', p.rol));
+  end if;
+  return jsonb_build_object('naam', p.naam, 'school', nieuwe_naam, 'groepen_weg', weg);
+end $$;
+
+/* Een account echt weghalen. Niet "op inactief", maar weg: het rijtje
+   in auth.users gaat eruit en het profiel en de groepskoppelingen gaan
+   daar vanzelf achteraan.
+
+   Wat níét weggaat: de kinderen, de borden en wat er op die borden is
+   gebeurd. Die hangen aan een groep en aan een school, niet aan de
+   leerkracht die toevallig was ingelogd. En het logboek blijft: dat een
+   account weg is, is zelf iets om terug te kunnen lezen. */
+create or replace function public.account_verwijderen(wie uuid)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p public.profielen%rowtype;
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder verwijdert een account.';
+  end if;
+  if wie = auth.uid() then
+    raise exception 'Je kunt je eigen account niet verwijderen.';
+  end if;
+  select * into p from public.profielen where id = wie;
+  if p.id is null then
+    raise exception 'Dat account bestaat niet.';
+  end if;
+  if public.laatste_beheerder(wie) then
+    raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
+  end if;
+
+  perform public.noteer('account verwijderd', p.school_id,
+                        coalesce(nullif(p.naam, ''), p.gebruikersnaam, p.email),
+                        jsonb_build_object('rol', p.rol, 'gebruikersnaam', p.gebruikersnaam));
+  delete from auth.users where id = wie;
+  return jsonb_build_object('naam', coalesce(nullif(p.naam, ''), p.gebruikersnaam));
+end $$;
+
+/* Deze drie zijn van de platformbeheerder. De functies controleren dat
+   zelf, maar PostgreSQL geeft van zichzelf uitvoerrecht aan iedereen --
+   en een deur die op slot zit achter een deur die openstaat is een deur
+   die openstaat zodra iemand de binnenste vergeet. */
+revoke execute on function public.laatste_beheerder(uuid)        from public;
+revoke execute on function public.account_rol(uuid, text)        from public;
+revoke execute on function public.account_verplaatsen(uuid, uuid) from public;
+revoke execute on function public.account_verwijderen(uuid)      from public;
+grant  execute on function public.laatste_beheerder(uuid)        to authenticated;
+grant  execute on function public.account_rol(uuid, text)        to authenticated;
+grant  execute on function public.account_verplaatsen(uuid, uuid) to authenticated;
+grant  execute on function public.account_verwijderen(uuid)      to authenticated;
+
 /* Een voorbeeldschool: een hele school met verzonnen kinderen, om aan
    iemand te laten zien hoe het werkt.
 
@@ -1742,6 +2000,74 @@ language sql stable security definer set search_path = public as $$
    where public.ben_platformbeheerder()
    order by s.naam;
 $$;
+
+/* ── feedback sturen ─────────────────────────────────────────────────
+   Via een functie en niet rechtstreeks, om twee redenen. De app kan zo
+   niet zelf bepalen wie de afzender is of bij welke school het hoort --
+   dat vult de database in. En de tekst wordt hier afgekapt op iets wat
+   een mens nog leest; een melding van een megabyte is geen melding.
+
+   Wat hier bewust niet gebeurt: er gaat geen mail uit. Dat kan later met
+   een Edge Function, maar een mailserver die stilletjes stukgaat is een
+   postbus waarvan niemand merkt dat hij vol zit. Nu staat alles in één
+   tabel die je zelf nakijkt. Zie DECISIONS.md. */
+create or replace function public.feedback_sturen(soort text, tekst text,
+                                                  contact  text default '',
+                                                  scherm   text default '',
+                                                  versie   text default '',
+                                                  apparaat text default '')
+returns uuid language plpgsql security definer set search_path = public as $$
+declare nieuw uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Je moet ingelogd zijn.';
+  end if;
+  if coalesce(trim(tekst), '') = '' then
+    raise exception 'Schrijf even op wat er aan de hand is.';
+  end if;
+  if soort not in ('probleem','idee','vraag','compliment') then
+    soort := 'probleem';
+  end if;
+
+  insert into public.feedback (school_id, wie, soort, tekst, contact,
+                               scherm, versie, apparaat)
+  values (public.mijn_school(), auth.uid(), soort,
+          left(trim(tekst), 4000), left(trim(coalesce(contact, '')), 200),
+          left(coalesce(scherm, ''), 120), left(coalesce(versie, ''), 80),
+          left(coalesce(apparaat, ''), 200))
+  returning id into nieuw;
+  return nieuw;
+end $$;
+
+/* Een melding afhandelen: de stand verzetten en er een notitie bij
+   schrijven. Alleen de platformbeheerder, en het gaat door een functie
+   zodat de notitie en de stand in één stap gaan -- een stand die op
+   'afgehandeld' staat zonder dat erbij staat wat je hebt gedaan, is
+   over een maand niets meer waard. */
+create or replace function public.feedback_behandelen(welke uuid,
+                                                      nieuwe_stand text,
+                                                      nieuwe_notitie text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.ben_platformbeheerder() then
+    raise exception 'Alleen de platformbeheerder behandelt meldingen.';
+  end if;
+  if nieuwe_stand not in ('nieuw','opgepakt','afgehandeld','afgewezen') then
+    raise exception 'Die stand bestaat niet.';
+  end if;
+  update public.feedback
+     set stand = nieuwe_stand,
+         notitie = coalesce(left(nieuwe_notitie, 2000), notitie)
+   where id = welke;
+  if not found then
+    raise exception 'Die melding bestaat niet.';
+  end if;
+end $$;
+
+revoke execute on function public.feedback_sturen(text, text, text, text, text, text) from public;
+revoke execute on function public.feedback_behandelen(uuid, text, text)               from public;
+grant  execute on function public.feedback_sturen(text, text, text, text, text, text) to authenticated;
+grant  execute on function public.feedback_behandelen(uuid, text, text)               to authenticated;
 
 insert into storage.buckets (id, name, public)
 values ('kb-media', 'kb-media', false)

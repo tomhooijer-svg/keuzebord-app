@@ -79,17 +79,32 @@ function datum(t){
 var ONDERDELEN = [
   { id:'scholen', naam:'Scholen',
     icoon:'M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5' },
+  { id:'accounts', naam:'Accounts',
+    icoon:'M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.5 4.3a3.5 3.5 0 0 1 0 6.4' },
+  { id:'feedback', naam:'Feedback',
+    icoon:'M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-3.3A8.4 8.4 0 1 1 21 11.5z' },
   { id:'databank', naam:'Hoeken-databank',
     icoon:'M4 7h16v12H4zM4 7l2-3h12l2 3M9 12h6' },
   { id:'logboek', naam:'Logboek',
     icoon:'M4 5h16M4 12h16M4 19h10' }
 ];
 var huidig = 'scholen';
+var ikZelf = null;       // het eigen profiel, om jezelf geen knoppen te geven
 var cijfers  = [];
 var deuren   = [];
 var logboek  = [];
 var databank = [];
 var scholenRij = [];     // de scholen zelf, voor de modules
+var mensen   = [];       // alle accounts, over alle scholen heen
+var feedback = [];       // wat de scholen ons hebben laten weten
+
+/* Waar de accountslijst op dit moment op staat. Dit blijft staan terwijl
+   je in een blad iets aanpast: heb je net op "leerkracht van De Regenboog"
+   gefilterd en zet je er een rol om, dan sta je daarna weer in diezelfde
+   lijst en niet bovenaan bij alles. */
+var zoek        = '';
+var filterSchool = '';   // '' = alle, 'geen' = zonder school, anders een school-id
+var filterRol    = '';   // '' = alle
 
 function haalAlles(){
   return Promise.all([
@@ -97,13 +112,18 @@ function haalAlles(){
     SB.lees('scholen', { kies:'id,naam,modules,huisstijl' }),
     SB.roep('databankcijfers', {}),
     SB.lees('ondersteuning', { kies:'*', volgorde:'tot.desc', hoeveel:50 }),
-    SB.lees('handelingen',   { kies:'*', volgorde:'tijd.desc', hoeveel:40 })
+    SB.lees('handelingen',   { kies:'*', volgorde:'tijd.desc', hoeveel:40 }),
+    SB.lees('profielen', { kies:'id,naam,rol,school_id,gebruikersnaam,email,aangemaakt',
+                           volgorde:'naam' }),
+    SB.lees('feedback', { kies:'*', volgorde:'tijd.desc', hoeveel:300 })
   ]).then(function (uit) {
     cijfers  = uit[0] || [];
     scholenRij = uit[1] || [];
     databank = uit[2] || [];
     deuren   = uit[3] || [];
     logboek  = uit[4] || [];
+    mensen   = uit[5] || [];
+    feedback = uit[6] || [];
   });
 }
 
@@ -157,6 +177,8 @@ function teken(){
   meekijkBalk();
   var v = leeg($('inhoud'));
   if (huidig === 'meekijken') return tekenMeekijken(v);
+  if (huidig === 'accounts')  return tekenAccounts(v);
+  if (huidig === 'feedback')  return tekenFeedback(v);
   if (huidig === 'logboek')   return tekenLogboek(v);
   if (huidig === 'databank')  return tekenDatabank(v);
   return tekenScholen(v);
@@ -363,6 +385,19 @@ function tekenScholen(v){
     var kaart = el('div', 'schoolkaart');
     kaart.appendChild(el('div', 'schoolnaam', c.naam));
 
+    /* Een school zonder schoolbeheerder staat stil zodra er iets moet:
+       er is dan niemand die collega's kan toevoegen of groepen kan
+       regelen. Dat is precies het soort ding dat niemand opmerkt tot het
+       te laat is, dus het staat op de kaart. */
+    var heeftBeheerder = mensen.some(function (m) {
+      return m.school_id === c.school_id && m.rol === 'schoolbeheerder';
+    });
+    if (!heeftBeheerder) {
+      var zonder = el('div', 'deur geenbeheer', 'Geen schoolbeheerder');
+      zonder.title = 'Er is hier niemand die collega\u2019s kan toevoegen of groepen kan regelen.';
+      kaart.appendChild(zonder);
+    }
+
     var deur = deurVan(c.school_id);
     if (deur) {
       kaart.appendChild(el('div', 'deur',
@@ -409,8 +444,14 @@ function tekenScholen(v){
 
     var acties = el('div', 'knoprij');
     if (deur) acties.appendChild(knop('Meekijken', 'stil', function () { kiesGroep(c, deur); }));
-    acties.appendChild(knop('Accounts', 'stil', function () { toonAccounts(c); }));
-    acties.appendChild(knop('Opheffen', 'stil', function () { verwijderSchool(c); }));
+    acties.appendChild(knop('Accounts', 'stil', function () {
+      filterSchool = c.school_id; filterRol = ''; zoek = '';
+      huidig = 'accounts'; tekenMenu(); teken();
+    }));
+    acties.appendChild(knop('Hernoemen', 'stil', function () { toonSchoolAanpassen(c); }));
+    var op = knop('Opheffen', 'stil', function () { verwijderSchool(c); });
+    op.classList.add('weg');
+    acties.appendChild(op);
     kaart.appendChild(acties);
     rooster.appendChild(kaart);
   });
@@ -723,7 +764,9 @@ function toonNieuweSchool(){
         }, function (err) {
           maak.disabled = false;
           maak.textContent = 'Aanmaken';
-          meld('Dat lukte niet: ' + (err && err.message));
+          meld(SB.isTeVaak(err)
+            ? 'Supabase laat maar dertig aanmeldingen per vijf minuten toe vanaf \u00e9\u00e9n plek. Wacht vijf minuten en ga dan verder \u2014 er is niets misgegaan.'
+            : 'Dat lukte niet: ' + (err && err.message));
         });
     });
     rij.appendChild(maak);
@@ -760,60 +803,10 @@ function toonKaartje(gegevens){
   });
 }
 
-/* ── de accounts van een school ───────────────────────────────────────
-   Wie er bij een school hoort, en hun wachtwoord terug kunnen zetten.
-   Dit is het enige wat de leverancier van een school mag zien zonder
-   dat die school een deur openzet: namen en rollen, geen kinderen,
-   geen borden, geen statistieken. Zie docs/ROLLEN.md.
-
-   Waarom het er is: raakt de schoolbeheerder haar wachtwoord kwijt,
-   dan is er verder niemand die haar kan helpen -- en een school waar
-   niemand meer bij kan is een school die stilstaat. Een wachtwoord
-   zetten geeft geen inzage; het maakt alleen een nieuw kaartje. */
-function toonAccounts(c){
-  toonBlad(function (blad) {
-    var t = el('div', null, 'Accounts van ' + c.naam);
-    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
-    blad.appendChild(t);
-    blad.appendChild(el('p', 'hint',
-      'Namen en rollen \u2014 verder niets. Een nieuw wachtwoord maakt het oude ' +
-      'meteen onbruikbaar en levert een kaartje op om uit te printen.'));
-
-    var vak = el('div');
-    vak.appendChild(el('p', 'hint', 'Bezig met ophalen\u2026'));
-    blad.appendChild(vak);
-
-    var rij = el('div', 'knoprij-onder');
-    rij.appendChild(knop('Sluiten', 'stil', sluitBlad));
-    blad.appendChild(rij);
-
-    SB.lees('profielen', { kies:'id,naam,rol,gebruikersnaam',
-                           waar:{ school_id:'eq.' + c.school_id },
-                           volgorde:'rol,naam' }).then(function (mensen) {
-      vak.innerHTML = '';
-      if (!(mensen || []).length) {
-        vak.appendChild(el('p', 'hint', 'Er hoort nog niemand bij deze school.'));
-        return;
-      }
-      mensen.forEach(function (m) {
-        var r = el('div', 'ledenrij');
-        var links = el('div');
-        links.appendChild(el('div', 'ledennaam', m.naam || m.gebruikersnaam || '\u2014'));
-        links.appendChild(el('div', 'ledenmail',
-          (m.gebruikersnaam ? m.gebruikersnaam + ' \u00b7 ' : '') +
-          (m.rol === 'schoolbeheerder' ? 'schoolbeheerder' : 'leerkracht')));
-        r.appendChild(links);
-        r.appendChild(knop('Nieuw wachtwoord', 'stil', function () {
-          nieuwWachtwoord(m, c.naam);
-        }));
-        vak.appendChild(r);
-      });
-    }, function (e) {
-      vak.innerHTML = '';
-      vak.appendChild(el('p', 'hint', 'Ophalen lukte niet: ' + (e && e.message)));
-    });
-  });
-}
+/* Vroeger stond hier een eigen lijstje met de accounts van één school.
+   Dat is weg: er is nu één lijst over alle scholen heen, en de knop op
+   de schoolkaart zet daar het filter op. Twee lijsten met dezelfde
+   mensen erin lopen vroeg of laat uit elkaar. */
 
 function nieuwWachtwoord(mens, schoolnaam){
   var wie = mens.naam || mens.gebruikersnaam;
@@ -836,6 +829,743 @@ function nieuwWachtwoord(mens, schoolnaam){
       }, function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
     }));
     blad.appendChild(rij);
+  });
+}
+
+/* ── wat de scholen ons laten weten ───────────────────────────────────
+   Alle meldingen uit de app, met een stand erbij zodat je ziet wat je
+   nog moet doen. Dit is het enige scherm waar ze te lezen zijn: de
+   notitie is van jou, en een melding kan over een collega gaan.
+
+   Niet verwijderen maar afhandelen. Een melding die weg is, is een
+   melding waarvan je over een half jaar niet meer weet dat hij er is
+   geweest -- en dan komt hij een tweede keer binnen en begin je opnieuw. */
+
+var STANDEN = [['nieuw','Nieuw'], ['opgepakt','Opgepakt'],
+               ['afgehandeld','Afgehandeld'], ['afgewezen','Afgewezen']];
+var SOORTWOORD = { probleem:'Er klopt iets niet', vraag:'Ik snap iets niet',
+                   idee:'Een idee', compliment:'Compliment' };
+var filterStand = 'open';   // 'open' = nieuw + opgepakt, '' = alles
+var filterSoort = '';
+var csvAdres = null;
+
+function standWoord(stand){
+  for (var i = 0; i < STANDEN.length; i++) if (STANDEN[i][0] === stand) return STANDEN[i][1];
+  return stand;
+}
+
+function meldingenNu(){
+  return feedback.filter(function (f) {
+    if (filterStand === 'open' && f.stand !== 'nieuw' && f.stand !== 'opgepakt') return false;
+    if (filterStand && filterStand !== 'open' && f.stand !== filterStand) return false;
+    if (filterSoort && f.soort !== filterSoort) return false;
+    return true;
+  });
+}
+
+function naamVan(id){
+  for (var i = 0; i < mensen.length; i++) {
+    if (mensen[i].id === id) return mensen[i].naam || mensen[i].gebruikersnaam || '—';
+  }
+  return 'account is weg';
+}
+
+/* Eén veld voor een csv-bestand.
+
+   Die apostrof vooraan is geen sierlijkheid. Begint een veld met = + -
+   of @, dan ziet Excel er een formule in en voert die uit zodra je het
+   bestand opent. De tekst in een melding typt iemand anders in; dat is
+   precies het soort veld waar je dat niet wilt. */
+function csvVeld(waarde){
+  var t = String(waarde == null ? '' : waarde);
+  if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  return '"' + t.replace(/"/g, '""') + '"';
+}
+
+function csvMaken(rijen){
+  var kop = ['tijd','stand','soort','school','van','scherm','uitgave',
+             'apparaat','tekst','contact','notitie'];
+  var regels = [kop.map(csvVeld).join(';')];
+  rijen.forEach(function (f) {
+    regels.push([
+      f.tijd, standWoord(f.stand), SOORTWOORD[f.soort] || f.soort,
+      f.school_id ? schoolnaamVan(f.school_id) : 'geen school',
+      naamVan(f.wie), f.scherm, f.versie, f.apparaat,
+      f.tekst, f.contact, f.notitie
+    ].map(csvVeld).join(';'));
+  });
+  /* De bom vooraan is voor Excel: zonder dat leest het de tekst als
+     latin-1 en wordt elke é een Ã©. Puntkomma's en geen komma's om
+     dezelfde reden -- een Nederlandse Excel splitst daarop. */
+  return '﻿' + regels.join('\r\n') + '\r\n';
+}
+
+function tekenFeedback(v){
+  var open = feedback.filter(function (f) {
+    return f.stand === 'nieuw' || f.stand === 'opgepakt'; }).length;
+
+  /* Uitvoeren is een link en geen knop: een knop die een bestand
+     binnenhaalt verandert niets aan het scherm, en dan is hij niet te
+     onderscheiden van een knop die stuk is. */
+  var uit = el('a', 'knop knop-stil knop-klein', 'Uitvoeren als csv');
+  uit.id = 'csv-uitvoeren';
+  uit.download = 'feedback.csv';
+
+  v.appendChild(kopregel('Feedback',
+    feedback.length
+      ? (open === 1 ? 'Eén melding open' : open + ' meldingen open') +
+        ' · ' + feedback.length + ' in totaal'
+      : 'Nog geen meldingen',
+    [uit]));
+
+  var rij1 = el('div', 'chips');
+  [['open','Nog te doen'], ['','Alles']].concat(STANDEN).forEach(function (paar) {
+    var c = el('button', 'chip' + (filterStand === paar[0] ? ' aan' : ''), paar[1]);
+    c.addEventListener('click', function () { filterStand = paar[0]; teken(); });
+    rij1.appendChild(c);
+  });
+  v.appendChild(rij1);
+
+  var rij2 = el('div', 'chips');
+  [['','Alle soorten']].concat(Object.keys(SOORTWOORD).map(function (k) {
+    return [k, SOORTWOORD[k]];
+  })).forEach(function (paar) {
+    var c = el('button', 'chip' + (filterSoort === paar[0] ? ' aan' : ''), paar[1]);
+    c.addEventListener('click', function () { filterSoort = paar[0]; teken(); });
+    rij2.appendChild(c);
+  });
+  v.appendChild(rij2);
+
+  var nu = meldingenNu();
+
+  /* Het adres van het csv-bestand hangt aan wat er nu op het scherm
+     staat: wat je uitvoert is wat je ziet. Het oude adres gaat eruit,
+     anders houdt de browser elk bestand van deze sessie vast. */
+  if (csvAdres) { try { URL.revokeObjectURL(csvAdres); } catch (e) {} }
+  csvAdres = URL.createObjectURL(new Blob([csvMaken(nu)], { type:'text/csv;charset=utf-8' }));
+  uit.href = csvAdres;
+  if (!nu.length) uit.classList.add('uit');
+
+  var vak = el('div', 'paneel');
+  if (!nu.length) {
+    vak.appendChild(el('p', 'hint', feedback.length
+      ? 'Geen melding die hierop past.'
+      : 'Er is nog niets binnengekomen. De knop staat in de zijbalk van het ' +
+        'beheer en in het menu van het bord.'));
+  } else {
+    nu.forEach(function (f) { vak.appendChild(meldingKaart(f)); });
+  }
+  v.appendChild(vak);
+
+  var uitleg = el('div', 'paneel');
+  uitleg.appendChild(el('div', 'paneelkop', 'Wat er meekomt en wat niet'));
+  uitleg.appendChild(el('p', 'hint',
+    'Scherm, uitgave en apparaat gaan vanzelf mee, en de app zegt er in het ' +
+    'meldingsscherm ook bij dat dat gebeurt. Er komt geen schermafdruk mee ' +
+    'en niets van de kinderen. Staat er toch een kindernaam in een melding, ' +
+    'dan heeft iemand hem zelf ingetypt — haal hem er dan uit met de notitie ' +
+    'en handel de melding af.'));
+  v.appendChild(uitleg);
+}
+
+function meldingKaart(f){
+  var k = el('div', 'melding-kaart');
+
+  var kop = el('div', 'melding-kop');
+  kop.appendChild(el('span', 'rolmerk' + (f.soort === 'probleem' ? ' platform' :
+                                          f.soort === 'compliment' ? ' beheer' : ''),
+                     SOORTWOORD[f.soort] || f.soort));
+  kop.appendChild(el('span', 'melding-stand stand-' + f.stand, standWoord(f.stand)));
+  kop.appendChild(el('span', 'melding-tijd', datum(f.tijd)));
+  k.appendChild(kop);
+
+  k.appendChild(el('div', 'melding-tekst', f.tekst));
+
+  var onder = el('div', 'melding-onder');
+  onder.textContent = naamVan(f.wie) + ' · ' +
+    (f.school_id ? schoolnaamVan(f.school_id) : 'geen school') +
+    (f.scherm ? ' · ' + f.scherm : '') +
+    (f.versie ? ' · ' + f.versie : '') +
+    (f.apparaat ? ' · ' + f.apparaat : '');
+  k.appendChild(onder);
+
+  if (f.contact) {
+    var c = el('div', 'melding-onder');
+    c.textContent = 'Terugkoppelen via: ' + f.contact;
+    k.appendChild(c);
+  }
+  if (f.notitie) {
+    var n = el('div', 'melding-notitie');
+    n.textContent = f.notitie;
+    k.appendChild(n);
+  }
+
+  var acties = el('div', 'knoprij');
+  acties.appendChild(knop('Behandelen', 'stil', function () { toonBehandelen(f); }));
+  k.appendChild(acties);
+  return k;
+}
+
+function toonBehandelen(f){
+  var stand = f.stand;
+  toonBlad(function (blad) {
+    var t = el('div', null, 'Melding behandelen');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+
+    var citaat = el('div', 'melding-tekst', f.tekst);
+    citaat.style.marginBottom = '4px';
+    blad.appendChild(citaat);
+    blad.appendChild(el('p', 'hint', naamVan(f.wie) + ' · ' +
+      (f.school_id ? schoolnaamVan(f.school_id) : 'geen school') + ' · ' + datum(f.tijd)));
+
+    var r1 = el('div', 'veldrij');
+    r1.appendChild(el('label', 'veldlabel', 'Stand'));
+    var chips = el('div', 'knoprij');
+    STANDEN.forEach(function (paar) {
+      var c = el('button', 'chip' + (stand === paar[0] ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () {
+        stand = paar[0];
+        [].forEach.call(chips.children, function (x) { x.classList.remove('aan'); });
+        c.classList.add('aan');
+      });
+      chips.appendChild(c);
+    });
+    r1.appendChild(chips);
+    blad.appendChild(r1);
+
+    var r2 = el('div', 'veldrij');
+    r2.appendChild(el('label', 'veldlabel', 'Notitie voor jezelf'));
+    var notitie = el('textarea', 'invoer');
+    notitie.id = 'fb-notitie';
+    notitie.rows = 3;
+    notitie.style.cssText = 'resize:vertical;min-height:72px;line-height:1.5';
+    notitie.value = f.notitie || '';
+    notitie.placeholder = 'Wat je ermee hebt gedaan, of waarom niet.';
+    r2.appendChild(notitie);
+    r2.appendChild(el('div', 'hint', 'Alleen jij leest dit. De school ziet het niet.'));
+    blad.appendChild(r2);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    var bewaar = knop('Opslaan', 'primair', function () {
+      bewaar.disabled = true; bewaar.textContent = 'Bezig…';
+      SB.roep('feedback_behandelen', { welke: f.id, nieuwe_stand: stand,
+                                       nieuwe_notitie: notitie.value || '' })
+        .then(function () { return haalAlles(); })
+        .then(function () { sluitBlad(); teken(); meld('Opgeslagen'); },
+              function (e) {
+                bewaar.disabled = false; bewaar.textContent = 'Opslaan';
+                meld((e && e.message) || 'Dat lukte niet');
+              });
+    });
+    rij.appendChild(bewaar);
+    blad.appendChild(rij);
+  });
+}
+
+/* ── alle accounts, op één hoop ───────────────────────────────────────
+   Eén lijst over alle scholen heen, met een zoekveld en twee filters.
+   Dat is met opzet geen lijstje per school: de vragen die hier binnen
+   komen gaan over een mens ("Marieke kan niet inloggen"), en dan wil je
+   niet eerst weten bij welke school ze hoort.
+
+   Wat de platformbeheerder hier ziet is een naam, een gebruikersnaam,
+   een rol en een school. Geen kinderen, geen borden, geen statistieken
+   -- die zijn van de school. Zie docs/ROLLEN.md. */
+
+function schoolnaamVan(id){
+  if (!id) return '';
+  for (var i = 0; i < scholenRij.length; i++) {
+    if (scholenRij[i].id === id) return scholenRij[i].naam;
+  }
+  return 'onbekende school';
+}
+
+var ROLNAAM = { leerkracht:'Leerkracht', schoolbeheerder:'Schoolbeheerder',
+                platformbeheerder:'Platformbeheerder' };
+
+function rolMerk(rol){
+  var m = el('span', 'rolmerk' + (rol === 'schoolbeheerder' ? ' beheer' :
+                                  rol === 'platformbeheerder' ? ' platform' : ''),
+             ROLNAAM[rol] || rol);
+  return m;
+}
+
+/* Wat er na het filteren overblijft. Zoeken gaat over naam en
+   gebruikersnaam allebei: je weet van een collega meestal het een of
+   het ander, zelden precies welk van de twee in het systeem staat. */
+function gefilterd(){
+  var z = zoek.trim().toLowerCase();
+  return mensen.filter(function (m) {
+    if (filterRol && m.rol !== filterRol) return false;
+    if (filterSchool === 'geen' && m.school_id) return false;
+    if (filterSchool && filterSchool !== 'geen' && m.school_id !== filterSchool) return false;
+    if (!z) return true;
+    return ((m.naam || '') + ' ' + (m.gebruikersnaam || '') + ' ' +
+            schoolnaamVan(m.school_id)).toLowerCase().indexOf(z) >= 0;
+  });
+}
+
+function tekenAccounts(v){
+  v.appendChild(kopregel('Accounts',
+    mensen.length === 1 ? 'Eén account' : mensen.length + ' accounts',
+    [knop('Account toevoegen', 'primair', function () { toonNieuwAccount(); })]));
+
+  /* De filterbalk. Hij tekent zichzelf niet opnieuw bij elke aanslag --
+     dan springt de cursor naar het eind en typ je "Marieke" als
+     "ekeiraM". Alleen de lijst eronder wordt opnieuw gevuld. */
+  var balk = el('div', 'filterbalk');
+
+  var zoekveld = el('input', 'invoer zoekveld');
+  zoekveld.type = 'search';
+  zoekveld.placeholder = 'Zoek op naam, gebruikersnaam of school…';
+  zoekveld.value = zoek;
+  balk.appendChild(zoekveld);
+
+  var kiesSchool = el('select', 'invoer kiesveld');
+  function optie(waarde, tekst){
+    var o = el('option', null, tekst); o.value = waarde;
+    if (waarde === filterSchool) o.selected = true;
+    return o;
+  }
+  kiesSchool.appendChild(optie('', 'Alle scholen'));
+  kiesSchool.appendChild(optie('geen', 'Zonder school'));
+  scholenRij.slice().sort(function (a, b) { return a.naam.localeCompare(b.naam); })
+    .forEach(function (s) { kiesSchool.appendChild(optie(s.id, s.naam)); });
+  balk.appendChild(kiesSchool);
+  v.appendChild(balk);
+
+  var rolrij = el('div', 'chips');
+  [['', 'Alle rollen'], ['leerkracht', 'Leerkrachten'],
+   ['schoolbeheerder', 'Schoolbeheerders'], ['platformbeheerder', 'Platformbeheer']]
+    .forEach(function (paar) {
+      var c = el('button', 'chip' + (filterRol === paar[0] ? ' aan' : ''), paar[1]);
+      c.addEventListener('click', function () { filterRol = paar[0]; teken(); });
+      rolrij.appendChild(c);
+    });
+  v.appendChild(rolrij);
+
+  var vak = el('div', 'paneel');
+  v.appendChild(vak);
+
+  function vulLijst(){
+    leeg(vak);
+    var nu = gefilterd();
+    vak.appendChild(el('div', 'paneelkop',
+      nu.length === mensen.length
+        ? (nu.length === 1 ? 'Eén account' : 'Alle ' + nu.length + ' accounts')
+        : nu.length + ' van ' + mensen.length));
+    if (!nu.length) {
+      vak.appendChild(el('p', 'hint', 'Geen account dat hierop past.'));
+      return;
+    }
+    nu.forEach(function (m) { vak.appendChild(accountRij(m)); });
+  }
+
+  var tikker = null;
+  zoekveld.addEventListener('input', function () {
+    zoek = zoekveld.value;
+    clearTimeout(tikker);
+    tikker = setTimeout(vulLijst, 120);
+  });
+  kiesSchool.addEventListener('change', function () {
+    filterSchool = kiesSchool.value; vulLijst();
+  });
+  vulLijst();
+
+  var uitleg = el('div', 'paneel');
+  uitleg.appendChild(el('div', 'paneelkop', 'Wat hier niet staat'));
+  uitleg.appendChild(el('p', 'hint',
+    'Namen, gebruikersnamen, rollen en scholen — verder niets. Welke kinderen ' +
+    'er in een groep zitten en wat er op een bord gebeurt is van de school. ' +
+    'Een wachtwoord kun je vervangen maar nooit opzoeken, ook jij niet.'));
+  v.appendChild(uitleg);
+}
+
+function accountRij(m){
+  var r = el('div', 'mensrij');
+  var links = el('div', 'menslinks');
+  var naam = el('div', 'mensnaam', m.naam || m.gebruikersnaam || '—');
+  links.appendChild(naam);
+  var onder = [];
+  if (m.gebruikersnaam) onder.push(m.gebruikersnaam);
+  onder.push(m.school_id ? schoolnaamVan(m.school_id) : 'geen school');
+  links.appendChild(el('div', 'mensonder', onder.join(' · ')));
+  r.appendChild(links);
+  /* De rol in een eigen vakje van vaste breedte, zodat de merkjes een
+     kolom vormen in plaats van mee te schuiven met de knoppen ernaast. */
+  var rolvak = el('div', 'mensrol');
+  rolvak.appendChild(rolMerk(m.rol));
+  r.appendChild(rolvak);
+
+  var acties = el('div', 'knoprij');
+  if (ikZelf && m.id === ikZelf.id) {
+    /* Jezelf. Geen knoppen die toch worden geweigerd -- de database
+       houdt dit tegen, en een knop die altijd een foutmelding geeft is
+       erger dan geen knop. */
+    acties.appendChild(el('span', 'hint', 'Dat ben jij'));
+  } else {
+    acties.appendChild(knop('Aanpassen', 'stil', function () { toonAccountBewerken(m); }));
+    acties.appendChild(knop('Nieuw wachtwoord', 'stil', function () {
+      nieuwWachtwoord(m, schoolnaamVan(m.school_id));
+    }));
+    /* Weghalen ziet er anders uit dan de rest. Drie knoppen die er
+       precies hetzelfde uitzien maakt de verkeerde even makkelijk te
+       raken als de goede. */
+    var weg = knop('Verwijderen', 'stil', function () { toonAccountWeg(m); });
+    weg.classList.add('weg');
+    acties.appendChild(weg);
+  }
+  r.appendChild(acties);
+  return r;
+}
+
+/* ── een account aanpassen ────────────────────────────────────────────
+   Naam, rol en school in één blad, maar onder water drie aparte stappen:
+   de naam gaat rechtstreeks, de rol en de school gaan door een functie
+   in de database die ook nakijkt of er geen school zonder beheerder
+   achterblijft. Alleen wat je echt hebt veranderd wordt verstuurd. */
+function toonAccountBewerken(m, concept){
+  concept = concept || { naam: m.naam || '', rol: m.rol, school: m.school_id || '' };
+  toonBlad(function (blad) {
+    var t = el('div', null, m.naam || m.gebruikersnaam || 'Account');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'Zij logt in met ' + (m.gebruikersnaam || '—') + '. Die gebruikersnaam ' +
+      'staat vast — een naam die onder iemand verandert is een naam waarmee ' +
+      'ze de volgende ochtend buiten staat. Haar wachtwoord kun je wel vervangen.'));
+
+    var r1 = el('div', 'veldrij');
+    r1.appendChild(el('label', 'veldlabel', 'Naam'));
+    var naam = el('input', 'invoer');
+    naam.type = 'text'; naam.value = concept.naam; naam.placeholder = 'Juf Marieke';
+    naam.addEventListener('input', function () { concept.naam = naam.value; });
+    r1.appendChild(naam);
+    blad.appendChild(r1);
+
+    var r2 = el('div', 'veldrij');
+    r2.appendChild(el('label', 'veldlabel', 'Rol'));
+    var chips = el('div', 'knoprij');
+    ['leerkracht', 'schoolbeheerder', 'platformbeheerder'].forEach(function (rol) {
+      var c = el('button', 'chip' + (concept.rol === rol ? ' aan' : ''), ROLNAAM[rol]);
+      c.addEventListener('click', function () {
+        /* Opnieuw tekenen, want bij platformbeheerder valt het
+           schoolveld weg -- en een veld dat er nog staat maar niets meer
+           doet, liegt. Het concept gaat mee, dus wat al was ingevuld
+           blijft staan. */
+        concept.rol = rol; sluitBlad(); toonAccountBewerken(m, concept);
+      });
+      chips.appendChild(c);
+    });
+    r2.appendChild(chips);
+    var roluitleg = el('div', 'hint');
+    roluitleg.style.marginTop = '6px';
+    roluitleg.textContent =
+      concept.rol === 'platformbeheerder'
+        ? 'Ziet alle scholen en kan accounts beheren. Hoort bij geen school — ' +
+          'die wordt losgelaten en haar groepen gaan eraf.'
+        : concept.rol === 'schoolbeheerder'
+          ? 'Mag binnen haar eigen school alles: groepen, kinderen en collega’s.'
+          : 'Ziet alleen de groepen waar ze aan is gekoppeld.';
+    r2.appendChild(roluitleg);
+    blad.appendChild(r2);
+
+    if (concept.rol !== 'platformbeheerder') {
+      var r3 = el('div', 'veldrij');
+      r3.appendChild(el('label', 'veldlabel', 'School'));
+      var kies = el('select', 'invoer');
+      var geen = el('option', null, 'Geen school');
+      geen.value = ''; if (!concept.school) geen.selected = true;
+      kies.appendChild(geen);
+      scholenRij.slice().sort(function (a, b) { return a.naam.localeCompare(b.naam); })
+        .forEach(function (s) {
+          var o = el('option', null, s.naam);
+          o.value = s.id; if (s.id === concept.school) o.selected = true;
+          kies.appendChild(o);
+        });
+      r3.appendChild(kies);
+      var waarschuwing = el('div', 'waarschuwing');
+      waarschuwing.style.display = 'none';
+      r3.appendChild(waarschuwing);
+      blad.appendChild(r3);
+
+      /* Verhuizen is geen kleinigheid, dus het staat er voordat je op
+         Opslaan drukt en niet erna. Haar groepen gaan niet mee: die zijn
+         van de oude school, en een koppeling die blijft staan zou haar
+         bij kinderen laten die niet meer de hare zijn. */
+      var waarschuw = function (){
+        var anders = (concept.school || '') !== (m.school_id || '');
+        waarschuwing.style.display = anders ? '' : 'none';
+        if (anders) {
+          waarschuwing.textContent =
+            'Zij gaat van ' + (m.school_id ? schoolnaamVan(m.school_id) : 'geen school') +
+            ' naar ' + (concept.school ? schoolnaamVan(concept.school) : 'geen school') +
+            '. Haar groepen gaan niet mee: op de nieuwe school moet de ' +
+            'schoolbeheerder haar opnieuw aan groepen koppelen.';
+        }
+      };
+      kies.addEventListener('change', function () { concept.school = kies.value; waarschuw(); });
+      waarschuw();
+    }
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    var bewaar = knop('Opslaan', 'primair', function () {
+      var stappen = [];
+      var nieuweNaam = (concept.naam || '').trim();
+      if (nieuweNaam !== (m.naam || '')) {
+        stappen.push(function () {
+          return SB.wijzig('profielen', { naam: nieuweNaam }, { id:'eq.' + m.id });
+        });
+      }
+      if (concept.rol !== m.rol) {
+        stappen.push(function () {
+          return SB.roep('account_rol', { wie: m.id, nieuwe_rol: concept.rol });
+        });
+      }
+      /* Eerst de rol, dan de school: wie net geen platformbeheerder meer
+         is kan pas daarna bij een school horen. */
+      var doelSchool = concept.rol === 'platformbeheerder' ? null : (concept.school || null);
+      if (doelSchool !== (m.school_id || null) && concept.rol !== 'platformbeheerder') {
+        stappen.push(function () {
+          return SB.roep('account_verplaatsen', { wie: m.id, nieuwe_school: doelSchool });
+        });
+      }
+      if (!stappen.length) { sluitBlad(); return; }
+
+      bewaar.disabled = true; bewaar.textContent = 'Bezig…';
+      stappen.reduce(function (keten, stap) { return keten.then(stap); }, Promise.resolve())
+        .then(function () { return haalAlles(); })
+        .then(function () { sluitBlad(); teken(); meld('Opgeslagen'); },
+              function (e) {
+                bewaar.disabled = false; bewaar.textContent = 'Opslaan';
+                meld((e && e.message) || 'Dat lukte niet');
+              });
+    });
+    rij.appendChild(bewaar);
+    blad.appendChild(rij);
+    zetCursor(naam, blad);
+  });
+}
+function toonAccountWeg(m){
+  var wie = m.naam || m.gebruikersnaam || 'dit account';
+  toonBlad(function (blad) {
+    var t = el('div', null, wie + ' verwijderen');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'Het account gaat echt weg: de inlog, het profiel en de koppelingen aan ' +
+      'groepen. Dit kan niet terug — een nieuw account voor dezelfde persoon ' +
+      'is een nieuw account.'));
+    blad.appendChild(el('p', 'hint',
+      'Wat blijft: de kinderen, de groepen en alles wat er op de borden is ' +
+      'gebeurd. Die horen bij de school, niet bij de leerkracht die toevallig ' +
+      'was ingelogd. En de regels in het logboek blijven ook staan.'));
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    rij.appendChild(knop('Verwijderen', 'gevaar', function () {
+      SB.roep('account_verwijderen', { wie: m.id })
+        .then(function () { return haalAlles(); })
+        .then(function () { sluitBlad(); teken(); meld(wie + ' is verwijderd'); },
+              function (e) { meld((e && e.message) || 'Dat lukte niet'); });
+    }));
+    blad.appendChild(rij);
+  });
+}
+
+/* ── een account erbij ────────────────────────────────────────────────
+   Dezelfde weg als in het schoolbeheer: eerst een uitnodiging klaarzetten
+   op het interne adres, dan het account aanmaken. In die volgorde, want
+   de trekker in de database kijkt bij het aanmaken of er een uitnodiging
+   ligt en koppelt daar school en rol aan. Andersom staat ze binnen zonder
+   school, en dan krijgt ze het scherm "begin een school" te zien. */
+function toonNieuwAccount(voorSchool){
+  var concept = { naam:'', gebruikersnaam:'', zelfGekozen:false,
+                  rol:'leerkracht', school: voorSchool || '' };
+  toonBlad(function (blad) {
+    var t = el('div', null, 'Account toevoegen');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'Het account staat meteen klaar en je krijgt een kaartje om uit te printen. ' +
+      'Er gaat van ons geen mail uit — geef het kaartje zelf even door.'));
+
+    var r0 = el('div', 'veldrij');
+    r0.appendChild(el('label', 'veldlabel', 'Bij welke school?'));
+    var kies = el('select', 'invoer');
+    var geen = el('option', null, 'Kies een school…'); geen.value = '';
+    kies.appendChild(geen);
+    scholenRij.slice().sort(function (a, b) { return a.naam.localeCompare(b.naam); })
+      .forEach(function (s) {
+        var o = el('option', null, s.naam);
+        o.value = s.id; if (s.id === concept.school) o.selected = true;
+        kies.appendChild(o);
+      });
+    kies.addEventListener('change', function () { concept.school = kies.value; });
+    r0.appendChild(kies);
+    blad.appendChild(r0);
+
+    var r1 = el('div', 'veldrij');
+    r1.appendChild(el('label', 'veldlabel', 'Naam'));
+    var naam = el('input', 'invoer');
+    naam.type = 'text'; naam.placeholder = 'Juf Marieke';
+    r1.appendChild(naam);
+    blad.appendChild(r1);
+
+    var r2 = el('div', 'veldrij');
+    r2.appendChild(el('label', 'veldlabel', 'Gebruikersnaam'));
+    var gn = el('input', 'invoer');
+    gn.type = 'text'; gn.placeholder = 'juf.marieke';
+    gn.autocapitalize = 'off'; gn.spellcheck = false;
+    r2.appendChild(gn);
+    var stand = el('div', 'hint');
+    stand.style.marginTop = '4px';
+    r2.appendChild(stand);
+    blad.appendChild(r2);
+
+    var kijker = null;
+    function kijkNaam(){
+      var n = concept.gebruikersnaam;
+      clearTimeout(kijker);
+      stand.style.color = '';
+      if (!n) { stand.textContent = ''; return; }
+      stand.textContent = 'Even kijken…';
+      kijker = setTimeout(function () {
+        SB.roep('gebruikersnaam_vrij', { gewenst: n }).then(function (vrij) {
+          stand.textContent = vrij ? 'Vrij. Ze logt straks in met ' + n + '.'
+                                   : 'Die naam is al in gebruik. Kies een andere.';
+          stand.style.color = vrij ? '' : 'var(--stop)';
+        }, function () { stand.textContent = ''; });
+      }, 350);
+    }
+    naam.addEventListener('input', function () {
+      concept.naam = naam.value;
+      if (!concept.zelfGekozen) {
+        gn.value = SB.gebruikersnaamNet(naam.value);
+        concept.gebruikersnaam = gn.value;
+        kijkNaam();
+      }
+    });
+    gn.addEventListener('input', function () {
+      concept.zelfGekozen = true;
+      gn.value = SB.gebruikersnaamNet(gn.value);
+      concept.gebruikersnaam = gn.value;
+      kijkNaam();
+    });
+
+    var r3 = el('div', 'veldrij');
+    r3.appendChild(el('label', 'veldlabel', 'Rol'));
+    var chips = el('div', 'knoprij');
+    [['leerkracht', 'Leerkracht'], ['schoolbeheerder', 'Schoolbeheerder']]
+      .forEach(function (paar) {
+        var c = el('button', 'chip' + (concept.rol === paar[0] ? ' aan' : ''), paar[1]);
+        c.addEventListener('click', function () {
+          concept.rol = paar[0];
+          [].forEach.call(chips.children, function (k) { k.classList.remove('aan'); });
+          c.classList.add('aan');
+        });
+        chips.appendChild(c);
+      });
+    r3.appendChild(chips);
+    blad.appendChild(r3);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    var maak = knop('Aanmaken', 'primair', function () {
+      var persoon = (concept.naam || '').trim();
+      var gebruiker = SB.gebruikersnaamNet(concept.gebruikersnaam);
+      if (!concept.school) { meld('Kies eerst een school'); kies.focus(); return; }
+      if (!persoon)   { meld('Vul een naam in'); naam.focus(); return; }
+      if (!gebruiker) { meld('Vul een gebruikersnaam in'); gn.focus(); return; }
+
+      var ww;
+      try { ww = KBKAARTJE.wachtwoord(); }
+      catch (e) { meld('Deze browser kan geen veilig wachtwoord maken. Probeer een andere.'); return; }
+
+      maak.disabled = true; maak.textContent = 'Bezig…';
+      var schoolnaam = schoolnaamVan(concept.school);
+      SB.schrijf('uitnodigingen', [{ school_id: concept.school,
+                                     email: SB.inlogadres(gebruiker),
+                                     rol: concept.rol, code: nieuweCode() }])
+        .then(function () { return SB.maakAccountVoor(gebruiker, ww, persoon); })
+        .then(function () { return haalAlles(); })
+        .then(function () {
+          sluitBlad(); teken();
+          toonKaartje({ naam: persoon, gebruikersnaam: gebruiker, wachtwoord: ww,
+                        rol: concept.rol, school: schoolnaam });
+        }, function (err) {
+          maak.disabled = false; maak.textContent = 'Aanmaken';
+          var bericht = (err && err.message) || '';
+          if (SB.isTeVaak(err)) {
+            meld('Supabase laat maar dertig aanmeldingen per vijf minuten toe vanaf één plek. Wacht vijf minuten en ga dan verder — er is niets misgegaan.');
+          } else if (/duplicate|unique|al een account|already/i.test(bericht)) {
+            meld('Die gebruikersnaam is al in gebruik. Kies een andere.');
+          } else {
+            meld('Dat lukte niet: ' + bericht);
+          }
+        });
+    });
+    rij.appendChild(maak);
+    blad.appendChild(rij);
+    zetCursor(naam, blad);
+  });
+}
+
+/* Een code voor de uitnodiging. Dezelfde vorm als in het schoolbeheer:
+   acht tekens zonder de letters en cijfers die op elkaar lijken, zodat
+   je hem ook door de telefoon kunt doorgeven. */
+var CODETEKENS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function nieuweCode(){
+  var uit = '';
+  var ruw = new Uint8Array(8);
+  if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(ruw);
+  else for (var j = 0; j < 8; j++) ruw[j] = Math.floor(Math.random() * 256);
+  for (var i = 0; i < 8; i++) uit += CODETEKENS.charAt(ruw[i] % CODETEKENS.length);
+  return uit;
+}
+
+/* ── de naam van een school aanpassen ────────────────────────────────
+   Een school die van naam verandert (een fusie, een typefout bij het
+   aanmaken) hoeft daarvoor niet opnieuw te worden opgezet. De school
+   kan dit zelf ook, bij "De school"; dit is er voor het geval zij het
+   vraagt in plaats van het zelf te doen. */
+function toonSchoolAanpassen(c){
+  toonBlad(function (blad) {
+    var t = el('div', null, 'Naam van de school');
+    t.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';
+    blad.appendChild(t);
+    blad.appendChild(el('p', 'hint',
+      'De naam staat op de inlogkaartjes en bovenaan het scherm van de school. ' +
+      'Kleuren en logo stelt de school zelf in.'));
+
+    var r = el('div', 'veldrij');
+    r.appendChild(el('label', 'veldlabel', 'Naam'));
+    var naam = el('input', 'invoer');
+    naam.type = 'text'; naam.value = c.naam; naam.id = 'schoolnaamveld';
+    r.appendChild(naam);
+    blad.appendChild(r);
+
+    var rij = el('div', 'knoprij-onder');
+    rij.appendChild(knop('Annuleren', 'stil', sluitBlad));
+    rij.appendChild(knop('Opslaan', 'primair', function () {
+      var nieuw = (naam.value || '').trim();
+      if (!nieuw) { meld('Een school heeft een naam nodig'); naam.focus(); return; }
+      if (nieuw === c.naam) { sluitBlad(); return; }
+      SB.wijzig('scholen', { naam: nieuw }, { id:'eq.' + c.school_id })
+        .then(function () {
+          return SB.roep('noteer', { wat:'schoolnaam gewijzigd', school:c.school_id,
+                                     waarover: nieuw }).catch(function () {});
+        })
+        .then(function () { return haalAlles(); })
+        .then(function () { sluitBlad(); teken(); meld('De school heet nu ' + nieuw); },
+              function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
+    }));
+    blad.appendChild(rij);
+    zetCursor(naam, blad);
+    setTimeout(function () { if (document.activeElement === naam) naam.select(); }, 70);
   });
 }
 
@@ -939,6 +1669,7 @@ SB.wieBenIk().then(function (ik) {
     location.href = ik && ik.profiel && ik.profiel.school_id ? 'school.html' : 'inloggen.html';
     return null;
   }
+  ikZelf = ik.profiel;
   return haalAlles().then(teken);
 }).catch(function (e) {
   var v = leeg($('inhoud'));

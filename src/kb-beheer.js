@@ -151,12 +151,16 @@ function pictoBol(l, maat){
      af is gesneden is niet meer jouw paddenstoel. Die krijgt dus wit onder
      zich en past zich in het rondje in plaats van het te vullen. Bij een
      foto is vullen juist goed: een gezicht hoort het rondje te vullen. */
-  var tekening = l && l.image && KB.isTekening(l);
+  /* KB.kindbeeld en niet l.image: staan de foto's van kinderen uit op
+     deze school, dan komt een foto niet in beeld. Een getekende picto
+     wel -- dat is geen foto. */
+  var beeld = KB.kindbeeld(l);
+  var tekening = beeld && KB.isTekening(l);
   if (tekening) rond.classList.add('tekening');
   // backgroundColor, niet background: de verkorte vorm wist background-size
   rond.style.backgroundColor = tekening ? '#fff' : ((l && l.kleur) || '#3b6ff0');
   if (tekening) rond.style.setProperty('--kindkleur', (l && l.kleur) || '#3b6ff0');
-  if (l && l.image) rond.style.backgroundImage = 'url(' + l.image + ')';
+  if (beeld) rond.style.backgroundImage = 'url(' + beeld + ')';
   else rond.textContent = ((l && l.naam) || '?').charAt(0).toUpperCase();
   return rond;
 }
@@ -244,7 +248,30 @@ function mijnOnderdelen(){
   });
 }
 
+/* Het logo van de school in de zijbalk, op de plek van het p'tje. Voor
+   een juf is haar school belangrijker dan wie de app gemaakt heeft; het
+   woordmerk onderin blijft staan, dus er gaat niets verloren.
+
+   Het komt uit wat deze browser onthield, zodat het er meteen staat en
+   niet pas als de school is opgehaald. */
+function zetSchoollogo(){
+  var logo = KB.schoollogo();
+  var kop = document.querySelector('.zijbalk .zij-kop');
+  if (!kop) return;
+  var oud = kop.querySelector('.schoollogo');
+  if (!logo) { if (oud) oud.remove(); return; }
+  var merk = kop.querySelector('.merkteken');
+  if (merk) merk.style.display = 'none';
+  if (oud) { oud.src = logo; return; }
+  var beeld = document.createElement('img');
+  beeld.className = 'schoollogo';
+  beeld.src = logo;
+  beeld.alt = '';
+  kop.insertBefore(beeld, kop.firstChild);
+}
+
 function tekenMenu(){
+  zetSchoollogo();
   var menu = leeg($('zij-menu'));
   mijnOnderdelen().forEach(function (o) {
     if (o.scheiding) { menu.appendChild(el('div', 'zij-scheiding')); return; }
@@ -1182,20 +1209,34 @@ function bewerkLeerling(l){
     boven.style.cssText = 'display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap';
     var bol = pictoBol(concept, 64);
     boven.appendChild(bol);
-    boven.appendChild(bestandKnop('Foto kiezen', 'image/*', false, function (f) {
-      KB.verklein(f, KB.FOTO_MAAT.leerling).then(function (d) {
-        concept.image = d;
-        concept.pictoId = null;          // dit is een foto, geen tekening
-        bol.style.backgroundImage = 'url(' + d + ')'; bol.textContent = '';
-        meld('Foto klaar · ' + Math.round(d.length * 0.75 / 1024) + ' KB');
-      }).catch(function () { meld('Die foto lukte niet'); });
-    }));
+    /* De knop om een foto te kiezen staat er alleen als de school dat
+       heeft aangezet. Een knop die er wel staat maar waarvan het
+       resultaat daarna toch niet in beeld komt, is erger dan geen knop. */
+    if (KB.kindfotosAan()) {
+      boven.appendChild(bestandKnop('Foto kiezen', 'image/*', false, function (f) {
+        KB.verklein(f, KB.FOTO_MAAT.leerling).then(function (d) {
+          concept.image = d;
+          concept.pictoId = null;        // dit is een foto, geen tekening
+          bol.style.backgroundImage = 'url(' + d + ')'; bol.textContent = '';
+          meld('Foto klaar · ' + Math.round(d.length * 0.75 / 1024) + ' KB');
+        }).catch(function () { meld('Die foto lukte niet'); });
+      }));
+    }
     boven.appendChild(knop("Uit picto's kiezen", 'stil', function () {
       // Het formulier wordt opnieuw getekend zodra de kiezer sluit, dus
       // hoeven we hier alleen het concept bij te werken.
       kiesPicto(function (p) { concept.image = p.data; concept.pictoId = p.id; });
     }));
     blad.appendChild(boven);
+
+    if (!KB.kindfotosAan()) {
+      var waarom = el('div', 'hint');
+      waarom.style.marginBottom = '14px';
+      waarom.textContent = 'Foto\u2019s van kinderen staan uit op deze school. ' +
+        'Kies een picto, of laat de eerste letter staan. De schoolbeheerder ' +
+        'kan foto\u2019s aanzetten bij "De school".';
+      blad.appendChild(waarom);
+    }
 
     var naamVeld = el('div', 'veld');
     naamVeld.appendChild(el('label', null, 'Naam'));

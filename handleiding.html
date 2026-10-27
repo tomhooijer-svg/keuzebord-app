@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" href="stijl/logo/ptje.svg">
 <title>Handleiding — Keuzebord</title>
-<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-b6db7e52">
-<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-b6db7e52">
-<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-b6db7e52">
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-c6088570">
 <style>
 body{ background:var(--vlak-2); margin:0; }
 .blad-breed{ max-width:1080px; margin:0 auto; padding:40px 24px 90px;
@@ -45,6 +45,42 @@ th{ font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppe
     color:var(--inkt-3); }
 .terug{ display:inline-flex; align-items:center; gap:8px; margin-bottom:18px;
         font-size:.88rem; font-weight:600; color:var(--inkt-2); text-decoration:none; }
+.kopknoppen{ display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 0; }
+a.knop{ text-decoration:none; }
+
+/* ── op papier ────────────────────────────────────────────────────────
+   Een school wil dit uitgeprind in de teamkamer hebben liggen. Dat is
+   geen schermafdruk van een website: de inhoudsopgave is op papier
+   nutteloos (je kunt er niet op klikken), schaduwen en gekleurde
+   vlakken kosten alleen maar toner, en een onderwerp dat halverwege
+   een bladzij afbreekt is op papier erger dan op een scherm.
+
+   De pagina blijft daarom één document met alle onderwerpen erin; de
+   kopjes houden hun eigen bladzij bij elkaar. Zo is het ook een
+   handleiding die je kunt doorbladeren in plaats van één lange rol. */
+@media print{
+  @page{ size:A4; margin:16mm 15mm; }
+  body{ background:#fff !important; }
+  .blad-breed{ display:block; max-width:none; padding:0; }
+  .inhoudsopgave, .terug, .kopknoppen, .merkregel{ display:none !important; }
+  .stuk{ box-shadow:none !important; background:#fff !important;
+         border-radius:0 !important; padding:0 !important;
+         margin:0 0 10mm !important;
+         break-inside:avoid; page-break-inside:avoid; }
+  /* Een nieuw onderwerp begint op een nieuwe bladzij, behalve het
+     eerste -- anders is bladzij één leeg op de titel na. */
+  .stuk + .stuk{ break-before:page; page-break-before:always; }
+  h1{ font-size:20pt; }
+  h2{ font-size:15pt; margin-top:0; }
+  h3{ font-size:11.5pt; break-after:avoid; page-break-after:avoid; }
+  p, li, td, th{ font-size:10pt; color:#1a2535; }
+  p, ul, ol{ max-width:none; }
+  .let{ border-left:2pt solid #555; background:#fff;
+        padding:6pt 0 6pt 10pt; border-radius:0; }
+  table{ break-inside:avoid; page-break-inside:avoid; }
+  th, td{ border-bottom:.5pt solid #bbb; }
+  a{ color:inherit; text-decoration:none; }
+}
 </style>
 </head>
 <body>
@@ -64,6 +100,7 @@ th{ font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppe
     <a href="#wifi">Als de wifi wegvalt</a>
     <a href="#school">Voor de schoolbeheerder</a>
     <a href="#privacy">Wat we van kinderen bewaren</a>
+    <a href="privacy.html">Privacyverklaring</a>
     <a href="#vast">Als er iets vastloopt</a>
   </nav>
 
@@ -82,17 +119,29 @@ th{ font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppe
       <p>Je hebt niets te installeren. Het bord is een website: je opent hem
          op het digibord in de klas en op je eigen laptop, en alles loopt
          vanzelf gelijk.</p>
+      <div class="kopknoppen">
+        <button class="knop knop-primair knop-klein" id="knop-rondleiding">Laat me in vijf stappen zien</button>
+        <button class="knop knop-stil knop-klein" id="knop-printen">Printen als A4</button>
+        <a class="knop knop-stil knop-klein" href="privacy.html">Privacyverklaring</a>
+      </div>
     </div>
 
     <div class="stuk" id="begin">
       <h2>Beginnen</h2>
       <h3>Inloggen</h3>
-      <p>Je logt in met je e-mailadres en een wachtwoord. Heeft je school al
-         een omgeving, dan heb je van de schoolbeheerder een <strong>toegangscode</strong>
-         van acht tekens gekregen; die vul je één keer in en daarna hoor je
-         bij de goede school en groep.</p>
+      <p>Je krijgt van je schoolbeheerder een <strong>kaartje</strong> met twee regels:
+         een gebruikersnaam en een wachtwoord van drie woorden en een cijfer.
+         Geen e-mailadres — dat typt niemand graag op een digibord. Hoofdletters
+         maken niet uit.</p>
       <p>Op het digibord log je <strong>één keer</strong> in. Daarna blijft dat scherm
          ingelogd — de kinderen hoeven niets te typen en jij ook niet meer.</p>
+      <div class="let">
+        <p><strong>Wachtwoord kwijt?</strong> Vraag je schoolbeheerder om een nieuw
+           kaartje. Niemand kan een wachtwoord opzoeken, ook de schoolbeheerder
+           niet — hij kan er alleen een nieuw maken. Dat is met opzet: een
+           lijstje met wachtwoorden dat ergens blijft liggen is gevaarlijker
+           dan af en toe een nieuw kaartje.</p>
+      </div>
 
       <h3>Twee schermen</h3>
       <table>
@@ -283,7 +332,14 @@ th{ font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppe
       <p>De losse speelmomenten blijven één schooljaar bewaard. Daarna
          blijven alleen de totalen per kind per hoek staan — genoeg voor een
          oudergesprek in juni, en daarna bewaren we niet langer dan nodig.</p>
-      <p>Alle gegevens staan in de Europese Unie.</p>
+      <p><b>Foto's van kinderen staan standaard uit.</b> Zolang dat zo is kan
+         niemand een foto van een kind kiezen, en komen foto's die er al zijn
+         niet in beeld — er staat dan een pictogram of de eerste letter van de
+         naam. De schoolbeheerder kan ze aanzetten bij <b>De school</b>. Doe dat
+         alleen als de school toestemming van ouders heeft; dat regelt de
+         school, niet de app. Pictogrammen werken altijd: een getekend konijn
+         is geen foto.</p>
+      <p>Alle gegevens staan in de Europese Unie (Ierland).</p>
     </div>
 
     <div class="stuk" id="vast">
@@ -297,8 +353,12 @@ th{ font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppe
          er ook bij als er elders is gewerkt.</p>
 
       <h3>Ik kan niet inloggen</h3>
-      <p>Vraag je schoolbeheerder om je wachtwoord terug te zetten. Ben jij de
-         schoolbeheerder, neem dan contact op met de leverancier.</p>
+      <p>Kijk eerst of je de gebruikersnaam van je kaartje gebruikt en niet je
+         e-mailadres. Klopt dat, vraag dan je schoolbeheerder om een nieuw
+         kaartje. Ben jij de schoolbeheerder, neem dan contact op met de
+         leverancier.</p>
+      <p>Heb je je vijf keer vertypt, dan moet je even wachten — tien seconden
+         de eerste keer, daarna wat langer. Dat gaat vanzelf over.</p>
 
       <h3>Een kind is van het bord verdwenen</h3>
       <p>Kijk linksonder of er nog iets staat te wachten om verstuurd te
@@ -312,5 +372,17 @@ th{ font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppe
   <img class="merkwoord" src="stijl/logo/pixelwoord.svg" alt="Pixelplein">
 </div>
 
+<script>
+/* Twee knoppen, allebei één regel. De rondleiding zelf staat in het
+   beheer -- daar zijn de schermen waar hij het over heeft. */
+(function () {
+  var r = document.getElementById('knop-rondleiding');
+  if (r) r.addEventListener('click', function () {
+    location.href = 'beheer.html?rondleiding=1';
+  });
+  var pr = document.getElementById('knop-printen');
+  if (pr) pr.addEventListener('click', function () { window.print(); });
+})();
+</script>
 </body>
 </html>

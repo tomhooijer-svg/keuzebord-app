@@ -6,9 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" href="stijl/logo/ptje.svg">
 <title>Platformbeheer — Keuzebord</title>
-<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-b6db7e52">
-<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-b6db7e52">
-<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-b6db7e52">
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-c6088570">
 <style>
 body{ background: var(--vlak-2); }
 .knoprij{ display:flex; gap:10px; flex-wrap:wrap; }
@@ -35,6 +35,69 @@ body{ background: var(--vlak-2); }
 .stil{ font-size:.8rem; color:var(--inkt-3); margin-top:auto; padding-top:4px; }
 .deur{ font-size:.8rem; font-weight:550; color:var(--let-op); background:var(--let-op-zacht);
        padding:6px 10px; border-radius:var(--rond-vol); align-self:flex-start; }
+.deur.geenbeheer{ color:var(--stop); background:var(--stop-zacht); }
+.schoolkaart button.weg{ color:var(--stop); }
+.schoolkaart button.weg:hover{ background:var(--stop-zacht); }
+
+/* ── de accountslijst ──────────────────────────────────────────────
+   Eén rij per mens. Naam en gebruikersnaam links, de rol als merkje in
+   het midden, de knoppen rechts -- en op een smal scherm vallen die
+   onder elkaar in plaats van dat de naam wordt afgeknepen. */
+.filterbalk{ display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 12px; }
+.zoekveld{ flex:1 1 280px; }
+.kiesveld{ flex:0 1 220px; }
+.mensrij{ display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+          padding:11px 14px; border-radius:12px; background:var(--vlak-2);
+          margin-bottom:8px; }
+.menslinks{ flex:1 1 200px; min-width:0; }
+.mensnaam{ font-size:.96rem; font-weight:560; letter-spacing:-.01em; color:var(--inkt);
+           overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mensonder{ font-size:.78rem; color:var(--inkt-3); margin-top:1px;
+            overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mensrol{ flex:0 0 132px; }
+.rolmerk{ font-size:.72rem; font-weight:620; letter-spacing:.02em; white-space:nowrap;
+          padding:4px 10px; border-radius:var(--rond-vol);
+          background:rgba(20,28,44,.07); color:var(--inkt-2); }
+.rolmerk.beheer{ background:var(--accent-zacht); color:var(--accent); }
+.rolmerk.platform{ background:var(--let-op-zacht); color:var(--let-op); }
+.mensrij .knoprij{ margin-left:auto; }
+.mensrij .hint{ font-size:.78rem; }
+.mensrij button.weg{ color:var(--stop); }
+.mensrij button.weg:hover{ background:var(--stop-zacht); }
+@media (max-width:760px){ .mensrol{ flex:0 0 auto; } .mensrij .knoprij{ margin-left:0; } }
+
+/* ── de meldingen ──────────────────────────────────────────────────
+   Eén kaart per melding. De tekst krijgt de ruimte -- dat is waar het
+   om gaat; de herkomst staat er klein onder. */
+.melding-kaart{ padding:14px 16px; border-radius:12px; background:var(--vlak-2);
+                margin-bottom:10px; }
+.melding-kop{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+.melding-stand{ font-size:.72rem; font-weight:620; letter-spacing:.02em;
+                padding:4px 10px; border-radius:var(--rond-vol);
+                background:rgba(20,28,44,.07); color:var(--inkt-2); }
+.melding-stand.stand-nieuw{ background:var(--stop-zacht); color:var(--stop); }
+.melding-stand.stand-opgepakt{ background:var(--let-op-zacht); color:var(--let-op); }
+.melding-tijd{ font-size:.76rem; color:var(--inkt-3); margin-left:auto;
+               font-variant-numeric:tabular-nums; }
+.melding-tekst{ font-size:.95rem; line-height:1.6; color:var(--inkt);
+                white-space:pre-wrap; overflow-wrap:anywhere; }
+.melding-onder{ font-size:.76rem; color:var(--inkt-3); margin-top:6px;
+                overflow-wrap:anywhere; }
+.melding-notitie{ font-size:.83rem; line-height:1.5; color:var(--inkt-2);
+                  margin-top:8px; padding:8px 11px; border-radius:9px;
+                  background:var(--vlak); border-left:3px solid var(--lijn);
+                  white-space:pre-wrap; }
+.melding-kaart .knoprij{ margin-top:10px; }
+/* Een uitvoerknop zonder iets om uit te voeren. Niet verbergen: dan
+   verspringt de kop zodra er een melding binnenkomt. */
+.knop.uit{ opacity:.45; pointer-events:none; }
+a.knop{ text-decoration:none; }
+
+/* Een waarschuwing in een blad: wat er gaat gebeuren, vóór de knop en
+   niet erna. */
+.waarschuwing{ margin-top:8px; padding:10px 12px; border-radius:11px;
+               background:var(--let-op-zacht); color:var(--let-op);
+               font-size:.83rem; line-height:1.5; }
 
 .logrij{ display:flex; align-items:baseline; justify-content:space-between; gap:14px;
          padding:9px 13px; border-radius:11px; background:var(--vlak-2); margin-bottom:7px; }
@@ -91,8 +154,11 @@ body.metbalk .zijbalk{ height:calc(100vh - 46px); top:46px; }
 <div class="app">
   <nav class="zijbalk">
     <div class="zij-kop">
-      <div class="n">Keuzebord</div>
-      <div class="s">Platformbeheer</div>
+      <img class="merkteken" src="stijl/logo/ptje.svg" alt="" aria-hidden="true">
+      <div class="zij-kop-tekst">
+        <div class="n">Keuzebord</div>
+        <div class="s">Platformbeheer</div>
+      </div>
     </div>
     <div class="zij-menu" id="zij-menu"></div>
     <div class="zij-onder">
@@ -110,10 +176,11 @@ body.metbalk .zijbalk{ height:calc(100vh - 46px); top:46px; }
 
 <!-- kb-app.js zegt welke uitgave dit is; de testchip leest daar of
      deze app een testversie is. -->
-<script src="src/kb-app.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-testbanner.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-supabase.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-kaartje.js?v=22oktober2026-b6db7e52"></script>
-<script src="src/kb-platform.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-app.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-testbanner.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-supabase.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-feedback.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-kaartje.js?v=22oktober2026-c6088570"></script>
+<script src="src/kb-platform.js?v=22oktober2026-c6088570"></script>
 </body>
 </html>

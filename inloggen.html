@@ -14,9 +14,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="stijl/logo/ptje.svg">
 <title>Inloggen — Keuzebord</title>
-<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-b6db7e52">
-<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-b6db7e52">
-<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-b6db7e52">
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-c6088570">
 <style>
 body.inlog{
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
@@ -75,7 +75,13 @@ body.inlog{
 <body class="inlog">
 
 <div class="kaart">
-  <img class="merkteken" src="stijl/logo/ptje.svg" alt=""
+  <!-- Het logo van de school, als deze browser er een kent van de vorige
+       keer. Op dit moment is nog niemand binnen, dus de app kan niet
+       weten van welke school je bent; dit is hetzelfde vangnet als bij
+       de kleuren. Op een schooldigibord klopt het altijd, op een vers
+       apparaat verschijnt het na de eerste keer inloggen. -->
+  <img class="schoollogo" id="schoollogo" alt="" style="display:none">
+  <img class="merkteken" id="merkteken" src="stijl/logo/ptje.svg" alt=""
        aria-hidden="true" style="width:40px;height:40px;margin:0 auto 14px">
   <h1 class="merk">Keuzebord</h1>
   <p class="onder" id="onder">Log in om verder te gaan.</p>
@@ -107,10 +113,28 @@ body.inlog{
      werken; wat je doet gaat later vanzelf mee.</p>
 </div>
 
-<script src="src/kb-supabase.js?v=22oktober2026-b6db7e52"></script>
+<script src="src/kb-supabase.js?v=22oktober2026-c6088570"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
+
+  /* Het logo van de school, uit wat deze browser onthield. Staat er een,
+     dan neemt hij de plaats in van het p'tje -- voor een leerkracht is
+     haar school belangrijker dan wie de app gemaakt heeft.
+
+     Dit staat los van kb-data.js: deze pagina laadt dat bestand niet
+     (het is een inlogscherm, geen bord), dus we lezen de opslag hier
+     rechtstreeks. Dezelfde sleutel, één keer opgeschreven in
+     KB.schoollogo en hier herhaald omdat er geen gedeelde plek is die
+     allebei de pagina's kennen. */
+  try {
+    var logo = localStorage.getItem('kb_schoollogo');
+    if (logo) {
+      $('schoollogo').src = logo;
+      $('schoollogo').style.display = '';
+      $('merkteken').style.display = 'none';
+    }
+  } catch (e) {}
   var stand = 'aanmelden';          // of 'registreren'
   var bezig = false;
 
@@ -220,7 +244,14 @@ body.inlog{
   }
 
   function toonFout(e){
-    if (e && e.offline) {
+    if (SB.isTeVaak(e)) {
+      /* Niet onze eigen rem maar die van Supabase: dertig pogingen per
+         vijf minuten vanaf hetzelfde IP-adres. Op een school delen alle
+         apparaten één adres naar buiten, dus dit kan ook iemand raken
+         die niets fout deed. */
+      meld('Er is vanaf deze school te vaak geprobeerd in te loggen. ' +
+           'Wacht vijf minuten en probeer het dan nog eens.');
+    } else if (e && e.offline) {
       meld('Geen verbinding met de server. Controleer het internet en probeer het opnieuw.');
     } else if (e && /invalid login|klopt niet|credentials/i.test(e.message || '')) {
       /* Niet zeggen wélke van de twee fout is. Zou er staan "die

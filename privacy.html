@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="stijl/logo/ptje.svg">
+<title>Privacyverklaring — Keuzebord</title>
+<link rel="stylesheet" href="stijl/css/fonts.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="stijl/css/tokens.css?v=22oktober2026-c6088570">
+<link rel="stylesheet" href="src/kb-stijl.css?v=22oktober2026-c6088570">
+<style>
+body{ background:var(--vlak-2); margin:0; }
+.blad-smal{ max-width:760px; margin:0 auto; padding:40px 24px 90px; }
+@media (max-width:640px){ .blad-smal{ padding:24px 16px 60px; } }
+.stuk{ background:var(--vlak); border-radius:var(--rond-m); box-shadow:var(--schaduw-1);
+       padding:28px 32px; margin-bottom:18px; }
+@media (max-width:640px){ .stuk{ padding:22px 20px; } }
+h1{ font-size:2rem; font-weight:600; letter-spacing:-.03em; margin:0 0 6px; }
+.onder{ color:var(--inkt-3); font-size:1.02rem; margin:0 0 4px; }
+h2{ font-size:1.25rem; font-weight:600; letter-spacing:-.022em; margin:0 0 12px; }
+h3{ font-size:1rem; font-weight:620; margin:20px 0 6px; }
+p, li{ color:var(--inkt-2); line-height:1.62; }
+p{ margin:0 0 12px; max-width:62ch; }
+ul{ margin:0 0 12px; padding-left:22px; max-width:62ch; }
+li{ margin-bottom:5px; }
+strong{ color:var(--inkt); font-weight:620; }
+table{ border-collapse:collapse; width:100%; margin:12px 0 16px; font-size:.93rem; }
+th, td{ text-align:left; padding:9px 12px; border-bottom:1px solid var(--lijn);
+        vertical-align:top; color:var(--inkt-2); }
+th{ font-size:.76rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--inkt-3); }
+.let{ border-left:3px solid var(--accent); background:var(--accent-zacht);
+      padding:14px 16px; border-radius:0 10px 10px 0; margin:16px 0; }
+.let p{ margin:0; max-width:58ch; }
+.terug{ display:inline-flex; align-items:center; gap:8px; margin-bottom:18px;
+        font-size:.88rem; font-weight:600; color:var(--inkt-2); text-decoration:none; }
+.invullen{ border-left:3px solid var(--stop); background:var(--stop-zacht);
+           padding:14px 16px; border-radius:0 10px 10px 0; margin:16px 0; }
+.invullen p{ margin:0; color:var(--stop); font-size:.9rem; }
+@media print{
+  @page{ size:A4; margin:16mm 15mm; }
+  body{ background:#fff !important; }
+  .blad-smal{ max-width:none; padding:0; }
+  .terug, .merkregel, .kopknoppen{ display:none !important; }
+  .stuk{ box-shadow:none !important; border-radius:0 !important;
+         padding:0 !important; margin:0 0 8mm !important;
+         break-inside:avoid; page-break-inside:avoid; }
+  h1{ font-size:20pt; } h2{ font-size:14pt; } h3{ font-size:11.5pt; }
+  p, li, td, th{ font-size:10pt; color:#1a2535; }
+  .let, .invullen{ border-left:2pt solid #555; background:#fff;
+                   padding:6pt 0 6pt 10pt; border-radius:0; }
+  .invullen p{ color:#1a2535; }
+}
+</style>
+</head>
+<body>
+
+<div class="blad-smal">
+  <a class="terug" href="handleiding.html">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 l-7 7 7 7"></path></svg>
+    Terug naar de handleiding
+  </a>
+
+  <div class="stuk">
+    <h1>Privacyverklaring</h1>
+    <p class="onder">Keuzebord — wat er van kinderen en leerkrachten wordt bewaard,
+       waar het staat en wie erbij kan.</p>
+    <p>Deze verklaring is geschreven om te worden gelezen, niet om te worden
+       afgevinkt. Staat er iets in dat u niet begrijpt, dan is dat onze fout en
+       horen we dat graag.</p>
+    <div class="kopknoppen" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+      <button class="knop knop-stil knop-klein" id="knop-printen">Printen als A4</button>
+    </div>
+  </div>
+
+  <div class="stuk">
+    <h2>Wie is waarvoor verantwoordelijk</h2>
+    <p>De <strong>school</strong> bepaalt welke kinderen in het keuzebord staan en
+       waarvoor het wordt gebruikt. De school is daarmee verwerkings­verantwoordelijke
+       in de zin van de AVG.</p>
+    <p>De <strong>leverancier</strong> levert de software en beheert de omgeving, en
+       is daarmee verwerker. Dat betekent: wij doen met deze gegevens alleen wat
+       de school ons opdraagt, en niets daarbuiten.</p>
+    <div class="invullen">
+      <p><strong>Nog in te vullen door de leverancier:</strong> naam, adres,
+         KvK-nummer en een contactadres voor privacyvragen. En: een
+         verwerkersovereenkomst met elke school, voordat er één echte
+         kindernaam in gaat.</p>
+    </div>
+  </div>
+
+  <div class="stuk">
+    <h2>Wat er van een kind wordt bewaard</h2>
+    <table>
+      <tr><th>Wat</th><th>Waarom</th></tr>
+      <tr><td>Voornaam of roepnaam</td><td>Het kind moet zichzelf herkennen op het bord.</td></tr>
+      <tr><td>Een kleur en een pictogram</td><td>Hetzelfde, voor wie nog niet leest.</td></tr>
+      <tr><td>Een foto — alleen als de school dat aanzet</td><td>Hetzelfde. Staat standaard uit.</td></tr>
+      <tr><td>Welke hoek, wanneer, hoe lang</td><td>Zodat de leerkracht kan terugkijken.</td></tr>
+      <tr><td>Observaties die de leerkracht zelf opschrijft</td><td>Voor het oudergesprek.</td></tr>
+    </table>
+    <p>Verder niets. <strong>Geen achternaam, geen geboortedatum, geen klasnummer,
+       geen burgerservicenummer, geen adres.</strong> Er is geen koppeling met een
+       leerlingvolgsysteem.</p>
+    <p>"Met wie speelt dit kind" staat nergens apart opgeschreven. Dat volgt uit
+       twee kinderen die in dezelfde hoek dezelfde tijd overlappen, en dat rekent
+       de app pas uit op het moment dat een leerkracht ernaar kijkt.</p>
+
+    <h3>Foto's van kinderen</h3>
+    <p>Foto's staan <strong>standaard uit</strong>. Zolang dat zo is kan niemand een
+       foto van een kind kiezen en komen foto's die er al zijn niet in beeld. De
+       schoolbeheerder kan ze aanzetten; de school is er dan verantwoordelijk voor
+       dat ouders daar toestemming voor hebben gegeven. Dat regelt de school, niet
+       de app — wij weten niet wie toestemming heeft gegeven en kunnen dat ook niet
+       weten.</p>
+  </div>
+
+  <div class="stuk">
+    <h2>Wat er van een leerkracht wordt bewaard</h2>
+    <p>Een naam, een gebruikersnaam, een rol en bij welke school en groepen zij
+       hoort. Het wachtwoord wordt niet bewaard maar alleen versleuteld
+       opgeslagen; niemand kan het opzoeken, ook de beheerder niet. Er wordt
+       bijgehouden wie wanneer iets in het beheer heeft gedaan — dat is het
+       logboek, en dat kan de school zelf inzien.</p>
+    <p>Er wordt geen e-mailadres gevraagd. Een gebruikersnaam krijgt intern een
+       adres op <code>keuzebord.invalid</code>; dat is een domein dat officieel
+       nooit kan bestaan, dus daar kan nooit post heen.</p>
+  </div>
+
+  <div class="stuk">
+    <h2>Hoe lang het bewaard blijft</h2>
+    <ul>
+      <li>Losse speelmomenten: <strong>één schooljaar</strong>.</li>
+      <li>Daarna alleen de totalen per kind per hoek — genoeg voor een
+          oudergesprek in juni.</li>
+      <li>Gegevens van een kind dat uit een groep wordt gehaald: meteen weg.</li>
+      <li>Vraagt een school om verwijdering, dan gaat de hele school eruit:
+          kinderen, groepen, borden en alles wat daarop is gebeurd. Dat kan niet
+          worden teruggedraaid.</li>
+    </ul>
+    <p>Een school kan op elk moment alles uitdraaien wat van haar is, in een
+       bestand dat zij zelf kan lezen. Dat zit in het schoolbeheer onder
+       <strong>Uitdraaien</strong>.</p>
+  </div>
+
+  <div class="stuk">
+    <h2>Waar het staat, en wie erbij kan</h2>
+    <p>Alle gegevens staan bij <strong>Supabase</strong>, in een datacentrum in
+       <strong>Ierland</strong> — binnen de Europese Unie. Er gaat niets naar buiten
+       de EU.</p>
+    <p>Elke school ziet alleen haar eigen gegevens. Dat is geen afspraak maar een
+       regel in de database zelf: een verzoek om de kinderen van een andere school
+       levert een leeg antwoord op, ook als iemand het met opzet probeert.</p>
+    <p>Binnen een school ziet een leerkracht alleen de groepen waaraan zij is
+       gekoppeld. De schoolbeheerder ziet alles van haar eigen school.</p>
+
+    <h3>En de leverancier?</h3>
+    <p>De leverancier ziet <strong>geen kinderen, geen borden en geen
+       statistieken</strong>. Wat hij wel ziet: welke scholen er zijn, hoeveel
+       groepen en kinderen ze hebben (als getal), en de namen en rollen van de
+       accounts — want hij moet een wachtwoord kunnen vervangen als iemand het
+       kwijt is.</p>
+    <p>Moet er echt worden meegekeken omdat er iets niet werkt, dan zet de
+       <strong>schoolbeheerder zelf de deur open</strong>. Die staat hoogstens een
+       paar uur open, gaat daarna vanzelf dicht, en elke keer dat er wordt
+       meegekeken komt in het logboek dat de school kan nakijken.</p>
+  </div>
+
+  <div class="stuk">
+    <h2>Wat we níét doen</h2>
+    <ul>
+      <li><strong>Geen analyse-software van derden.</strong> Geen Google Analytics,
+          geen trackers, geen cookies van anderen. De app zet alleen iets in de
+          opslag van de browser om te onthouden wie is ingelogd en welke groep dit
+          apparaat laat zien.</li>
+      <li><strong>Geen reclame</strong>, en de gegevens worden aan niemand verkocht
+          of doorgegeven.</li>
+      <li><strong>Geen kunstmatige intelligentie</strong> op gegevens van kinderen.
+          Er gaat niets naar een taalmodel.</li>
+      <li><strong>Geen profielen van kinderen.</strong> De app rekent geen scores
+          uit en trekt geen conclusies; ze laat de leerkracht zien wat er is
+          gebeurd.</li>
+    </ul>
+  </div>
+
+  <div class="stuk">
+    <h2>Rechten van ouders</h2>
+    <p>Ouders hebben het recht te weten wat er van hun kind is vastgelegd, het te
+       laten verbeteren en het te laten verwijderen. Die vragen gaan naar de
+       <strong>school</strong>: die bepaalt wat er in het keuzebord staat. De school
+       kan alles van een kind in het beheer inzien en weghalen, en hoeft daarvoor
+       niemand om toestemming te vragen.</p>
+    <p>Komt zo'n vraag bij ons binnen, dan sturen we hem door naar de school en
+       doen we zelf niets — behalve als de school ons vraagt iets te doen.</p>
+  </div>
+
+  <div class="stuk">
+    <h2>Als er iets misgaat</h2>
+    <p>Is er een datalek, dan meldt de leverancier dat zonder onnodige vertraging
+       bij de school. De school beoordeelt vervolgens of het bij de Autoriteit
+       Persoonsgegevens moet worden gemeld en of ouders moeten worden
+       geïnformeerd; dat is haar rol als verantwoordelijke.</p>
+    <div class="let">
+      <p>Ziet u iets wat niet klopt — een scherm waar gegevens staan die er niet
+         horen, of iets wat u kunt zien terwijl dat niet zou moeten — meld het dan
+         meteen met de knop <strong>Iets melden</strong> in de app. Ook als u denkt
+         dat het aan u ligt.</p>
+    </div>
+  </div>
+
+  <div class="stuk">
+    <h2>Deze verklaring</h2>
+    <p>Laatst bijgewerkt: 27 oktober 2026. Verandert er iets aan wat er wordt
+       bewaard of wie erbij kan, dan wordt deze verklaring bijgewerkt en krijgt
+       elke school daar bericht van.</p>
+  </div>
+</div>
+
+<div class="merkregel" style="justify-content:center;margin:0 0 40px">
+  <img class="merkwoord" src="stijl/logo/pixelwoord.svg" alt="Pixelplein">
+</div>
+
+<script>
+(function () {
+  var pr = document.getElementById('knop-printen');
+  if (pr) pr.addEventListener('click', function () { window.print(); });
+})();
+</script>
+</body>
+</html>

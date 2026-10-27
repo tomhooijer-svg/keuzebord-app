@@ -283,7 +283,12 @@ function start(opties){
     ik = uit;
     /* De kleuren van de school. kb-data heeft er al een gezet uit wat
        deze browser onthield; dit is de echte, van de server. */
-    KB.zetHuisstijl(ik.school && ik.school.huisstijl);
+    KB.zetHuisstijl(ik.school && ik.school.huisstijl, (ik.school && ik.school.logo) || null);
+    /* En of deze school foto's van kinderen gebruikt. Dit moet in de
+       opslag staan en niet alleen in de sessie: het bord in de klas
+       start 's ochtends op en tekent de kinderen voordat de server
+       antwoord heeft gegeven. */
+    KB.zetKindfotos(ik.school ? !!ik.school.kindfotos : null);
     /* Doorsturen naar de pagina waar je al staat is geen doorsturen maar
        een herlaadlus: de pagina begint opnieuw, komt tot dezelfde
        conclusie, en stuurt zichzelf weer door -- tientallen keren per
@@ -356,7 +361,12 @@ function volgIntervallen(){
 function herstart(){
   return SB.wieBenIk().then(function (uit) {
     ik = uit;
-    KB.zetHuisstijl(ik.school && ik.school.huisstijl);
+    KB.zetHuisstijl(ik.school && ik.school.huisstijl, (ik.school && ik.school.logo) || null);
+    /* En of deze school foto's van kinderen gebruikt. Dit moet in de
+       opslag staan en niet alleen in de sessie: het bord in de klas
+       start 's ochtends op en tekent de kinderen voordat de server
+       antwoord heeft gegeven. */
+    KB.zetKindfotos(ik.school ? !!ik.school.kindfotos : null);
     zorgVoorGroepen();
     klasId = kiesGroep();
     groepId = klasId ? KBSYNC.opServer(klasId) : null;
@@ -411,7 +421,8 @@ function afmelden(){
     /* Ook de kleuren van deze school. Logt er daarna iemand van een
        andere school in op hetzelfde apparaat, dan hoort die niet eerst
        de kleuren van de vorige te zien. */
-    KB.zetHuisstijl(null);
+    KB.zetHuisstijl(null, null);
+    KB.zetKindfotos(null);
     location.href = 'inloggen.html';
   });
 }
@@ -425,7 +436,11 @@ function maakAccountknop(opties){
   opties = opties || {};
   if (!ik || !ik.profiel) return null;
 
-  var naam = ik.profiel.naam || ik.profiel.email || 'ingelogd';
+  /* Naam, anders gebruikersnaam, anders het adres. Dat middelste is
+     erbij gekomen met het inloggen op gebruikersnaam: een account dat
+     geen naam heeft gekregen toonde anders een afgekapt intern adres,
+     en daar herkent niemand zichzelf in. */
+  var naam = ik.profiel.naam || ik.profiel.gebruikersnaam || ik.profiel.email || 'ingelogd';
   var rol  = ik.profiel.rol === 'schoolbeheerder' ? 'Schoolbeheerder' : 'Leerkracht';
 
   var doos = document.createElement('div');

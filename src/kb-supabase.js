@@ -73,6 +73,25 @@ function OfflineFout(oorzaak){
   return f;
 }
 
+/* Supabase telt per IP-adres hoeveel keer er per vijf minuten wordt
+   in- of aangemeld. Dertig is de grens, en aanmelden en inloggen delen
+   diezelfde teller.
+
+   Dat is bijna altijd goed nieuws -- het is de echte rem tegen het
+   raden van wachtwoorden. Maar het raakt ook iets onschuldigs: wie in
+   één keer een school met tien leerkrachten aanmaakt, doet tien
+   aanmeldingen vanaf hetzelfde IP-adres. Loop je tegen de grens, dan
+   komt er een technische melding terug waar niemand iets aan heeft,
+   terwijl er niets kapot is: je moet gewoon even wachten.
+
+   Vandaar deze herkenning op één plek, zodat elk scherm hetzelfde kan
+   zeggen. */
+function isTeVaak(e){
+  if (!e) return false;
+  if (e.status === 429) return true;
+  return /rate limit|too many requests|over_request_rate/i.test(e.message || '');
+}
+
 function ServerFout(status, lijf){
   var tekst = (lijf && (lijf.message || lijf.msg || lijf.error_description ||
                         lijf.error || lijf.hint)) || ('Fout ' + status);
@@ -389,14 +408,14 @@ function bestandWeg(paden){
    het eerste wat elke pagina opvraagt. */
 
 function wieBenIk(){
-  return lees('profielen', { kies: 'id,naam,email,rol,school_id' }).then(function (rijen) {
+  return lees('profielen', { kies: 'id,naam,email,rol,school_id,gebruikersnaam' }).then(function (rijen) {
     var ik = (rijen || []).filter(function (p) {
       return sessie && sessie.gebruiker && p.id === sessie.gebruiker.id;
     })[0] || (rijen || [])[0] || null;
     if (!ik) return { profiel: null, school: null, groepen: [] };
     if (!ik.school_id) return { profiel: ik, school: null, groepen: [] };
     return Promise.all([
-      lees('scholen', { kies: 'id,naam,modules,huisstijl' }),
+      lees('scholen', { kies: 'id,naam,modules,huisstijl,logo,kindfotos' }),
       lees('groepen', { kies: 'id,naam,volgorde,instellingen,uiterlijk', volgorde: 'volgorde,naam' })
     ]).then(function (uit) {
       return { profiel: ik, school: (uit[0] || [])[0] || null, groepen: uit[1] || [] };
@@ -418,6 +437,7 @@ global.SB = {
   vernieuw: vernieuw,
   lees: lees, schrijf: schrijf, wijzig: wijzig, wis: wis, roep: roep,
   INLOG_DOMEIN: INLOG_DOMEIN, maakAccountVoor: maakAccountVoor,
+  isTeVaak: isTeVaak,
   gebruikersnaamNet: gebruikersnaamNet, inlogadres: inlogadres,
   bestandOp: bestandOp, bestandLink: bestandLink, bestandWeg: bestandWeg,
   wieBenIk: wieBenIk
