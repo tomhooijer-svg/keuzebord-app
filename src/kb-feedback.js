@@ -109,9 +109,23 @@ function bak(){
   });
   return o;
 }
+/* Open of dicht, ook op body -- zoals deze app zijn schermstanden
+   overal bijhoudt (body.bord, body.beheer, body.rondleiding-open).
+
+   Dat is hier geen sierlijkheid. Dit venster hangt náást dat van de
+   pagina, en de proef in test/knoppen.test.js neemt een afdruk van het
+   scherm waarin alleen het eigen venster van de pagina zit. Zonder deze
+   klasse verandert er in die afdruk niets als je dit venster opent of
+   sluit, en dan is Annuleren niet te onderscheiden van een knop die
+   stuk is -- precies wat die proef hoort te vangen. */
+function merkOp(open){
+  if (document.body) document.body.classList.toggle('melden-open', !!open);
+}
+
 function sluit(){
   var o = document.getElementById('fb-overlay');
   if (o) o.classList.remove('open');
+  merkOp(false);
 }
 
 function open(){
@@ -119,6 +133,7 @@ function open(){
   var blad = document.getElementById('fb-blad');
   while (blad.firstChild) blad.removeChild(blad.firstChild);
   o.classList.add('open');
+  merkOp(true);
 
   var titel = el('div', null, 'Iets melden');
   titel.style.cssText = 'font-size:1.25rem;font-weight:600;letter-spacing:-.02em;margin-bottom:8px';

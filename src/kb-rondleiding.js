@@ -64,27 +64,62 @@ function onthoud(){
   try { localStorage.setItem(SLEUTEL, 'ja'); } catch (e) {}
 }
 
-/* Een kaart in de hoek, en met opzet geen venster over het scherm heen.
+/* De kaart staat in de stroom van de pagina, bovenaan de inhoud, en
+   nadrukkelijk niet als venster over het scherm en ook niet zwevend in
+   een hoek.
 
-   Een rondleiding die het scherm afdekt dwingt je om eerst vijf keer op
-   Verder te drukken voordat je iets mag. Dan lees je niet, dan klik je.
-   Zo kun je de stap meteen dóén terwijl je hem leest -- en wie hem niet
-   wil, klikt hem weg zonder dat er iets in de weg heeft gestaan.
+   Die hoek heb ik geprobeerd en weer weggehaald. Hij zag er goed uit en
+   hij dekte een knop af: op het scherm Vandaag lag hij precies over
+   "Taak inplannen". Dat is niet half erg -- dat is een leerkracht die
+   op een knop drukt en niets ziet gebeuren, op haar eerste dag, door
+   iets wat haar zou moeten helpen. Een proef (test/opslagstand.test.js)
+   liep er als eerste tegenaan; zij zag wat een mens ook zou zien.
 
-   De stand staat ook op body, zoals deze app zijn schermstanden overal
-   bijhoudt (body.bord, body.beheer). Dat is hier geen sierlijkheid: de
-   proef in test/knoppen.test.js klikt elke knop aan en kijkt of het
-   scherm er daarna anders uitziet. Zonder die klasse is Verder niet te
-   onderscheiden van een knop die stuk is. */
+   In de stroom kan dat niet. De kaart duwt de inhoud omlaag in plaats
+   van eroverheen te liggen, en er is geen enkele plek waar iets
+   onbereikbaar wordt.
+
+   Het beheer tekent zijn inhoud telkens opnieuw -- bij elke klik in het
+   menu -- en gooit de kaart daarmee weg. Daarom kijkt een waarnemer mee
+   en zet hem er weer in. Dat is minder mooi dan een haakje in het
+   beheer zelf, maar het houdt de rondleiding een losse laag die je in
+   één regel uit een pagina haalt. */
+var KIJKER = null;
+
+function plek(){
+  return document.getElementById('inhoud') || document.body;
+}
+
 function kaart(){
   var k = document.getElementById('rl-kaart');
-  if (k) return k;
+  if (k && k.parentNode === plek()) return k;
+  if (k) k.remove();
   k = el('aside', 'rl-kaart');
   k.id = 'rl-kaart';
   k.setAttribute('aria-label', 'Rondleiding');
-  document.body.appendChild(k);
+  var waar = plek();
+  waar.insertBefore(k, waar.firstChild);
   return k;
 }
+
+/* Blijven kijken of de kaart er nog staat. Het beheer veegt zijn inhoud
+   leeg bij elke menuklik, en een rondleiding die halverwege verdwijnt is
+   geen rondleiding. */
+function blijfKijken(){
+  if (KIJKER || typeof MutationObserver === 'undefined') return;
+  var vak = document.getElementById('inhoud');
+  if (!vak) return;
+  KIJKER = new MutationObserver(function () {
+    if (huidigeStap < 0) return;
+    if (!document.getElementById('rl-kaart')) toon(huidigeStap);
+  });
+  KIJKER.observe(vak, { childList: true });
+}
+function stopKijken(){
+  if (KIJKER) { KIJKER.disconnect(); KIJKER = null; }
+}
+
+var huidigeStap = -1;
 
 function merkOp(n){
   var b = document.body;
@@ -97,15 +132,19 @@ function merkOp(n){
 
 function stop(){
   onthoud();
+  huidigeStap = -1;
+  stopKijken();
   var k = document.getElementById('rl-kaart');
   if (k) k.remove();
   merkOp(-1);
 }
 
 function toon(n){
+  huidigeStap = n;
   var k = kaart();
   while (k.firstChild) k.removeChild(k.firstChild);
   merkOp(n);
+  blijfKijken();
 
   var s = STAPPEN[n];
 
