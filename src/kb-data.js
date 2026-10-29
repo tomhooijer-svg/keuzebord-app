@@ -1205,16 +1205,26 @@ function appAdres(welke, pagina, klasId){
 
   var basis = doel.url || '';
   try {
-    var eigen = (lijst[app.id] || {}).url;
-    /* Draaien we niet op het adres waar de configuratie van uitgaat, dan
-       is een volledig adres verkeerd -- we zoeken de andere app dan naast
-       ons op de plek waar we nu staan. */
-    if (!eigen || location.href.indexOf(eigen) !== 0) {
-      basis = '../' + (doel.map || welke) + '/';
-    }
+    /* Draaien we niet op een van de adressen waar de configuratie van
+       uitgaat, dan is een volledig adres verkeerd -- we zoeken de andere
+       app dan naast ons op de plek waar we nu staan. Een uitgave kan op
+       meer dan één adres staan (tijdens een verhuizing); die staan in
+       'ook'. */
+    if (!opEigenAdres()) basis = '../' + (doel.map || welke) + '/';
   } catch (e) { basis = '../' + (doel.map || welke) + '/'; }
 
   return basis + pad + vraag;
+}
+
+/* Staan we op een adres dat in de configuratie bij deze app hoort? */
+function opEigenAdres(){
+  var app = window.KB_APP || {};
+  var eigen = (app.apps || {})[app.id] || {};
+  var adressen = [eigen.url].concat(eigen.ook || []);
+  for (var i = 0; i < adressen.length; i++) {
+    if (adressen[i] && location.href.indexOf(adressen[i]) === 0) return true;
+  }
+  return false;
 }
 
 /* Waar het bord staat. Heeft deze uitgave het zelf, dan hiernaast; zo
@@ -2367,7 +2377,7 @@ global.KB = {
   kerenDezeWeek: kerenDezeWeek,
   hoekVan: hoekVan, instelling: instelling,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,
-  VERSIE: VERSIE, bordAdres: bordAdres, appAdres: appAdres,
+  VERSIE: VERSIE, bordAdres: bordAdres, appAdres: appAdres, opEigenAdres: opEigenAdres,
   alsElders: alsElders, verouderd: verouderd,
   geefVrij: geefVrij,
   vergrendeldTot: vergrendeldTot, timerDeel: timerDeel,

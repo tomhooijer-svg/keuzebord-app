@@ -33,7 +33,7 @@
 <!-- Zonder dit bestand toont GitHub een grijze standaardpagina zonder weg
      terug: je klikt op een verouderde link, komt in het niets uit, en er
      staat nergens waar je dan wél moet zijn. -->
-<script src="src/kb-app.js?v=22oktober2026-6744659a"></script>
+<script src="src/kb-app.js?v=22oktober2026-b761eef8"></script>
 <script>
 (function () {
   var app = window.KB_APP || {};
@@ -57,9 +57,19 @@
   if (hier) link('Terug naar ' + hier, 'index.html', true);
   else link('Terug naar het begin', 'index.html', true);
 
+  /* Staan we op een adres uit de configuratie (het oude GitHub-adres of
+     app.pixelplein.nl), dan heeft de andere app een vast adres. Zo niet
+     -- een testserver -- dan staat hij naast ons. Op het subdomein bestaat
+     zo'n buurmap niet, dus daar moet het volledige adres het zijn. */
+  var eigen = (app.id && lijst[app.id]) || {};
+  var opEigen = [eigen.url].concat(eigen.ook || []).some(function (u) {
+    return u && location.href.indexOf(u) === 0;
+  });
+
   Object.keys(lijst).forEach(function (id) {
     if (id === app.id) return;
-    link('Naar ' + lijst[id].naam, '../' + lijst[id].map + '/');
+    var naar = (opEigen && lijst[id].url) ? lijst[id].url : '../' + lijst[id].map + '/';
+    link('Naar ' + lijst[id].naam, naar);
   });
 
   var a = document.getElementById('adres');

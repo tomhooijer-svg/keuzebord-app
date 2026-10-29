@@ -712,3 +712,23 @@ input, select, textarea{ font: inherit; color: inherit; }
   display: inline-block; padding: 3px 9px; border-radius: 999px;
   font-size: .75rem; font-weight: 600;
 }
+
+/* ── verhuizing naar een nieuw adres ───────────────────────
+   Alleen op het oude adres, en alleen zolang de verhuizing aan staat
+   (src/kb-verhuizing.js). Onderaan, over de volle breedte maar laag:
+   de juf moet hem zien, het bord moet blijven werken. */
+.verhuismelding{
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 900;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px; border-radius: var(--rond-s);
+  background: var(--goed-zacht); color: var(--inkt);
+  border: 1px solid var(--lijn); box-shadow: 0 6px 20px rgb(14 42 86 / .12);
+  font-size: .9rem; line-height: 1.4;
+}
+.verhuismelding.wacht{ background: var(--let-op-zacht); border-color: var(--let-op); }
+.verhuismelding .verhuis-tekst{ flex: 1; min-width: 220px; }
+.verhuismelding [hidden]{ display: none !important; }
+.verhuismelding .verhuis-heen{
+  display: inline-flex; align-items: center; text-decoration: none;
+  background: var(--inkt); color: var(--vlak); border-radius: var(--rond-vol);
+}

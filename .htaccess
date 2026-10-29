@@ -1,0 +1,35 @@
+# Voor Cloud86 (Plesk, Apache). Dezelfde koppen als _headers, dat alleen
+# Cloudflare leest; GitHub Pages leest geen van beide. Pas je hier iets
+# aan, doe het dan ook in _headers.
+#
+# Van http naar https stuurt Plesk zelf door (vinkje bij Hosting &
+# DNS → Hosting → "Permanent SEO-safe 301 redirect"), dat hoort hier niet.
+
+# Een adres dat er niet is: onze eigen pagina met een weg terug.
+ErrorDocument 404 /404.html
+
+# Geen mappenlijst tonen als er ergens geen index.html staat.
+Options -Indexes
+
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  # Zoekmachines mogen deze app niet opnemen: er staan klaslijsten in.
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+  # De app mag alleen bij zichzelf en bij de eigen Supabase-database.
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; base-uri 'self'; form-action 'none'; frame-ancestors 'self'"
+
+  # De app zelf nooit uit de cache serveren, anders zien leerkrachten
+  # dagen later pas een wijziging. Plaatjes en letters mogen wel blijven.
+  <FilesMatch "\.(html|js|css|json)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# De database-scripts en leesmij's horen bij de repo, niet bij de app.
+<FilesMatch "\.(sql|md)$">
+  Require all denied
+</FilesMatch>

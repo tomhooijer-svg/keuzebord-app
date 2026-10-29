@@ -12,7 +12,7 @@ window.KB_APP = {
      bordmenu en bij Groep, zodat je twee uitgaven van dezelfde dag uit
      elkaar kunt houden -- en kunt zien of een wijziging bij je is
      aangekomen. */
-  bouw: '6744659a',
+  bouw: 'b761eef8',
   /* De datum die de leerkracht herkent. Staat samen met de
      bouwvingerafdruk in de testchip, zodat je bij een melding weet
      welke code ze voor zich had. */
@@ -28,8 +28,13 @@ window.KB_APP = {
      bij als terugval voor een testserver of een ander domein. Dit is de
      enige plek waar die adressen staan. */
   apps: {
-    keuzebord: { naam:'Keuzebord', map:'keuzebord-app', url:'https://tomhooijer-svg.github.io/keuzebord-app/' },
+    keuzebord: { naam:'Keuzebord', map:'keuzebord-app', url:'https://tomhooijer-svg.github.io/keuzebord-app/',
+                 ook:['https://app.pixelplein.nl/'] },
     planbord:  { naam:'Planbord',  map:'planbord', url:'https://tomhooijer-svg.github.io/planbord/' }
   },
-  ander: 'planbord'
+  ander: 'planbord',
+  /* De verhuizing naar het nieuwe adres. Staat 'aan' op true, dan ziet
+     wie op het oude adres werkt een melding: eerst versturen, dan pas
+     overstappen. Zie src/kb-verhuizing.js. */
+  verhuizing: { aan:false, van:'https://tomhooijer-svg.github.io/keuzebord-app/', naar:'https://app.pixelplein.nl/' }
 };
