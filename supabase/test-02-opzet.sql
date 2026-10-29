@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP on
 insert into auth.users (id, email) values
-  ('11111111-1111-1111-1111-111111111111','beheer@school-a.nl'),
-  ('44444444-4444-4444-4444-444444444444','beheer@school-b.nl');
+  ('11111111-1111-1111-1111-111111111111','beheer.a@school-a.nl'),
+  ('44444444-4444-4444-4444-444444444444','beheer.b@school-b.nl');
 set test.uid = '11111111-1111-1111-1111-111111111111';
 select public.school_beginnen('School A');
 set test.uid = '44444444-4444-4444-4444-444444444444';

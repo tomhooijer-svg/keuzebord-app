@@ -1053,7 +1053,10 @@ function logboekPaneel(){
   logboekNu.forEach(function (r) {
     var rij = el('div', 'ledenrij');
     var links = el('div');
-    links.appendChild(el('div', 'ledennaam', r.wat + (r.waarover ? ' \u2014 ' + r.waarover : '')));
+    /* Wat de leverancier deed, staat er met zoveel woorden bij: dat is
+       precies wat een school in haar logboek wil kunnen terugvinden. */
+    var door = (r.gegevens && r.gegevens.door === 'leverancier') ? 'Pixelplein (leverancier): ' : '';
+    links.appendChild(el('div', 'ledennaam', door + r.wat + (r.waarover ? ' \u2014 ' + r.waarover : '')));
     links.appendChild(el('div', 'ledenmail', tijdstip(r.tijd)));
     rij.appendChild(links);
     p.appendChild(rij);

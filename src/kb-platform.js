@@ -20,10 +20,17 @@ function el(tag, klasse, tekst){
 function leeg(n){ while (n && n.firstChild) n.removeChild(n.firstChild); return n; }
 
 var meldingTimer = null;
+/* De database weigert een actie op een school met kinderen zolang de deur
+   dicht is (platform_moet_mogen in schema.sql). Dat is geen storing maar
+   een afspraak, dus geen "Dat lukte niet: ..." ervoor: alleen de zin
+   zelf, en wat langer in beeld, want er staat iets in om te doen. */
+var DEUR_DICHT = 'Deze school heeft kinderen. Vraag de schoolbeheerder om meekijken aan te zetten.';
 function meld(t){
-  var m = $('melding'); m.textContent = t; m.classList.add('zichtbaar');
+  var dicht = String(t || '').indexOf('Deze school heeft kinderen') >= 0;
+  var m = $('melding'); m.textContent = dicht ? DEUR_DICHT : t; m.classList.add('zichtbaar');
+  m.classList.toggle('deur-dicht', dicht);
   clearTimeout(meldingTimer);
-  meldingTimer = setTimeout(function () { m.classList.remove('zichtbaar'); }, 3200);
+  meldingTimer = setTimeout(function () { m.classList.remove('zichtbaar'); }, dicht ? 8000 : 3200);
 }
 
 function toonBlad(bouw){
@@ -430,11 +437,8 @@ function tekenScholen(v){
     mk2.title = aan ? 'Deze school heeft het planbord' : 'Deze school heeft alleen het keuzebord';
     mk2.addEventListener('click', function () {
       var nieuw = Object.assign({}, mods, { planbord: !aan });
+      // het logboek van de school schrijft de database zelf (school_bewaken)
       SB.wijzig('scholen', { modules: nieuw }, { id:'eq.' + c.school_id })
-        .then(function () {
-          return SB.roep('noteer', { wat: (!aan ? 'planbord aangezet' : 'planbord uitgezet'),
-                                     school: c.school_id, waarover: c.naam }).catch(function () {});
-        })
         .then(function () { return haalAlles(); })
         .then(function () { teken(); meld(!aan ? 'Planbord aan' : 'Planbord uit'); },
               function (e) { meld('Dat lukte niet: ' + (e && e.message)); });
@@ -1554,11 +1558,8 @@ function toonSchoolAanpassen(c){
       var nieuw = (naam.value || '').trim();
       if (!nieuw) { meld('Een school heeft een naam nodig'); naam.focus(); return; }
       if (nieuw === c.naam) { sluitBlad(); return; }
+      // het logboek van de school schrijft de database zelf (school_bewaken)
       SB.wijzig('scholen', { naam: nieuw }, { id:'eq.' + c.school_id })
-        .then(function () {
-          return SB.roep('noteer', { wat:'schoolnaam gewijzigd', school:c.school_id,
-                                     waarover: nieuw }).catch(function () {});
-        })
         .then(function () { return haalAlles(); })
         .then(function () { sluitBlad(); teken(); meld('De school heet nu ' + nieuw); },
               function (e) { meld('Dat lukte niet: ' + (e && e.message)); });

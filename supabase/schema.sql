@@ -543,6 +543,7 @@ create or replace function public.wachtwoord_zetten(wie uuid, nieuw text)
 returns void language plpgsql security definer set search_path = public as $$
 declare doel public.profielen%rowtype;
         ik   public.profielen%rowtype;
+        noodroute boolean := false;
 begin
   select * into doel from public.profielen where id = wie;
   if doel.id is null then raise exception 'Dat account bestaat niet.'; end if;
@@ -555,15 +556,35 @@ begin
      andere schoolbeheerder daar, want anders kan een school zichzelf
      buitensluiten zodra er één persoon uitvalt.
 
-     De platformbeheerder mag het voor iedereen. Dat is niet hetzelfde
-     als bij de gegevens van een school kunnen: een wachtwoord zetten
-     geeft hem geen inzage, en zonder dit recht kan hij een school die
-     niemand meer binnen heeft helemaal niet helpen. */
+     De platformbeheerder: een wachtwoord zetten is wél inzage. Wie het
+     nieuwe wachtwoord kent, kan als die leerkracht inloggen en ziet haar
+     kinderen. Daarom geldt voor hem dezelfde regel als overal
+     (platform_mag_bij_school): bij een school met kinderen alleen als de
+     deur open staat.
+
+     Eén uitzondering, de noodroute: de schoolbeheerder van een school
+     die niemand anders meer binnen heeft. Die school kan de deur niet
+     openzetten -- daar is juist een schoolbeheerder voor nodig. Het
+     wordt gelogd, en de school ziet het in haar logboek. */
   if not (public.ben_platformbeheerder()
           or (ik.rol = 'schoolbeheerder' and ik.school_id is not null
               and ik.school_id = doel.school_id)
           or ik.id = doel.id) then
     raise exception 'Je mag het wachtwoord van dit account niet zetten.';
+  end if;
+  if public.ben_platformbeheerder() and ik.id <> doel.id
+     and doel.school_id is not null
+     and not public.platform_mag_bij_school(doel.school_id) then
+    if not (doel.rol = 'schoolbeheerder' and not exists (
+              select 1 from public.profielen p
+                join auth.users u on u.id = p.id
+               where p.school_id = doel.school_id
+                 and p.rol = 'schoolbeheerder'
+                 and p.id <> doel.id
+                 and coalesce(u.encrypted_password, '') <> '')) then
+      perform public.platform_moet_mogen(doel.school_id);
+    end if;
+    noodroute := true;
   end if;
 
   /* Kort genoeg om te raden is geen wachtwoord. De app maakt er zelf
@@ -613,7 +634,9 @@ begin
      where id = wie;
   end if;
 
-  perform public.noteer('wachtwoord opnieuw ingesteld', doel.school_id,
+  perform public.noteer(case when noodroute
+                          then 'wachtwoord schoolbeheerder hersteld (noodroute)'
+                          else 'wachtwoord opnieuw ingesteld' end, doel.school_id,
                         coalesce(nullif(doel.naam, ''), doel.gebruikersnaam),
                         jsonb_build_object('gebruikersnaam', doel.gebruikersnaam));
 end $$;
@@ -1008,6 +1031,39 @@ returns boolean language sql stable security definer set search_path = public as
   );
 $$;
 
+/* ── de leverancier en een school met kinderen ─────────────────────────
+   Eén regel voor alles wat de platformbeheerder aan een school doet:
+   accounts aanmaken, wachtwoorden zetten, iemand verplaatsen of een rol
+   geven. Elk van die knoppen kan hem anders langs een omweg bij de
+   kinderen brengen -- een account maken waarvan hij het wachtwoord kent,
+   en daarmee inloggen. Dus: heeft de school kinderen, dan alleen als de
+   school de deur heeft opengezet. Een lege school (net aangemaakt, nog
+   niets ingevoerd) mag hij gewoon inrichten. Zie DECISIONS.md,
+   29-10-2026. */
+create or replace function public.school_heeft_kinderen(s uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.leerlingen l where l.school_id = s);
+$$;
+
+create or replace function public.platform_mag_bij_school(s uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.ben_platformbeheerder()
+     and (s is null
+          or not public.school_heeft_kinderen(s)
+          or public.ondersteuning_actief(s));
+$$;
+
+/* Dezelfde vraag, maar dan als stop: mag het niet, dan een melding die
+   het platformbeheer zo aan je laat zien. De tekst is de afspraak met
+   src/kb-platform.js; verander je hem, verander hem daar ook. */
+create or replace function public.platform_moet_mogen(s uuid)
+returns void language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.platform_mag_bij_school(s) then
+    raise exception 'Deze school heeft kinderen. Vraag de schoolbeheerder om meekijken aan te zetten.';
+  end if;
+end $$;
+
 -- ── de rechten aanzetten ───────────────────────────────────────────────
 
 do $$
@@ -1060,6 +1116,26 @@ begin
      and not public.ben_platformbeheerder() then
     raise exception 'Welke onderdelen deze school heeft, regelt de leverancier.';
   end if;
+  -- Kindfoto's aan of uit is van de school (DECISIONS.md, 27-10-2026).
+  if new.kindfotos is distinct from old.kindfotos and public.ben_platformbeheerder() then
+    raise exception 'Kindfoto''s aan- of uitzetten doet alleen de schoolbeheerder.';
+  end if;
+  if public.ben_platformbeheerder() then
+    -- Hier en niet in het scherm: zo komt ook een wijziging die buiten
+    -- het platformbeheer om gaat in het logboek van de school.
+    if new.naam is distinct from old.naam then
+      perform public.noteer('schoolnaam gewijzigd', new.id, new.naam,
+                            jsonb_build_object('was', old.naam));
+    end if;
+    if (new.modules->>'planbord') is distinct from (old.modules->>'planbord') then
+      perform public.noteer(case when new.modules->>'planbord' = 'true'
+                                 then 'planbord aangezet' else 'planbord uitgezet' end,
+                            new.id, new.naam);
+    elsif new.modules is distinct from old.modules then
+      perform public.noteer('onderdelen gewijzigd', new.id, new.naam,
+                            jsonb_build_object('was', old.modules, 'nu', new.modules));
+    end if;
+  end if;
   return new;
 end $$;
 
@@ -1101,17 +1177,34 @@ begin
     if new.id = auth.uid() then
       raise exception 'Je kunt je eigen rol of school niet aanpassen.';
     end if;
-    -- De platformbeheerder beheert accounts: hij mag iemand aan een
-    -- school hangen of tot schoolbeheerder maken. Zijn eigen rol en
-    -- school kan hij niet aanpassen -- dat vangt de regel hierboven.
+    -- De platformbeheerder beheert accounts, maar rol en school alleen
+    -- via account_rol() en account_verplaatsen(): daar staat de regel
+    -- voor scholen met kinderen, het logboek en de laatste-beheerder-
+    -- controle. Die zetten kb.systeem aan en komen hierboven al langs.
+    -- Een gewone update eromheen zou dat allemaal overslaan.
     if public.ben_platformbeheerder() then
-      return new;
+      raise exception 'Rol en school pas je aan via Accounts in het platformbeheer.';
     end if;
     if not (public.ben_schoolbeheerder()
             and old.school_id is not distinct from public.mijn_school()
             and new.school_id is not distinct from public.mijn_school()) then
       raise exception 'Alleen de schoolbeheerder van deze school past dit aan.';
     end if;
+  end if;
+  /* Past de leverancier de naam of gebruikersnaam van iemand op een
+     school aan (rol en school lopen via account_rol en
+     account_verplaatsen, die loggen zelf), dan ziet de school dat. */
+  if old.school_id is not null and new.id <> auth.uid()
+     and coalesce(current_setting('kb.systeem', true), '') <> 'aan'
+     and public.ben_platformbeheerder()
+     and (new.naam is distinct from old.naam
+          or new.gebruikersnaam is distinct from old.gebruikersnaam
+          or new.email is distinct from old.email) then
+    perform public.noteer('account aangepast', old.school_id,
+                          coalesce(nullif(new.naam, ''), new.gebruikersnaam),
+                          jsonb_build_object(
+                            'was', jsonb_build_object('naam', old.naam, 'gebruikersnaam', old.gebruikersnaam),
+                            'nu',  jsonb_build_object('naam', new.naam, 'gebruikersnaam', new.gebruikersnaam)));
   end if;
   return new;
 end $$;
@@ -1120,15 +1213,58 @@ drop trigger if exists profiel_op_slot on public.profielen;
 create trigger profiel_op_slot before update on public.profielen
   for each row execute function public.profiel_bewaken();
 
+/* De leverancier ziet een uitnodiging alleen waar hij mag zijn. Anders kan
+   hij een openstaande code van een school met kinderen lezen en met een
+   vers account verzilveren -- dat is een account maken langs een omweg. */
 create policy "beheerder ziet uitnodigingen" on public.uitnodigingen
   for select using ((school_id = public.mijn_school() and public.ben_schoolbeheerder())
-         or public.ben_platformbeheerder());
+         or public.platform_mag_bij_school(school_id));
 create policy "beheerder nodigt uit" on public.uitnodigingen
   for insert with check ((school_id = public.mijn_school() and public.ben_schoolbeheerder())
-         or public.ben_platformbeheerder());
+         or public.platform_mag_bij_school(school_id));
+
+/* Een uitnodiging van de platformbeheerder is een account dat hij maakt
+   -- met een wachtwoord dat hij kent. Daarom de regel hierboven, en hier
+   de duidelijke melding (de regel zelf zegt alleen "mag niet") en de
+   regel in het logboek van de school. school_aanmaken() gaat hier ook
+   langs; die school is nieuw en leeg, dus dat mag. */
+create or replace function public.uitnodiging_bewaken()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare r public.uitnodigingen%rowtype;
+begin
+  r := case when tg_op = 'DELETE' then old else new end;
+  if not public.ben_platformbeheerder()
+     or coalesce(current_setting('kb.systeem', true), '') = 'aan' then
+    return r;
+  end if;
+  if tg_op = 'INSERT' then
+    perform public.platform_moet_mogen(r.school_id);
+    /* Met de deur open gemaakt, bij een school met kinderen: dan werkt hij
+       niet langer dan de deur openstaat. Anders verzilver je hem morgen
+       nog, als de school de deur alweer dicht heeft gedaan. */
+    if public.school_heeft_kinderen(r.school_id) then
+      new.verloopt := least(new.verloopt,
+        (select max(o.tot) from public.ondersteuning o
+          where o.school_id = r.school_id and o.ingetrokken is null and now() < o.tot));
+      r := new;
+    end if;
+    perform public.noteer(case r.rol when 'schoolbeheerder'
+                                 then 'account aangemaakt (schoolbeheerder)'
+                                 else 'account aangemaakt' end,
+                          r.school_id, split_part(r.email, '@', 1));
+  elsif exists (select 1 from public.scholen where id = r.school_id) then
+    -- (staat de school er niet meer, dan wordt hij net opgeheven en is
+    -- dat zelf al gelogd)
+    perform public.noteer('uitnodiging ingetrokken', r.school_id, split_part(r.email, '@', 1));
+  end if;
+  return r;
+end $$;
+drop trigger if exists uitnodiging_op_slot on public.uitnodigingen;
+create trigger uitnodiging_op_slot before insert or delete on public.uitnodigingen
+  for each row execute function public.uitnodiging_bewaken();
 create policy "beheerder trekt uitnodiging in" on public.uitnodigingen
   for delete using ((school_id = public.mijn_school() and public.ben_schoolbeheerder())
-         or public.ben_platformbeheerder());
+         or public.platform_mag_bij_school(school_id));
 
 -- ── groepen ────────────────────────────────────────────────────────────
 
@@ -1303,8 +1439,15 @@ create policy "beheerder trekt ondersteuning in" on public.ondersteuning
 create policy "logboek lezen" on public.handelingen
   for select using (school_id = public.mijn_school()
                     or public.ben_platformbeheerder());
+/* Bijschrijven op je eigen naam, in het logboek van je eigen school, en
+   zonder "door de leverancier" te kunnen zetten -- dat merkt noteer() zelf
+   aan. Zonder dit kon iedereen die kan inloggen regels in het logboek van
+   een willekeurige school zetten, ook als leverancier vermomd. */
 create policy "logboek bijschrijven" on public.handelingen
-  for insert with check (wie = auth.uid());
+  for insert with check (
+    wie = auth.uid()
+    and (school_id is null or school_id = public.mijn_school() or public.ben_platformbeheerder())
+    and (not (gegevens ? 'door') or public.ben_platformbeheerder()));
 
 /* Iedereen die is ingelogd mag iets sturen, op zijn eigen naam. Lezen
    doet alleen de platformbeheerder: er staat een notitie in die van hem
@@ -1333,6 +1476,7 @@ declare u public.uitnodigingen%rowtype;
 begin
   select * into u from public.uitnodigingen
    where lower(email) = lower(new.email) and verzilverd is null
+     and verloopt > now()
    order by aangemaakt limit 1;
 
   insert into public.profielen (id, email, naam, school_id, rol, gebruikersnaam)
@@ -1566,6 +1710,13 @@ begin
               or public.ben_platformbeheerder()) then
     raise exception 'Dat is niet jouw school.';
   end if;
+  /* Wat de leverancier doet, krijgt dat erbij. Het logboek in het
+     schoolbeheer zet er dan "Pixelplein (leverancier)" voor, zodat een
+     schoolbeheerder in één oogopslag ziet welke regels niet van een
+     collega komen. 'wat' zelf blijft gelijk; daar wordt op gezocht. */
+  if school is not null and public.ben_platformbeheerder() then
+    gegevens := coalesce(gegevens, '{}'::jsonb) || jsonb_build_object('door', 'leverancier');
+  end if;
   insert into public.handelingen (wie, school_id, wat, waarover, gegevens)
   values (auth.uid(), school, wat, waarover, gegevens);
 end $$;
@@ -1746,7 +1897,13 @@ begin
   ) into aantallen;
 
   perform public.noteer('school verwijderd', school, echte_naam, aantallen);
+  /* Het opheffen zet de school van de accounts op leeg (on delete set
+     null) en haalt de uitnodigingen weg. Dat zijn geen losse acties van
+     de leverancier maar deze ene, en die staat hierboven al in het
+     logboek. kb.systeem laat de bewakers dat weten. */
+  perform set_config('kb.systeem', 'aan', true);
   delete from public.scholen where id = school;
+  perform set_config('kb.systeem', '', true);
   return jsonb_build_object('naam', echte_naam, 'weg', aantallen);
 end $$;
 
@@ -1795,6 +1952,11 @@ begin
   end if;
   if p.rol = nieuwe_rol then
     return jsonb_build_object('naam', p.naam, 'rol', p.rol);
+  end if;
+  -- Een rol geven binnen een school met kinderen (bijv. een eigen
+  -- account schoolbeheerder maken) mag alleen met de deur open.
+  if p.school_id is not null then
+    perform public.platform_moet_mogen(p.school_id);
   end if;
   if nieuwe_rol <> 'schoolbeheerder' and public.laatste_beheerder(wie) then
     raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
@@ -1852,8 +2014,19 @@ begin
   if p.school_id is not distinct from nieuwe_school then
     return jsonb_build_object('naam', p.naam, 'school', nieuwe_naam, 'groepen_weg', 0);
   end if;
+  -- Iemand naar een school met kinderen brengen is een account daar
+  -- maken. Zelfde regel als bij de uitnodigingen.
+  if nieuwe_school is not null then
+    perform public.platform_moet_mogen(nieuwe_school);
+  end if;
   if public.laatste_beheerder(wie) then
     raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
+  end if;
+  -- Weghalen uit een school met kinderen: ook dat alleen met de deur
+  -- open. Anders haal je eerst de andere beheerders weg en staat de
+  -- noodroute (wachtwoord_zetten) voor jou open.
+  if p.school_id is not null then
+    perform public.platform_moet_mogen(p.school_id);
   end if;
 
   delete from public.groep_leden where profiel_id = wie;
@@ -1902,6 +2075,11 @@ begin
   end if;
   if public.laatste_beheerder(wie) then
     raise exception 'Dit is de enige schoolbeheerder van die school. Maak eerst iemand anders beheerder.';
+  end if;
+  -- Zie account_verplaatsen: een account weghalen uit een school met
+  -- kinderen kan de noodroute openzetten.
+  if p.school_id is not null then
+    perform public.platform_moet_mogen(p.school_id);
   end if;
 
   perform public.noteer('account verwijderd', p.school_id,
