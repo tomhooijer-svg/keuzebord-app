@@ -18,7 +18,7 @@ window.KB_APP = {
      welke code ze voor zich had. */
   versie: '22 oktober 2026',
   /* Draait deze uitgave op proef? Zie src/kb-testbanner.js. */
-  testversie: true,
+  testversie: false,
   /* Heeft deze uitgave het bord zelf? Planbord niet -- daar wijst een
      knop "Bord openen" naar de andere app, met de groep mee. */
   heeftBord: true,
@@ -28,13 +28,13 @@ window.KB_APP = {
      bij als terugval voor een testserver of een ander domein. Dit is de
      enige plek waar die adressen staan. */
   apps: {
-    keuzebord: { naam:'Keuzebord', map:'keuzebord-app', url:'https://tomhooijer-svg.github.io/keuzebord-app/',
-                 ook:['https://app.pixelplein.nl/'] },
+    keuzebord: { naam:'Keuzebord', map:'keuzebord-app', url:'https://app.pixelplein.nl/',
+                 ook:['https://tomhooijer-svg.github.io/keuzebord-app/'] },
     planbord:  { naam:'Planbord',  map:'planbord', url:'https://tomhooijer-svg.github.io/planbord/' }
   },
   ander: 'planbord',
   /* De verhuizing naar het nieuwe adres. Staat 'aan' op true, dan ziet
      wie op het oude adres werkt een melding: eerst versturen, dan pas
      overstappen. Zie src/kb-verhuizing.js. */
-  verhuizing: { aan:false, van:'https://tomhooijer-svg.github.io/keuzebord-app/', naar:'https://app.pixelplein.nl/' }
+  verhuizing: { aan:true, van:'https://tomhooijer-svg.github.io/keuzebord-app/', naar:'https://app.pixelplein.nl/' }
 };

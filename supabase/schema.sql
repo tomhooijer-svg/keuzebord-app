@@ -10,6 +10,13 @@
 --  iets van een andere school. Dat staat niet in de app maar in de
 --  database zelf, zodat het ook geldt als iemand buiten de app om probeert
 --  mee te kijken.
+--
+--  Deelt het Supabase-project met startpagina/ (tabellen sp_*, app_*):
+--  die worden hier niet aangeraakt. Hetzelfde geldt voor de oude
+--  observatie-app "Kijk mee" (tabellen observatie_*, periode*, functies
+--  obs_*). Dit bestand raakt alleen zijn eigen tabellen en functies aan,
+--  bij naam genoemd. Volgorde bij opnieuw draaien: eerst dit bestand,
+--  daarna startpagina/supabase/schema.sql.
 -- ═══════════════════════════════════════════════════════════════════════
 
 create extension if not exists "pgcrypto";
@@ -455,7 +462,7 @@ alter table public.profielen add column if not exists gebruikersnaam text;
    letters (dan logt de helft zichzelf buiten door een hoofdletter), en
    geen accenten (want die moeten door een e-mailadres heen). */
 create or replace function public.gebruikersnaam_net(ruw text)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public, pg_temp as $$
   select nullif(
     regexp_replace(
       regexp_replace(lower(trim(coalesce(ruw, ''))), '[^a-z0-9.-]+', '.', 'g'),
@@ -466,7 +473,7 @@ $$;
 /* Het adres dat erbij hoort. Eén plek, zodat de app en de database het
    nooit oneens kunnen zijn. */
 create or replace function public.inlogadres(gebruikersnaam text)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public, pg_temp as $$
   select public.gebruikersnaam_net(gebruikersnaam) || '@keuzebord.invalid'
 $$;
 
@@ -1083,11 +1090,26 @@ end $$;
 
 -- Bij een tweede keer draaien willen we niet over oude regels heen
 -- struikelen, dus we ruimen eerst op.
+/* Alleen de regels van onze eigen tabellen, bij naam. Vroeger ging dit
+   over alles in public, en dan verdwenen bij elke run ook de regels van
+   de startpagina en van de observatie-app, die in hetzelfde project
+   staan. Er lekte dan niets (zonder regels mag niemand iets), maar die
+   apps lagen stil tot hun eigen schema opnieuw draaide.
+
+   Dezelfde lijst als hierboven. Komt er een tabel bij, zet hem dan in
+   allebei; vergeet je deze, dan struikelt de tweede run over "policy
+   already exists" (test/rechten.test.js draait het schema twee keer). */
 do $$
 declare r record;
 begin
   for r in select schemaname, tablename, policyname from pg_policies
            where schemaname = 'public'
+             and tablename = any (array[
+    'scholen','profielen','uitnodigingen','groepen','groep_leden','groep_verzoeken','leerlingen',
+    'media','hoeken','themas','thema_hoeken','thema_doelen','borden','bord_hoeken','groep_doelen',
+    'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
+    'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen',
+    'ondersteuning','handelingen','feedback'])
   loop
     execute format('drop policy %I on %I.%I', r.policyname, r.schemaname, r.tablename);
   end loop;
@@ -1516,15 +1538,30 @@ create trigger profiel_bij_nieuw_account
 -- De allereerste persoon van een school heeft nog geen uitnodiging. Zij
 -- richt de school zelf in en wordt daarmee de beheerder. Dit kan maar één
 -- keer per account: heb je al een school, dan gebeurt er niets.
+/* Een account van een andere Pixelplein-app (de startpagina) heeft in
+   profielen géén school: dat is daar de afspraak. Voor deze functie zag
+   het er dus uit als een nieuw keuzebord-account, en zo'n account kon
+   zichzelf een keuzebord-school en de rol schoolbeheerder geven. Wie een
+   rij in app_leden heeft, wordt daarom geweigerd. app_leden hoort bij de
+   startpagina en bestaat niet altijd; vandaar to_regclass en dynamische
+   SQL, zodat dit schema ook zonder de startpagina werkt. */
 create or replace function public.school_beginnen(schoolnaam text)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare nieuwe uuid;
+        andere_app boolean := false;
 begin
   if auth.uid() is null then
     raise exception 'Je moet ingelogd zijn.';
   end if;
   if (select school_id from public.profielen where id = auth.uid()) is not null then
     raise exception 'Dit account hoort al bij een school.';
+  end if;
+  if to_regclass('public.app_leden') is not null then
+    execute 'select exists (select 1 from public.app_leden where profiel_id = $1)'
+       into andere_app using auth.uid();
+    if andere_app then
+      raise exception 'Dit account hoort bij een andere Pixelplein-app. Een keuzebord-school begin je met een eigen account.';
+    end if;
   end if;
   insert into public.scholen (naam) values (schoolnaam) returning id into nieuwe;
   -- alleen binnen deze ene transactie mag het slot open
@@ -1550,6 +1587,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare u public.uitnodigingen%rowtype;
         mijn_id uuid := auth.uid();
         huidige uuid;
+        andere_app boolean := false;
 begin
   if mijn_id is null then
     raise exception 'Je moet ingelogd zijn.';
@@ -1561,6 +1599,18 @@ begin
   select school_id into huidige from public.profielen where id = mijn_id;
   if huidige is not null then
     raise exception 'Dit account hoort al bij een school.';
+  end if;
+
+  /* Net als bij school_beginnen(): een startpagina-account heeft hier
+     geen school, maar hoort wel al ergens bij. Met een code kon het
+     anders bij een keuzebord-school komen, ook bij een andere dan zijn
+     startpagina-school. */
+  if to_regclass('public.app_leden') is not null then
+    execute 'select exists (select 1 from public.app_leden where profiel_id = $1)'
+       into andere_app using mijn_id;
+    if andere_app then
+      raise exception 'Dit account hoort bij een andere Pixelplein-app. Een keuzebord-school begin je met een eigen account.';
+    end if;
   end if;
 
   select * into u from public.uitnodigingen
@@ -1658,9 +1708,34 @@ grant execute on function public.zit_in_groep(uuid)   to authenticated;
 
 -- Zonder deze rechten komt de app niet eens bij de tabellen; de regels
 -- hierboven bepalen daarna pas welke rijen zichtbaar zijn.
+--
+-- Alleen onze eigen tabellen, bij naam (dezelfde lijst als de RLS-lus).
+-- Vroeger stond hier "on all tables in schema public", en dat gaf ook
+-- rechten op de tabellen van de startpagina en van "Kijk mee". Die
+-- regelen hun eigen rechten.
 grant usage on schema public to authenticated;
-grant select, insert, update, delete on all tables in schema public to authenticated;
-grant usage, select on all sequences in schema public to authenticated;
+do $$
+declare t text;
+        s text;
+begin
+  foreach t in array array[
+    'scholen','profielen','uitnodigingen','groepen','groep_leden','groep_verzoeken','leerlingen',
+    'media','hoeken','themas','thema_hoeken','thema_doelen','borden','bord_hoeken','groep_doelen',
+    'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
+    'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen',
+    'ondersteuning','handelingen','feedback']
+  loop
+    execute format('grant select, insert, update, delete on table public.%I to authenticated', t);
+  end loop;
+  -- de tellers achter de twee logboeken (bigserial); ontbreekt er een,
+  -- dan slaan we hem over
+  foreach t in array array['gebeurtenissen', 'handelingen'] loop
+    s := pg_get_serial_sequence('public.' || t, 'id');
+    if s is not null then
+      execute format('grant usage, select on sequence %s to authenticated', s);
+    end if;
+  end loop;
+end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  De foto's
@@ -2282,3 +2357,119 @@ create policy "kb media verwijderen" on storage.objects for delete
          and (case when (storage.foldername(name))[1] = 'basis'
                    then public.ben_platformbeheerder()
                    else (storage.foldername(name))[1] = public.mijn_school()::text end));
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Wie zonder inloggen wat mag (de rol anon)
+-- ═══════════════════════════════════════════════════════════════════════
+/* PostgreSQL geeft iedereen (PUBLIC) uitvoerrecht op een nieuwe functie,
+   en Supabase geeft daarbovenop elke nieuwe tabel en functie in public
+   apart aan anon. "revoke ... from public" alleen is dus niet genoeg:
+   anon hield dan zijn eigen recht en kon bijvoorbeeld met
+   gebruikersnaam_vrij() één voor één namen aflopen.
+
+   Wat het keuzebord vóór het inloggen nodig heeft: niets uit deze
+   database. Inloggen, aanmelden en de rem lopen via /auth/v1 (de
+   inlogdienst van Supabase, met een eigen databaserol); het adres
+   achter een gebruikersnaam rekent de app zelf uit (SB.inlogadres in
+   src/kb-supabase.js); de demo draait helemaal in de browser. De
+   trekker die bij een nieuw account een profiel maakt (nieuw_profiel)
+   heeft geen uitvoerrecht nodig: een trekker vuurt ook zonder.
+
+   Daarom: anon krijgt hier niets. Ingelogde accounts houden alles wat ze
+   al hadden. Trekkerfuncties zijn voor niemand aan te roepen.
+
+   Bewust een lijst bij naam, en geen "all functions in schema public":
+   in dit project staan ook de startpagina (sp_*, app_*) en de oude
+   observatie-app (obs_*), en die regelen hun eigen rechten. Om dezelfde
+   reden geen "alter default privileges" voor het hele schema.
+
+   Komt er een functie bij in dit bestand, zet hem dan hieronder.
+   test/rechten.test.js faalt als een keuzebord-functie open staat voor
+   anon. */
+do $$
+declare
+  f text;
+  t text;
+  s text;
+  er_is_anon boolean := exists (select 1 from pg_roles where rolname = 'anon');
+  -- aan te roepen door wie is ingelogd
+  gewoon text[] := array[
+    'public.gebruikersnaam_net(text)',
+    'public.inlogadres(text)',
+    'public.gebruikersnaam_vrij(text)',
+    'public.wachtwoord_zetten(uuid,text)',
+    'public.mijn_school()',
+    'public.ben_schoolbeheerder()',
+    'public.zit_in_groep(uuid)',
+    'public.groep_van_mijn_school(uuid)',
+    'public.ben_platformbeheerder()',
+    'public.ondersteuning_actief(uuid)',
+    'public.van_mijn_school(uuid)',
+    'public.mag_bij_groep(uuid)',
+    'public.school_heeft_kinderen(uuid)',
+    'public.platform_mag_bij_school(uuid)',
+    'public.platform_moet_mogen(uuid)',
+    'public.school_beginnen(text)',
+    'public.uitnodiging_verzilveren(text)',
+    'public.verzoek_behandelen(uuid,boolean)',
+    'public.groepen_van_mijn_school()',
+    'public.noteer(text,uuid,text,jsonb)',
+    'public.school_aanmaken(text,text)',
+    'public.ondersteuning_toestaan(text,integer)',
+    'public.ondersteuning_intrekken()',
+    'public.databankcijfers()',
+    'public.school_export()',
+    'public.school_verwijderen(uuid,text)',
+    'public.laatste_beheerder(uuid)',
+    'public.account_rol(uuid,text)',
+    'public.account_verplaatsen(uuid,uuid)',
+    'public.account_verwijderen(uuid)',
+    'public.voorbeeldschool_aanmaken(text)',
+    'public.schoolcijfers()',
+    'public.feedback_sturen(text,text,text,text,text,text)',
+    'public.feedback_behandelen(uuid,text,text)'];
+  -- trekkers: alleen de database zelf roept ze aan
+  trekkers text[] := array[
+    'public.vul_school_en_groep()',
+    'public.school_bewaken()',
+    'public.profiel_bewaken()',
+    'public.uitnodiging_bewaken()',
+    'public.nieuw_profiel()'];
+begin
+  foreach f in array gewoon || trekkers loop
+    if to_regprocedure(f) is null then
+      raise exception 'Functie % staat in de rechtenlijst maar bestaat niet.', f;
+    end if;
+    execute format('revoke execute on function %s from public', f);
+    if er_is_anon then
+      execute format('revoke execute on function %s from anon', f);
+    end if;
+  end loop;
+  foreach f in array gewoon loop
+    execute format('grant execute on function %s to authenticated', f);
+  end loop;
+  foreach f in array trekkers loop
+    execute format('revoke execute on function %s from authenticated', f);
+  end loop;
+
+  /* Ook de tabellen: anon komt er niet in. De rechtenregels lieten anon
+     al niets zien, maar zonder tabelrecht hoeft dat niet eens meer. */
+  if er_is_anon then
+    foreach t in array array[
+      'scholen','profielen','uitnodigingen','groepen','groep_leden','groep_verzoeken','leerlingen',
+      'media','hoeken','themas','thema_hoeken','thema_doelen','borden','bord_hoeken','groep_doelen',
+      'plaatsingen','wachtrij','doelen','taken','taak_doelen','weekplannen',
+      'week_doelen','weekplan_taken','taak_toewijzing','observaties','gebeurtenissen',
+      'ondersteuning','handelingen','feedback']
+    loop
+      execute format('revoke all on table public.%I from anon', t);
+    end loop;
+    -- de tellers achter de twee logboeken (bigserial)
+    foreach t in array array['gebeurtenissen', 'handelingen'] loop
+      s := pg_get_serial_sequence('public.' || t, 'id');
+      if s is not null then
+        execute format('revoke all on sequence %s from anon', s);
+      end if;
+    end loop;
+  end if;
+end $$;

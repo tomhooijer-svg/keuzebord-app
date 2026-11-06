@@ -51,3 +51,16 @@ do $$ begin create role authenticated; exception when duplicate_object then null
 grant usage on schema auth, storage to authenticated;
 grant select on auth.users to authenticated;
 grant select, insert, update, delete on storage.objects to authenticated;
+
+/* De rol anon: wie de app opent zonder in te loggen. Met dezelfde
+   standaardrechten die Supabase op een nieuw project zet: elke nieuwe
+   tabel en functie in public is meteen bruikbaar voor anon en
+   authenticated. Zo is hier te zien of schema.sql die rechten zelf weer
+   intrekt (test/rechten.test.js). De nabootsing (nep-supabase-server.js)
+   draait elke aanvraag als authenticated; anon wordt alleen in de
+   SQL-proeven gebruikt. */
+do $$ begin create role anon; exception when duplicate_object then null; end $$;
+grant usage on schema public to anon, authenticated;
+alter default privileges in schema public grant all on tables    to anon, authenticated;
+alter default privileges in schema public grant all on functions to anon, authenticated;
+alter default privileges in schema public grant all on sequences to anon, authenticated;
