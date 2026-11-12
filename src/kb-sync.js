@@ -266,7 +266,12 @@ function naarKlas(rijen, bestaande){
   };
 
   k.naam     = rijen.groep.naam;
-  k.settings = Object.assign(KB.standaardInstellingen(), rijen.groep.instellingen || {});
+  /* Eerst omzetten wat nog van vóór de code-standaard is, dán aanvullen:
+     anders vult de standaard "codeVersie" al in en blijft een oude
+     "pinAan:false" stilletjes staan. */
+  var eigen = Object.assign({}, rijen.groep.instellingen || {});
+  if (KB.codeBijwerken) KB.codeBijwerken(eigen);
+  k.settings = Object.assign(KB.standaardInstellingen(), eigen);
   if (rijen.groep.uiterlijk && Object.keys(rijen.groep.uiterlijk).length) {
     k.uiterlijk = rijen.groep.uiterlijk;
   }

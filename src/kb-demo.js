@@ -42,6 +42,10 @@ function vullen(){
      juist het stukje dat je wilt laten zien. */
   k.settings.wachtrijAan = true;
   k.settings.tellingAan  = true;
+  /* Geen code in de demo: er valt niets te beschermen, en een bezoeker
+     die eerst een code moet kiezen ziet het bord niet. In een echte groep
+     staat de code wel standaard aan. */
+  k.settings.pinAan = false;
 
   KB.G.klassen = [k];
   KB.G.activeKlasId = k.id;

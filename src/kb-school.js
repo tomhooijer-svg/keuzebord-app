@@ -163,7 +163,7 @@ function maakSchoolgroepen(metTestkinderen){
       var b = k.borden[0];
       b.hoekLibIds = k.hoekLib.map(function (h) { return h.id; });
       k.hoekLib.forEach(function (h) { b.plaatsingen[h.id] = []; });
-      KB.zorgVoorWerkplaats(k);
+      if (KB.planbordErbij()) KB.zorgVoorWerkplaats(k);
       if (metTestkinderen && code === '1A') {
         TESTKINDEREN.forEach(function (naam, i) {
           k.leerlingen.push({ id:'ll-1a-' + i, naam:naam,
@@ -198,7 +198,7 @@ function maakLokaleGroepen(metTestkinderen){
     k.hoekLib.forEach(function (h) { b.plaatsingen[h.id] = []; });
     KB.G.klassen.push(k);
     KB.G.activeKlasId = k.id;
-    KB.zorgVoorWerkplaats(k);
+    if (KB.planbordErbij()) KB.zorgVoorWerkplaats(k);
     if (metTestkinderen && code === '1A') {
       TESTKINDEREN.forEach(function (naam, i) {
         k.leerlingen.push({ id:'ll-1a-' + i, naam:naam,
@@ -470,7 +470,8 @@ function tekenGroepen(v){
     var vak = el('div', 'leegvak');
     vak.appendChild(el('p', 'hint',
       'De school is nog niet ingericht. Zet de zes kleutergroepen in één keer neer — ' +
-      '1A, 1B, 1C, 2A, 2B en 2C, elk met de standaardhoeken en een werkplaats.'));
+      '1A, 1B, 1C, 2A, 2B en 2C, elk met de standaardhoeken' +
+      (KB.planbordErbij() ? ' en een werkplaats.' : '.')));
     var rij0 = el('div', 'knoprij-onder');
     rij0.style.justifyContent = 'center';
     rij0.appendChild(knop('Zes groepen aanmaken', 'primair', function () {
@@ -512,7 +513,8 @@ function tekenGroepen(v){
       knoppen.appendChild(knop('Naar de server', 'primair', function () { brengNaarServer(k); }));
       knoppen.appendChild(knop('Weggooien', 'gevaar', function () {
         vraagBevestiging('Weggooien?',
-          k.naam + ' verdwijnt van dit apparaat, met kinderen, planning en observaties. ' +
+          k.naam + ' verdwijnt van dit apparaat, met ' +
+          (KB.planbordErbij() ? 'kinderen, planning en observaties. ' : 'kinderen, hoeken en statistieken. ') +
           'Dit kan niet terug.', 'Weggooien', function () {
             KB.G.klassen = KB.G.klassen.filter(function (x) { return x.id !== k.id; });
             bewaar(); teken(); meld(k.naam + ' weggegooid');
@@ -574,12 +576,17 @@ function tekenSchool(v){
   opnieuw.appendChild(el('div', 'paneelkop', 'Opnieuw beginnen'));
   opnieuw.appendChild(el('p', 'hint',
     'Zet de zes kleutergroepen opnieuw neer: 1A, 1B, 1C, 2A, 2B en 2C, elk met de ' +
-    'standaardhoeken en een werkplaats. Alle bestaande groepen en hun gegevens verdwijnen — ' +
-    'kinderen, planning, doelen en observaties, ook op de server en bij je collega\'s.'));
+    (KB.planbordErbij()
+      ? 'standaardhoeken en een werkplaats. Alle bestaande groepen en hun gegevens verdwijnen — ' +
+        'kinderen, planning, doelen en observaties, ook op de server en bij je collega\'s.'
+      : 'standaardhoeken. Alle bestaande groepen en hun gegevens verdwijnen — ' +
+        'kinderen, hoeken en statistieken, ook op de server en bij je collega\'s.')));
   var rij = el('div', 'knoprij-onder');
   rij.appendChild(knop('Zes lege groepen', 'gevaar', function () {
     vraagBevestiging('Alles vervangen door zes lege groepen?',
-      'Elke bestaande groep verdwijnt, met kinderen, planning en observaties. Dit kan niet terug.',
+      'Elke bestaande groep verdwijnt, met ' +
+      (KB.planbordErbij() ? 'kinderen, planning en observaties' : 'kinderen, hoeken en statistieken') +
+      '. Dit kan niet terug.',
       'Vervangen', function () {
         maakSchoolgroepen(false).then(function () {
           huidig = 'groepen'; tekenMenu(); teken(); meld('Zes lege groepen klaargezet');
@@ -1086,10 +1093,10 @@ function groepKaart(k, beheerd){
   var metBeurt = Object.keys(aanDeBeurt).length;
 
   var cijfers = el('div', 'cijfers');
-  [[kinderen.length, 'kinderen'],
-   [(k.hoekLib || []).length, 'hoeken'],
-   [(w.taken || []).length, 'taken deze week']
-  ].forEach(function (paar) {
+  var cijferLijst = [[kinderen.length, 'kinderen'], [(k.hoekLib || []).length, 'hoeken']];
+  /* Taken horen bij het weekplan; zonder planbord staan ze er niet. */
+  if (KB.planbordErbij()) cijferLijst.push([(w.taken || []).length, 'taken deze week']);
+  cijferLijst.forEach(function (paar) {
     var c = el('div', 'cijfer');
     c.appendChild(el('div', 'n', String(paar[0])));
     c.appendChild(el('div', 'l', paar[1]));
@@ -1097,7 +1104,9 @@ function groepKaart(k, beheerd){
   });
   kaart.appendChild(cijfers);
 
-  if (kinderen.length && (w.taken || []).length) {
+  if (!KB.planbordErbij()) {
+    if (!kinderen.length) kaart.appendChild(el('div', 'beurtregel', 'Nog geen kinderen ingevoerd'));
+  } else if (kinderen.length && (w.taken || []).length) {
     var deel = Math.round((metBeurt / kinderen.length) * 100);
     var balk = el('div', 'groepbalkje');
     var vulling = el('span');
@@ -1221,15 +1230,15 @@ function toonLeden(k){
     var leerkrachten = alleCollegas.filter(function (p) { return p.rol === 'leerkracht'; });
     if (!leerkrachten.length) {
       lijst.appendChild(el('p', 'hint',
-        'Er zijn nog geen leerkrachten. Nodig ze uit met hun e-mailadres; ' +
-        'zodra ze een account maken staan ze hier.'));
+        'Er zijn nog geen leerkrachten. Voeg ze toe bij Accounts, met "Collega toevoegen"; ' +
+        'daarna staan ze hier.'));
     }
     leerkrachten.forEach(function (p) {
       var aan = (ledenVanGroep[serverId] || []).indexOf(p.id) >= 0;
       var rij = el('div', 'ledenrij' + (aan ? ' aan' : ''));
       var links = el('div');
-      links.appendChild(el('div', 'ledennaam', p.naam || p.email));
-      if (p.naam) links.appendChild(el('div', 'ledenmail', p.email));
+      links.appendChild(el('div', 'ledennaam', p.naam || zichtbareNaam(p.email)));
+      if (p.naam) links.appendChild(el('div', 'ledenmail', p.gebruikersnaam || zichtbareNaam(p.email)));
       rij.appendChild(links);
       rij.appendChild(knop(aan ? 'Weghalen' : 'Toewijzen', aan ? 'gevaar' : 'primair',
         function () {
@@ -1258,6 +1267,14 @@ function toonLeden(k){
 
 /* Andersom gezien: welke groepen heeft elke leerkracht? Handig om in één
    oogopslag te zien wie er nog nergens bij hoort. */
+/* Achter een gebruikersnaam zit intern een adres op keuzebord.invalid
+   (zie kb-supabase.js). Dat hoeft niemand te zien: laat de naam zien. */
+function zichtbareNaam(adres){
+  var a = String(adres || '');
+  var staart = '@' + ((window.SB && SB.INLOG_DOMEIN) || 'keuzebord.invalid');
+  return a.slice(-staart.length) === staart ? a.slice(0, -staart.length) : a;
+}
+
 function mensenPaneel(){
   var p = el('div', 'paneel');
   var kop = el('div', 'kopregel');
@@ -1267,16 +1284,15 @@ function mensenPaneel(){
   kop.appendChild(kopknoppen);
   p.appendChild(kop);
   p.appendChild(el('p', 'hint',
-    'Een account maak je niet hier, maar door iemand uit te nodigen op zijn of haar ' +
-    'e-mailadres. Zodra die persoon naar de site gaat en op "Er een maken" klikt met datzelfde ' +
-    'adres, staat ze meteen bij de goede school en groep.'));
+    'Klik op "Collega toevoegen" en vul haar naam in. Ze krijgt een gebruikersnaam en ' +
+    'een wachtwoord, en jij krijgt een kaartje om te printen en te geven. Daarmee logt ' +
+    'ze in. Er is geen e-mailadres nodig en er gaat geen mail uit.'));
 
   var leerkrachten = alleCollegas.filter(function (x) { return x.rol === 'leerkracht'; });
   if (!leerkrachten.length) {
     p.appendChild(el('p', 'hint',
-      'Er zijn nog geen leerkrachten met een account. Nodig ze uit met hun ' +
-      'e-mailadres; zodra ze zich aanmelden staan ze hier en kun je ze aan een ' +
-      'groep hangen.'));
+      'Er zijn nog geen leerkrachten met een account. Voeg ze toe met "Collega toevoegen"; ' +
+      'daarna staan ze hier en kun je ze aan een groep hangen.'));
     return p;
   }
 
@@ -1343,7 +1359,7 @@ function mensenPaneel(){
     openUitnodigingen.forEach(function (u) {
       var rij = el('div', 'ledenrij wacht');
       var links = el('div');
-      links.appendChild(el('div', 'ledennaam', u.email));
+      links.appendChild(el('div', 'ledennaam', zichtbareNaam(u.email)));
       links.appendChild(el('div', 'ledenmail',
         (u.rol === 'schoolbeheerder' ? 'schoolbeheerder' : 'leerkracht') +
         (u.groep_id && naamVanGroep[u.groep_id] ? ' · ' + naamVanGroep[u.groep_id] : '') +
@@ -1387,7 +1403,7 @@ function toonCode(email, code){
   toonBlad(function (blad) {
     blad.appendChild(el('h3', 'titel', 'Uitnodiging staat klaar'));
     blad.appendChild(el('p', 'hint',
-      'Geef ' + email + ' het adres van deze site én de code hieronder. Ze maakt ' +
+      'Geef ' + zichtbareNaam(email) + ' het adres van deze site én de code hieronder. Ze maakt ' +
       'zelf een account en vult dan de code in — daarna zit ze bij de goede school ' +
       'en groep. De code werkt één keer en vervalt na drie weken.'));
 

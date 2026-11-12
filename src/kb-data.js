@@ -36,7 +36,37 @@ function standaardInstellingen(){
            afkoelAan:true, afkoelSeconden:20,
            herhaalAan:false, herhaalMax:3,
            sluitenSoort:'nooit', sluitenTijd:'14:30', sluitenNaMinuten:45,
-           pinAan:false, pincode:'1234', kolommen:3 };
+           pinAan:true, pincode:'', codeVersie:2, kolommen:3 };
+}
+
+/* ── de code van het bord ────────────────────────────────────
+   Achter het menu van het bord zit leegmaken, afsluiten en uitloggen.
+   Dat hoort niet bij een kleuter die langs het digibord loopt, dus de
+   code staat standaard aan. Er is geen vaste begincode: die zou in de
+   handleiding staan, en 1234 tikt een kind ook zonder te weten wat het
+   doet. Het bord vraagt de juf daarom de eerste keer zelf vier cijfers
+   te kiezen (zie vraagCodeInstellen in kb-bord.js).
+
+   Groepen van vóór deze regel hebben "pinAan:false" en "pincode:1234"
+   gewoon opgeslagen, want dat was toen de standaard. Die zetten we één
+   keer om (codeVersie 2): code aan, en een zelfgekozen code blijft staan.
+   Wie hem daarna uitzet, houdt hem uit. */
+function heeftCode(c){ return /^[0-9]{4}$/.test(String(c == null ? '' : c)); }
+function codeTeMakkelijk(c){
+  c = String(c);
+  return /^(\d)\1{3}$/.test(c) ||
+         '01234567890'.indexOf(c) >= 0 || '09876543210'.indexOf(c) >= 0;
+}
+function codeBijwerken(s){
+  if (!s || typeof s !== 'object' || s.codeVersie != null) return s;
+  s.pinAan = !DEMO;           // de demo heeft niets te beschermen
+  if (!heeftCode(s.pincode) || codeTeMakkelijk(s.pincode)) s.pincode = '';
+  s.codeVersie = 2;
+  return s;
+}
+/* Moet het bord nu eerst om een nieuwe code vragen? */
+function codeNogKiezen(k){
+  return !!instelling('pinAan', k) && !heeftCode(instelling('pincode', k));
 }
 
 /* Op maandag, dinsdag en donderdag wordt er twee keer in de werkplaats
@@ -148,6 +178,7 @@ function laad(){
   }
   G.klassen.forEach(function (k) {
     if (!k.settings) k.settings = standaardInstellingen();
+    codeBijwerken(k.settings);
     if (!k.wachtrij)  k.wachtrij  = [];
     if (!k.doelActief) k.doelActief = {};
     (k.borden || []).forEach(function (b) {
@@ -999,6 +1030,12 @@ function werkplaatsHoek(k){
   k = k || klas();
   return (k.hoekLib || []).filter(function (h) { return h.werkplaats; })[0] || null;
 }
+/* Hoort het planbord bij deze uitgave? In de keuzebord-uitgave niet
+   (zie kb-app.js); dan maken we ook geen werkplaats aan en tonen we
+   niets wat bij het weekplan hoort. De gegevens blijven ongemoeid. */
+function planbordErbij(){
+  return !(global.KB_APP && global.KB_APP.planbord === false);
+}
 function zorgVoorWerkplaats(k){
   k = k || klas();
   var h = werkplaatsHoek(k);
@@ -1691,6 +1728,7 @@ function zetBackupTerug(pak){
   }
   G = pak.gegevens;
   if (!G.klassen || !G.klassen.length) return Promise.reject(new Error('de back-up bevat geen groepen'));
+  G.klassen.forEach(function (k) { if (k && k.settings) codeBijwerken(k.settings); });
   if (pak.doelen && pak.doelen.lijst) {
     doelen.meta = pak.doelen.meta || null;
     doelen.lijst = pak.doelen.lijst || [];
@@ -2376,6 +2414,8 @@ global.KB = {
   klas: klas, bord: bord, bordHoeken: bordHoeken, foto: foto, leerling: leerling,
   kerenDezeWeek: kerenDezeWeek,
   hoekVan: hoekVan, instelling: instelling,
+  heeftCode: heeftCode, codeTeMakkelijk: codeTeMakkelijk, codeBijwerken: codeBijwerken,
+  codeNogKiezen: codeNogKiezen,
   bezetting: bezetting, isVol: isVol, plaatsingVan: plaatsingVan,
   VERSIE: VERSIE, bordAdres: bordAdres, appAdres: appAdres, opEigenAdres: opEigenAdres,
   alsElders: alsElders, verouderd: verouderd,
@@ -2419,7 +2459,7 @@ global.KB = {
   dagVanVandaag: dagVanVandaag, week: week, weekAls: weekAls, weekDoelen: weekDoelen,
   weekNummer: weekNummer, weekDatums: weekDatums,
   taken: taken, taakVan: taakVan, nieuweTaak: nieuweTaak, wekenVanTaak: wekenVanTaak,
-  werkplaatsHoek: werkplaatsHoek, zorgVoorWerkplaats: zorgVoorWerkplaats,
+  werkplaatsHoek: werkplaatsHoek, zorgVoorWerkplaats: zorgVoorWerkplaats, planbordErbij: planbordErbij,
   weekTaak: weekTaak, weekTaakAls: weekTaakAls, haalWeekTaakWeg: haalWeekTaakWeg,
   standaardWerkmomenten: standaardWerkmomenten, werkmomenten: werkmomenten,
   dagRuimte: dagRuimte, momentGroepen: momentGroepen,

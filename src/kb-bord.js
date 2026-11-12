@@ -60,6 +60,7 @@ document.addEventListener('pointerdown', function (e) {
 
 function toonBlad(bouw){
   var blad = $('blad');
+  bladVast = false;
   blad.innerHTML = '';
   bouw(blad);
   if (laatstGedrukt) {
@@ -72,9 +73,15 @@ function toonBlad(bouw){
   }
   $('overlay').classList.add('open');
 }
-function sluitBlad(){ $('overlay').classList.remove('open'); }
-$('overlay').addEventListener('click', function (e) { if (e.target.id === 'overlay') sluitBlad(); });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape') sluitBlad(); });
+/* Een blad dat vast staat (de eerste code kiezen) gaat niet dicht door
+   ernaast te tikken of op Escape te drukken -- anders tikt een kind hem
+   weg en blijft het menu open. */
+var bladVast = false;
+function sluitBlad(){ bladVast = false; $('overlay').classList.remove('open'); }
+$('overlay').addEventListener('click', function (e) {
+  if (e.target.id === 'overlay' && !bladVast) sluitBlad();
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !bladVast) sluitBlad(); });
 
 /* ── picto ───────────────────────────────────────────────── */
 function maakPicto(leerling, opties){
@@ -179,6 +186,7 @@ function toonBord(){
   if (KB.moetSluiten()) KB.sluitBord();
   tekenBord();
   toonAanUit();
+  bewaakCode();
 }
 
 
@@ -1248,56 +1256,136 @@ function toonHoekDetail(hoek, index){
    niet per ongeluk het bord leegmaakt. De leerkracht typt hem op het digibord,
    dus grote toetsen en geen toetsenbord. */
 
+/* Het toetsenblok, voor de code intikken én voor een nieuwe kiezen.
+   vier(ingetikt, fout) krijgt de vier cijfers; fout(tekst) zet ze terug. */
+function codeVak(titelTekst, hintTekst, vier){
+  var ingetikt = '';
+  var vak = el('div', 'pinvak');
+  var titel = el('div', null, titelTekst);
+  titel.style.cssText = 'font-size:1.3rem;font-weight:600;letter-spacing:-.022em';
+  vak.appendChild(titel);
+  vak.appendChild(el('p', 'hint', hintTekst));
+
+  var bollen = el('div', 'pincijfers');
+  for (var i = 0; i < 4; i++) bollen.appendChild(el('div', 'pincijfer'));
+  vak.appendChild(bollen);
+
+  var mis = el('div', 'pinmis');
+  vak.appendChild(mis);
+
+  function tekenBollen(){
+    for (var i = 0; i < bollen.children.length; i++) {
+      bollen.children[i].classList.toggle('vol', i < ingetikt.length);
+    }
+  }
+  function fout(tekst){
+    mis.textContent = tekst;
+    ingetikt = '';
+    setTimeout(tekenBollen, 240);
+  }
+
+  var toetsen = el('div', 'pintoetsen');
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(function (teken) {
+    if (teken === '') { toetsen.appendChild(el('div', 'pintoets leeg')); return; }
+    var t = el('button', 'pintoets', teken);
+    t.addEventListener('click', function () {
+      if (teken === '⌫') ingetikt = ingetikt.slice(0, -1);
+      else if (ingetikt.length < 4) ingetikt += teken;
+      tekenBollen();
+      if (ingetikt.length < 4) { if (ingetikt.length) mis.textContent = ''; return; }
+      vier(ingetikt, fout);
+    });
+    toetsen.appendChild(t);
+  });
+  vak.appendChild(toetsen);
+  tekenBollen();
+  return vak;
+}
+
 function vraagPin(klaar){
   if (!KB.instelling('pinAan')) { klaar(); return; }
-  var goed = String(KB.instelling('pincode') || '1234');
-  var ingetikt = '';
+  /* Code aan maar nog geen code gekozen: dan eerst die kiezen. */
+  if (KB.codeNogKiezen()) { vraagCodeInstellen(klaar); return; }
+  var goed = String(KB.instelling('pincode'));
 
   toonBlad(function (blad) {
-    var vak = el('div', 'pinvak');
-    var titel = el('div', null, 'Even je code');
-    titel.style.cssText = 'font-size:1.3rem;font-weight:600;letter-spacing:-.022em';
-    vak.appendChild(titel);
-    vak.appendChild(el('p', 'hint', 'Vier cijfers.'));
-
-    var bollen = el('div', 'pincijfers');
-    for (var i = 0; i < 4; i++) bollen.appendChild(el('div', 'pincijfer'));
-    vak.appendChild(bollen);
-
-    var mis = el('div', 'pinmis');
-    vak.appendChild(mis);
-
-    function tekenBollen(){
-      for (var i = 0; i < bollen.children.length; i++) {
-        bollen.children[i].classList.toggle('vol', i < ingetikt.length);
-      }
-    }
-
-    var toetsen = el('div', 'pintoetsen');
-    ['1','2','3','4','5','6','7','8','9','','0','\u232b'].forEach(function (teken) {
-      if (teken === '') { toetsen.appendChild(el('div', 'pintoets leeg')); return; }
-      var t = el('button', 'pintoets', teken);
-      t.addEventListener('click', function () {
-        if (teken === '\u232b') ingetikt = ingetikt.slice(0, -1);
-        else if (ingetikt.length < 4) ingetikt += teken;
-        tekenBollen();
-        if (ingetikt.length < 4) { mis.textContent = ''; return; }
-        if (ingetikt === goed) { sluitBlad(); klaar(); return; }
-        mis.textContent = 'Dat is niet de goede code.';
-        ingetikt = '';
-        setTimeout(tekenBollen, 240);
-      });
-      toetsen.appendChild(t);
+    var vak = codeVak('Code van dit bord',
+                      'Vier cijfers. Zo kan geen kind het bord leegmaken of uitloggen.',
+                      function (ingetikt, fout) {
+      if (ingetikt === goed) { sluitBlad(); klaar(); return; }
+      fout('Dat is niet de goede code.');
     });
-    vak.appendChild(toetsen);
-    tekenBollen();
-
+    /* Vast op het scherm, geen melding die verdwijnt. Een schoolbeheerder
+       komt via Schoolbeheer > Beheer openen ook bij Functies van elke groep. */
+    var vergeten = el('p', 'hint', 'Code vergeten? Kijk in Beheer, bij Functies. Of vraag het je schoolbeheerder.');
+    vergeten.style.marginTop = '18px';
+    vak.appendChild(vergeten);
     var annuleer = el('button', 'knop knop-stil', 'Terug naar het bord');
-    annuleer.style.marginTop = '22px';
+    annuleer.style.marginTop = '14px';
     annuleer.addEventListener('click', sluitBlad);
     vak.appendChild(annuleer);
     blad.appendChild(vak);
   });
+}
+
+/* ── de eerste keer: een code kiezen ──────────────────────
+   De code staat standaard aan, zonder begincode. Opent de juf het bord
+   en is er nog geen code, dan vraagt het bord er meteen een: twee keer
+   dezelfde vier cijfers, en klaar. Dit blad kan niet weggetikt worden,
+   want dan kiest straks een kind de code. Wie geen code wil, zet hem uit
+   in het beheer, bij Functies. */
+var codeKiezenOpen = false;
+function vraagCodeInstellen(klaar){
+  var eerste = null;
+  codeKiezenOpen = true;
+  function stap(melding){
+    toonBlad(function (blad) {
+      var vak = eerste === null
+        ? codeVak('Kies een code voor dit bord',
+                  'Vier cijfers. Het bord vraagt ze voordat iemand bij het menu komt. ' +
+                  'Dit doe je maar één keer. Kies de code als de kinderen er niet bij staan.',
+                  function (code, fout) {
+                    if (KB.codeTeMakkelijk(code)) { fout('Die raadt een kind te makkelijk. Kies andere cijfers.'); return; }
+                    eerste = code; stap();
+                  })
+        : codeVak('Tik je code nog een keer',
+                  'Zo weet je zeker dat je hem goed hebt.',
+                  function (code) {
+                    if (code !== eerste) { eerste = null; stap('Dat was niet hetzelfde. Begin opnieuw.'); return; }
+                    var k = KB.klas();
+                    if (!k.settings) k.settings = KB.standaardInstellingen();
+                    k.settings.pinAan = true;
+                    k.settings.pincode = code;
+                    k.settings.codeVersie = 2;
+                    KB.bewaar();
+                    codeKiezenOpen = false;
+                    sluitBlad();
+                    meld('Code ingesteld. Je ziet hem terug in Beheer, bij Functies.');
+                    if (klaar) klaar();
+                  });
+      if (melding) vak.querySelector('.pinmis').textContent = melding;
+      var uitleg = el('p', 'hint', 'Liever geen code? Die kun je later uitzetten: Beheer, dan Functies.');
+      uitleg.style.marginTop = '18px';
+      vak.appendChild(uitleg);
+      blad.appendChild(vak);
+    });
+    bladVast = true;
+  }
+  stap();
+}
+
+/* Elke seconde en bij elk tonen van het bord: is er een code nodig en
+   nog niet gekozen, dan komt het blad. Is hij intussen op een ander
+   apparaat gekozen (of uitgezet), dan gaat het blad vanzelf weg. */
+function bewaakCode(){
+  if (scherm !== 'bord') return;
+  var nodig = false;
+  try { nodig = KB.codeNogKiezen(); } catch (e) {}
+  if (nodig && !(codeKiezenOpen && bladVast)) vraagCodeInstellen();
+  else if (!nodig && codeKiezenOpen) {
+    codeKiezenOpen = false;
+    if (bladVast) sluitBlad();
+  }
 }
 
 /* ── het bord aan- en uitzetten ───────────────────────────
@@ -1469,6 +1557,7 @@ function tik(){
      14:30 af, dan hoort dat om 14:30 te gebeuren en niet als er toevallig
      weer iets getekend wordt. */
   if (scherm === 'bord' && KB.moetSluiten()) sluitDeDag(true);
+  bewaakCode();
   if (datum === vorigeDatum && tijd === vorigeTijd) return;
   vorigeDatum = datum; vorigeTijd = tijd;
   zetTekst('bord-datum', datum);

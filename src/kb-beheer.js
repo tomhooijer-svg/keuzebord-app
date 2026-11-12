@@ -842,6 +842,8 @@ panelen.groep = function (v){
   naamVeld.appendChild(invoer);
   instellen.appendChild(naamVeld);
 
+  /* De niveaus zijn voor de doelen, en die zitten in het planbord. */
+  if (metPlanbord()) {
   var niveauVeld = el('div', 'veld');
   niveauVeld.appendChild(el('label', null, 'Beheersingsniveaus voor de doelen'));
   var chips = el('div', 'chips');
@@ -861,6 +863,7 @@ panelen.groep = function (v){
     'Groep 1 werkt meestal op 0, 1a, 1b en 1; groep 2 op 2a, 2b en 2. De halfjaarniveaus dragen ' +
     'spel, taal en rekenen, de hele-jaarniveaus motoriek en sociaal-emotioneel.'));
   instellen.appendChild(niveauVeld);
+  }
   v.appendChild(instellen);
 
   /* ── toegang tot een andere groep vragen ──
@@ -1162,7 +1165,7 @@ function toonWordBevestiging(lijst){
         bord.hoekLibIds = groep.hoekLib.map(function (h) { return h.id; });
         groep.hoekLib.forEach(function (h) { bord.plaatsingen[h.id] = []; });
         KB.G.klassen.push(groep);
-        KB.zorgVoorWerkplaats(groep);
+        if (metPlanbord()) KB.zorgVoorWerkplaats(groep);
       }
 
       var gekoppeld = 0, nieuwAantal = 0;
@@ -1209,6 +1212,15 @@ function bewerkLeerling(l){
     boven.style.cssText = 'display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap';
     var bol = pictoBol(concept, 64);
     boven.appendChild(bol);
+    /* Het voorbeeldrondje altijd opnieuw opbouwen met pictoBol, net als
+       op het bord. Eerst zette een kleurklik hier "background" -- de
+       verkorte vorm, die background-size en -repeat terugzet -- en dan
+       stond een gekozen picto als behang herhaald in het rondje. */
+    function verversBol(){
+      var nieuw = pictoBol(concept, 64);
+      if (bol.parentNode) bol.parentNode.replaceChild(nieuw, bol);
+      bol = nieuw;
+    }
     /* De knop om een foto te kiezen staat er alleen als de school dat
        heeft aangezet. Een knop die er wel staat maar waarvan het
        resultaat daarna toch niet in beeld komt, is erger dan geen knop. */
@@ -1217,7 +1229,7 @@ function bewerkLeerling(l){
         KB.verklein(f, KB.FOTO_MAAT.leerling).then(function (d) {
           concept.image = d;
           concept.pictoId = null;        // dit is een foto, geen tekening
-          bol.style.backgroundImage = 'url(' + d + ')'; bol.textContent = '';
+          verversBol();
           meld('Foto klaar · ' + Math.round(d.length * 0.75 / 1024) + ' KB');
         }).catch(function () { meld('Die foto lukte niet'); });
       }));
@@ -1243,7 +1255,7 @@ function bewerkLeerling(l){
     var invoer = el('input'); invoer.type = 'text'; invoer.value = concept.naam;
     invoer.addEventListener('input', function () {
       concept.naam = invoer.value;
-      if (!concept.image) bol.textContent = (invoer.value || '?').charAt(0).toUpperCase();
+      if (!concept.image) verversBol();
     });
     naamVeld.appendChild(invoer);
     blad.appendChild(naamVeld);
@@ -1257,8 +1269,7 @@ function bewerkLeerling(l){
       stip.classList.toggle('aan', c === concept.kleur);
       stip.addEventListener('click', function () {
         concept.kleur = c;
-        bol.style.background = c;
-        if (concept.image) bol.style.backgroundImage = 'url(' + concept.image + ')';
+        verversBol();
         Array.prototype.forEach.call(kleuren.children, function (s, i) {
           s.classList.toggle('aan', KB.KIND_KLEUREN[i] === c);
         });
@@ -1569,7 +1580,7 @@ panelen.hoeken = function (v){
       rij.appendChild(kleurstip);
       var naam = el('div');
       var titel = el('div', 'rij-naam', h.naam);
-      if (h.werkplaats) {
+      if (h.werkplaats && metPlanbord()) {
         var merk = el('span', 'merkje', 'werkplaats');
         titel.appendChild(merk);
       }
@@ -1740,7 +1751,7 @@ function volgordePaneel(k, b){
   var kaartje = el('div', 'bordkaartje');
   kaartje.style.gridTemplateColumns = 'repeat(' + kolommen + ', 1fr)';
   opBord.forEach(function (h, i) {
-    var vak = el('div', 'bordkaartje-vak' + (h.werkplaats ? ' werkplaats' : ''));
+    var vak = el('div', 'bordkaartje-vak' + (h.werkplaats && metPlanbord() ? ' werkplaats' : ''));
     vak.style.borderColor = KB.hoekKleur(h, k.hoekLib.indexOf(h));
     vak.appendChild(el('span', 'bordkaartje-nr', String(i + 1)));
     vak.appendChild(el('span', 'bordkaartje-naam', h.naam));
@@ -1763,7 +1774,7 @@ function volgordePaneel(k, b){
     var naam = el('div');
     naam.style.flexGrow = '1';
     var titel = el('div', 'rij-naam', h.naam);
-    if (h.werkplaats) titel.appendChild(el('span', 'merkje', 'werkplaats'));
+    if (h.werkplaats && metPlanbord()) titel.appendChild(el('span', 'merkje', 'werkplaats'));
     naam.appendChild(titel);
     naam.appendChild(el('div', 'rij-sub', plaatsZin(i, kolommen, opBord.length)));
     rij.appendChild(naam);
@@ -1882,6 +1893,9 @@ function bewerkHoek(h){
       'Op 0 gebruikt deze hoek de tijd van de groep (' + KB.instelling('timerMinuten', k) + ' minuten).'));
     blad.appendChild(timerVeld);
 
+    /* De werkplaats hoort bij het weekplan. Zonder planbord is het een
+       schakelaar die niets doet, dus hij staat er dan niet. */
+    if (metPlanbord()) {
     var wpVeld = el('div', 'rij');
     var wpTekst = el('div');
     wpTekst.style.flexGrow = '1';
@@ -1892,6 +1906,7 @@ function bewerkHoek(h){
     wpVeld.appendChild(wpTekst);
     wpVeld.appendChild(schakelaar(concept.werkplaats, function (aan) { concept.werkplaats = aan; }));
     blad.appendChild(wpVeld);
+    }
 
     /* ── waar is deze hoek voor ──
        Dezelfde domeinen en leerlijnen als bij de doelen, zodat je later
@@ -2269,7 +2284,7 @@ var FUNCTIES_BORD = [
   ['werkmomentenAan','Twee werkmomenten per dag', 'Op een hele dag werk je twee keer in de werkplaats. De tweede ronde staat er alvast grijs achter; zodra een kind zijn plaatje eruit haalt schuift die naam naar voren.']
 ];
 var FUNCTIES_BEHEER = [
-  ['pinAan',        'Code op het bord', 'Vraagt vier cijfers voor je bij de instellingen van het bord komt. Zo maakt een kind niet per ongeluk het bord leeg.'],
+  ['pinAan',        'Code op het bord', 'Vraagt vier cijfers voordat iemand bij het menu van het bord komt (leegmaken, aan/uit, uitloggen). Zo maakt een kind niet per ongeluk het bord leeg. Staat standaard aan.'],
   ['signaleringAan','Signalering', 'Waarschuwt als een kind aan het eind van de week nog niet aan de beurt is geweest.']
 ];
 
@@ -2322,21 +2337,27 @@ function werkmomentenPaneel(k){
 }
 
 /* De code die het bord vraagt. Vier cijfers, meer niet -- het is geen
-   kluis maar een drempel voor kleine handen. */
+   kluis maar een drempel voor kleine handen. Er is geen begincode: het
+   bord vraagt de juf er de eerste keer zelf een (zie kb-bord.js). */
 function pincodePaneel(k){
   var p = paneel('Code van het bord');
   if (!KB.instelling('pinAan', k)) {
     p.appendChild(el('p', 'hint',
-      'Zet hierboven "Code op het bord" aan om een code te gebruiken.'));
+      'De code staat uit: iedereen kan via het menu het bord leegmaken of uitloggen. ' +
+      'Zet hierboven "Code op het bord" aan om dat af te schermen.'));
     return p;
   }
-  p.appendChild(el('p', 'hint',
-    'Deze vier cijfers vraagt het bord voordat het de instellingen laat zien. ' +
-    'Het bord aan- en uitzetten kan wel gewoon, daar is geen code voor nodig.'));
+  var nogGeen = !KB.heeftCode(KB.instelling('pincode', k));
+  p.appendChild(el('p', 'hint', nogGeen
+    ? 'Er is nog geen code. Kies hier vier cijfers, of doe het op het bord: dat vraagt er zelf om.'
+    : 'Deze vier cijfers vraagt het bord voordat het menu opengaat: leegmaken, aan- en uitzetten, uitloggen. ' +
+      'Een kind dat de code niet weet, komt daar niet bij.'));
   var rij = el('div', 'knoprij');
   var invoer = el('input', 'invoer');
   invoer.type = 'text'; invoer.inputMode = 'numeric'; invoer.maxLength = 4;
-  invoer.value = String(KB.instelling('pincode', k) || '1234');
+  invoer.value = nogGeen ? '' : String(KB.instelling('pincode', k));
+  invoer.placeholder = '····';
+  invoer.setAttribute('aria-label', 'Code van het bord');
   invoer.style.cssText = 'max-width:120px;font-size:1.3rem;letter-spacing:.32em;text-align:center';
   invoer.addEventListener('input', function () {
     invoer.value = invoer.value.replace(/[^0-9]/g, '').slice(0, 4);
@@ -2344,8 +2365,10 @@ function pincodePaneel(k){
   rij.appendChild(invoer);
   rij.appendChild(knop('Opslaan', 'primair', function () {
     if (!/^[0-9]{4}$/.test(invoer.value)) { meld('Vier cijfers graag'); return; }
+    if (KB.codeTeMakkelijk(invoer.value)) { meld('Die raadt een kind te makkelijk. Kies andere cijfers.'); return; }
     k.settings.pincode = invoer.value;
-    bewaarOfKlaag(); meld('Code opgeslagen');
+    k.settings.codeVersie = 2;
+    bewaarOfKlaag(); meld('Code opgeslagen'); teken();
   }));
   p.appendChild(rij);
   return p;
@@ -2585,18 +2608,19 @@ function opServer(){
 function backupPaneel(){
   var p = paneel('Back-up');
   var stand = backupTekst();
+  var inhoud = metPlanbord()
+    ? 'de groepen, kinderen, planning, doelen, observaties en de foto\'s'
+    : 'de groepen, kinderen, hoeken, keuzes en de foto\'s';
   if (opServer()) {
     p.appendChild(el('p', 'hint',
       'Je werk staat op de server en gaat vanzelf mee naar je andere apparaten. ' +
       'Een back-up hoeft dus niet, maar kan wel: je krijgt er een bestand mee in ' +
-      'handen dat je zelf bewaart, met de groepen, kinderen, planning, doelen, ' +
-      'observaties en de foto\'s. Handig voor het archief aan het eind van een jaar.'));
+      'handen dat je zelf bewaart, met ' + inhoud + '. Handig voor het archief aan het eind van een jaar.'));
     if (stand.tekst.indexOf('Laatste') === 0) p.appendChild(el('p', 'hint', stand.tekst));
   } else {
     p.appendChild(el('p', 'hint', stand.tekst +
       ' Dit apparaat is niet met de server verbonden, dus alles staat in de browser. ' +
-      'Een back-up is dan je enige vangnet: hij bevat de groepen, kinderen, planning, ' +
-      'doelen, observaties en de foto\'s.'));
+      'Een back-up is dan je enige vangnet: hij bevat ' + inhoud + '.'));
     if (stand.dringend) {
       var waarschuwing = el('div', 'signaal');
       waarschuwing.appendChild(el('div', 'signaal-kop', 'Maak even een back-up'));
